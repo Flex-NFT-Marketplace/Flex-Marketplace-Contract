@@ -13,7 +13,7 @@ mod marketplace {
 
     mod utils {
         mod merkle;
-        mod order_files;
+        mod order_types;
         mod reentrancy_guard;
     }
 
