@@ -27,7 +27,7 @@ mod Proxy {
     }
 
     #[external(v0)]
-    impl Proxy of super::IProxy<ContractState> {
+    impl ProxyImpl of super::IProxy<ContractState> {
         fn upgrade(ref self: ContractState, new_implementation: ClassHash) { // TODO
         }
 

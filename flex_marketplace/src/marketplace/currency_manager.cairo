@@ -16,15 +16,45 @@ trait ICurrencyManager<TState> {
 mod CurrencyManager {
     use starknet::{ContractAddress, contract_address_const};
 
+    use openzeppelin::access::ownable::OwnableComponent;
+    component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
+
+    #[abi(embed_v0)]
+    impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
+
+    impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
+
     #[storage]
     struct Storage {
         whitelisted_currency_count: usize,
         whitelisted_currencies: LegacyMap::<usize, ContractAddress>,
         whitelisted_currency_index: LegacyMap::<ContractAddress, usize>,
+        #[substorage(v0)]
+        ownable: OwnableComponent::Storage
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        CurrencyRemoved: CurrencyRemoved,
+        CurrencyWhitelisted: CurrencyWhitelisted,
+        OwnableEvent: OwnableComponent::Event,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct CurrencyRemoved {
+        currency: ContractAddress,
+        timestamp: u64,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct CurrencyWhitelisted {
+        currency: ContractAddress,
+        timestamp: u64,
     }
 
     #[external(v0)]
-    impl CurrencyManager of super::ICurrencyManager<ContractState> {
+    impl CurrencyManagerImpl of super::ICurrencyManager<ContractState> {
         fn initializer(
             ref self: ContractState, owner: ContractAddress, proxy_admin: ContractAddress
         ) { // TODO
