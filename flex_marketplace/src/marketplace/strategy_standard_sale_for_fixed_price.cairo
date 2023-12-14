@@ -23,15 +23,31 @@ trait IStrategyStandardSaleForFixedPrice<TState> {
 mod StrategyStandardSaleForFixedPrice {
     use starknet::{ContractAddress, contract_address_const};
 
+    use openzeppelin::access::ownable::OwnableComponent;
+    component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
+
+    #[abi(embed_v0)]
+    impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
+
+    impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
+
     use flex::marketplace::utils::order_types::{TakerOrder, MakerOrder};
 
     #[storage]
     struct Storage {
         protocol_fee: u128,
+        #[substorage(v0)]
+        ownable: OwnableComponent::Storage
+    }
+
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        OwnableEvent: OwnableComponent::Event,
     }
 
     #[external(v0)]
-    impl StrategyStandardSaleForFixedPrice of super::IStrategyStandardSaleForFixedPrice<
+    impl StrategyStandardSaleForFixedPriceImpl of super::IStrategyStandardSaleForFixedPrice<
         ContractState
     > {
         fn initializer(
