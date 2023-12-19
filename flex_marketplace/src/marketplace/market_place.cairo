@@ -333,12 +333,12 @@ mod MarketPlace {
         fn calculate_protocol_fee(
             self: @ContractState, execution_strategy: felt252, amount: u128
         ) -> u128 { // TODO
-        0
+            0
         }
 
         fn validate_order(
             self: @ContractState, order: MakerOrder, order_signature: Span<felt252>
-        ) {// TODO
+        ) { // TODO
         }
     }
 }
