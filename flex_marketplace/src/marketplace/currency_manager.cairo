@@ -5,30 +5,33 @@ trait ICurrencyManager<TState> {
     fn initializer(ref self: TState, owner: ContractAddress, proxy_admin: ContractAddress);
     fn add_currency(ref self: TState, currency: ContractAddress);
     fn remove_currency(ref self: TState, currency: ContractAddress);
-    fn transfer_ownership(ref self: TState, new_owner: ContractAddress);
-    fn owner(self: @TState) -> ContractAddress;
+    fn transfer_contract_ownership(ref self: TState, new_owner: ContractAddress);
+    fn contract_owner(self: @TState) -> ContractAddress;
     fn is_currency_whitelisted(self: @TState, currency: ContractAddress) -> bool;
-    fn whitelisted_currency_count(self: @TState) -> usize;
-    fn whitelisted_currency(self: @TState, index: usize) -> ContractAddress;
+    fn whitelisted_currency_count(self: @TState) -> u256;
+    fn whitelisted_currency(self: @TState, index: u256) -> ContractAddress;
 }
 
 #[starknet::contract]
 mod CurrencyManager {
-    use starknet::{ContractAddress, contract_address_const};
+    use openzeppelin::access::ownable::ownable::OwnableComponent;
+    use openzeppelin::access::ownable::ownable::OwnableComponent::InternalTrait as OwnableInternalTrait;
+    use openzeppelin::access::ownable::interface::IOwnable;
+    use starknet::{ContractAddress, contract_address_const, get_block_timestamp};
 
-    use openzeppelin::access::ownable::OwnableComponent;
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 
     #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
 
+    // impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
 
     #[storage]
     struct Storage {
-        whitelisted_currency_count: usize,
-        whitelisted_currencies: LegacyMap::<usize, ContractAddress>,
-        whitelisted_currency_index: LegacyMap::<ContractAddress, usize>,
+        whitelisted_currency_count: u256,
+        whitelisted_currencies: LegacyMap::<u256, ContractAddress>,
+        whitelisted_currency_index: LegacyMap::<ContractAddress, u256>,
         #[substorage(v0)]
         ownable: OwnableComponent::Storage
     }
@@ -57,36 +60,61 @@ mod CurrencyManager {
     impl CurrencyManagerImpl of super::ICurrencyManager<ContractState> {
         fn initializer(
             ref self: ContractState, owner: ContractAddress, proxy_admin: ContractAddress
-        ) { // TODO
+        ) {
+            // how to use the proxy_admin here?
+            self.ownable.initializer(owner);
         }
 
-        fn add_currency(ref self: ContractState, currency: ContractAddress) { // TODO
+        fn add_currency(ref self: ContractState, currency: ContractAddress) {
+            self.ownable.assert_only_owner();
+            let index = self.whitelisted_currency_index.read(currency);
+            assert(index == 0, 'currency already whitelisted');
+            let new_count = self.whitelisted_currency_count.read() + 1;
+            self.whitelisted_currency_index.write(currency, new_count);
+            self.whitelisted_currencies.write(new_count, currency);
+            self.whitelisted_currency_count.write(new_count);
+            let timestamp = get_block_timestamp();
+            self.emit(CurrencyWhitelisted { currency, timestamp });
         }
 
-        fn remove_currency(ref self: ContractState, currency: ContractAddress) { // TODO
+        fn remove_currency(ref self: ContractState, currency: ContractAddress) {
+            self.ownable.assert_only_owner();
+            let index = self.whitelisted_currency_index.read(currency);
+            assert(index != 0, 'currency not whitelisted');
+            let count = self.whitelisted_currency_count.read() ;
+            let currency_at_last_index = self.whitelisted_currencies.read(count);
+            self.whitelisted_currencies.write(index, currency_at_last_index);
+            self.whitelisted_currencies.write(count, contract_address_const::<0>());
+            self.whitelisted_currency_index.write(currency, 0);
+            self.whitelisted_currency_index.write(currency_at_last_index, index);
+            self.whitelisted_currency_count.write(count-1);
+            let timestamp = get_block_timestamp();
+            self.emit(CurrencyRemoved { currency, timestamp });
+
         }
 
-        fn transfer_ownership(ref self: ContractState, new_owner: ContractAddress) { // TODO
+        fn transfer_contract_ownership(ref self: ContractState, new_owner: ContractAddress) {
+            self.ownable.assert_only_owner();
+            self.ownable.transfer_ownership(new_owner);
         }
-
-        fn owner(self: @ContractState) -> ContractAddress {
-            // TODO
-            contract_address_const::<0>()
+        fn contract_owner(self: @ContractState) -> ContractAddress {
+            self.ownable.owner()
         }
 
         fn is_currency_whitelisted(self: @ContractState, currency: ContractAddress) -> bool {
-            // TODO
+            let index = self.whitelisted_currency_index.read(currency);
+            if (index == 0) {
+                return false;
+            }
             true
         }
 
-        fn whitelisted_currency_count(self: @ContractState) -> usize {
-            // TODO
-            0
+        fn whitelisted_currency_count(self: @ContractState) -> u256 {
+            self.whitelisted_currency_count.read()
         }
 
-        fn whitelisted_currency(self: @ContractState, index: usize) -> ContractAddress {
-            // TODO
-            contract_address_const::<0>()
+        fn whitelisted_currency(self: @ContractState, index: u256) -> ContractAddress {
+            self.whitelisted_currencies.read(index)
         }
     }
 }
