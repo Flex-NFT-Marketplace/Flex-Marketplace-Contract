@@ -1,0 +1,23 @@
+name: Build
+
+on: [push, pull_request]
+
+env:
+  SCARB_VERSION: 2.4.0
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          scarb-version: ${{ env.SCARB_VERSION }}
+      - name: Check cairo format
+        run: |
+          cd flex_marketplace
+          scarb fmt --check
+      - name: Build cairo programs
+        run: |
+          cd flex_marketplace
+          scarb build
