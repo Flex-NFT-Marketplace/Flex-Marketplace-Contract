@@ -1,11 +1,11 @@
+use flex::marketplace::royalty_fee_registry;
 use starknet::ContractAddress;
 use starknet::class_hash::ClassHash;
-use flex::marketplace::royalty_fee_registry;
 #[starknet::interface]
 trait IRoyaltyFeeManager<TState> {
     fn initializer(ref self: TState, fee_registry: ContractAddress, owner: ContractAddress,);
-    fn transfer_ownership(ref self: TState, new_owner: ContractAddress);
-    fn owner(ref self: TState) -> ContractAddress;
+    fn transferOwnership(ref self: TState, new_owner: ContractAddress);
+    fn get_owner(ref self: TState) -> ContractAddress;
     fn INTERFACE_ID_ERC2981(self: @TState) -> felt252;
     fn get_royalty_fee_registry(self: @TState) -> ContractAddress;
     fn calculate_royalty_fee_and_get_recipient(
@@ -28,21 +28,19 @@ trait IERC2981<TContractState> {
 
 #[starknet::contract]
 mod RoyaltyFeeManager {
-    use openzeppelin::access::ownable::ownable::OwnableComponent::InternalTrait;
+    use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::access::ownable::interface::IOwnable;
+    use openzeppelin::access::ownable::ownable::OwnableComponent::InternalTrait;
+    use starknet::get_caller_address;
     use starknet::{ContractAddress, contract_address_const};
-    use super::royalty_fee_registry::IRoyaltyFeeRegistryDispatcher;
-    use super::royalty_fee_registry::IRoyaltyFeeRegistryDispatcherTrait;
+    use super::ClassHash;
     use super::IERC165Dispatcher;
     use super::IERC165DispatcherTrait;
     use super::IERC2981Dispatcher;
     use super::IERC2981DispatcherTrait;
-    use super::ClassHash;
+    use super::royalty_fee_registry::IRoyaltyFeeRegistryDispatcher;
+    use super::royalty_fee_registry::IRoyaltyFeeRegistryDispatcherTrait;
     use zeroable::Zeroable;
-    use starknet::get_caller_address;
-
-
-    use openzeppelin::access::ownable::OwnableComponent;
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 
     #[abi(embed_v0)]
@@ -74,11 +72,11 @@ mod RoyaltyFeeManager {
             self.ownable.initializer(owner);
         }
 
-        fn transfer_ownership(ref self: ContractState, new_owner: ContractAddress) {
+        fn transferOwnership(ref self: ContractState, new_owner: ContractAddress) {
             self.ownable.transfer_ownership(new_owner);
         }
 
-        fn owner(ref self: ContractState) -> ContractAddress {
+        fn get_owner(ref self: ContractState) -> ContractAddress {
             return self.ownable.owner();
         }
 
