@@ -14,9 +14,8 @@ trait IExecutionManager<TState> {
 
 #[starknet::contract]
 mod ExecutionManager {
-    use starknet::{ContractAddress, contract_address_const};
-
     use openzeppelin::access::ownable::OwnableComponent;
+    use starknet::{ContractAddress, contract_address_const};
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 
     #[abi(embed_v0)]

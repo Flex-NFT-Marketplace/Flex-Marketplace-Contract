@@ -1,6 +1,5 @@
-use starknet::ContractAddress;
-
 use flex::marketplace::utils::order_types::{TakerOrder, MakerOrder};
+use starknet::ContractAddress;
 
 #[starknet::interface]
 trait IStrategyStandardSaleForFixedPrice<TState> {
@@ -21,17 +20,16 @@ trait IStrategyStandardSaleForFixedPrice<TState> {
 
 #[starknet::contract]
 mod StrategyStandardSaleForFixedPrice {
-    use starknet::{ContractAddress, contract_address_const};
+    use flex::marketplace::utils::order_types::{TakerOrder, MakerOrder};
 
     use openzeppelin::access::ownable::OwnableComponent;
+    use starknet::{ContractAddress, contract_address_const};
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 
     #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
 
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
-
-    use flex::marketplace::utils::order_types::{TakerOrder, MakerOrder};
 
     #[storage]
     struct Storage {

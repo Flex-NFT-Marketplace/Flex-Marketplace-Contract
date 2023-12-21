@@ -1,6 +1,5 @@
-use starknet::ContractAddress;
-
 use flex::marketplace::utils::order_types::{MakerOrder, TakerOrder};
+use starknet::ContractAddress;
 
 trait IMarketPlace<TState> {
     fn cancel_all_orders_for_sender(ref self: TState, min_nonce: u128);
@@ -50,11 +49,10 @@ trait IMarketPlace<TState> {
 
 #[starknet::contract]
 mod MarketPlace {
-    use starknet::{ContractAddress, contract_address_const};
-
     use flex::marketplace::utils::order_types::{MakerOrder, TakerOrder};
 
     use openzeppelin::access::ownable::OwnableComponent;
+    use starknet::{ContractAddress, contract_address_const};
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 
     #[abi(embed_v0)]

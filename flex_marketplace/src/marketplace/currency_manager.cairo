@@ -14,9 +14,9 @@ trait ICurrencyManager<TState> {
 
 #[starknet::contract]
 mod CurrencyManager {
-    use openzeppelin::access::ownable::ownable::OwnableComponent;
-    use openzeppelin::access::ownable::ownable::OwnableComponent::InternalTrait as OwnableInternalTrait;
     use openzeppelin::access::ownable::interface::IOwnable;
+    use openzeppelin::access::ownable::ownable::OwnableComponent::InternalTrait as OwnableInternalTrait;
+    use openzeppelin::access::ownable::ownable::OwnableComponent;
     use starknet::{ContractAddress, contract_address_const, get_block_timestamp};
 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
@@ -81,16 +81,18 @@ mod CurrencyManager {
             self.ownable.assert_only_owner();
             let index = self.whitelisted_currency_index.read(currency);
             assert(index != 0, 'currency not whitelisted');
-            let count = self.whitelisted_currency_count.read() ;
+            let count = self.whitelisted_currency_count.read();
+
             let currency_at_last_index = self.whitelisted_currencies.read(count);
             self.whitelisted_currencies.write(index, currency_at_last_index);
             self.whitelisted_currencies.write(count, contract_address_const::<0>());
             self.whitelisted_currency_index.write(currency, 0);
-            self.whitelisted_currency_index.write(currency_at_last_index, index);
-            self.whitelisted_currency_count.write(count-1);
+            if (count != 1) {
+                self.whitelisted_currency_index.write(currency_at_last_index, index);
+            }
+            self.whitelisted_currency_count.write(count - 1);
             let timestamp = get_block_timestamp();
             self.emit(CurrencyRemoved { currency, timestamp });
-
         }
 
         fn transfer_contract_ownership(ref self: ContractState, new_owner: ContractAddress) {

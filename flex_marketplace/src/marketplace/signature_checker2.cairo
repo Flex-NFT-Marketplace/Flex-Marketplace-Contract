@@ -1,6 +1,5 @@
-use starknet::ContractAddress;
-
 use flex::marketplace::utils::order_types::MakerOrder;
+use starknet::ContractAddress;
 
 trait ISignatureChecker2<TState> {
     fn initializer(ref self: TState, proxy_admin: ContractAddress);
@@ -12,9 +11,8 @@ trait ISignatureChecker2<TState> {
 
 #[starknet::contract]
 mod SignatureChecker2 {
-    use starknet::ContractAddress;
-
     use flex::marketplace::utils::order_types::MakerOrder;
+    use starknet::ContractAddress;
 
     #[storage]
     struct Storage {}
