@@ -1,7 +1,7 @@
 mod marketplace {
     mod launchpad {
         mod ERC721_launchpad_migrated;
-        mod ERC721_Launchpad;
+        mod ERC721_launchpad;
         mod minter;
     }
 

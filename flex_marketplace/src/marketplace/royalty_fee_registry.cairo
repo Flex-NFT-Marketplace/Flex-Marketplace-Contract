@@ -16,7 +16,9 @@ trait IRoyaltyFeeRegistry<TState> {
     fn transfer_ownership(ref self: TState, new_owner: ContractAddress);
     fn owner(ref self: TState) -> ContractAddress;
     fn get_royalty_fee_limit(self: @TState) -> u128;
-    fn get_royalty_fee_info(self: @TState) -> (ContractAddress, u128);
+    fn get_royalty_fee_info(
+        self: @TState, collection: ContractAddress, amount: u128
+    ) -> (ContractAddress, u128);
     fn get_royalty_fee_info_collection(
         self: @TState, collection: ContractAddress
     ) -> (ContractAddress, ContractAddress, u128);
@@ -107,7 +109,9 @@ mod RoyaltyFeeRegistry {
             0
         }
 
-        fn get_royalty_fee_info(self: @ContractState) -> (ContractAddress, u128) {
+        fn get_royalty_fee_info(
+            self: @ContractState, collection: ContractAddress, amount: u128
+        ) -> (ContractAddress, u128) {
             // TODO
             (contract_address_const::<0>(), 0)
         }
