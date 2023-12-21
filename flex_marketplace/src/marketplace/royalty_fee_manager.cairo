@@ -5,7 +5,7 @@ use flex::marketplace::royalty_fee_registry;
 trait IRoyaltyFeeManager<TState> {
     fn initializer(ref self: TState, fee_registry: ContractAddress, owner: ContractAddress,);
     fn transfer_ownership(ref self: TState, new_owner: ContractAddress);
-    fn get_owner(ref self: TState) -> ContractAddress;
+    fn owner(ref self: TState) -> ContractAddress;
     fn INTERFACE_ID_ERC2981(self: @TState) -> felt252;
     fn get_royalty_fee_registry(self: @TState) -> ContractAddress;
     fn calculate_royalty_fee_and_get_recipient(
@@ -78,7 +78,7 @@ mod RoyaltyFeeManager {
             self.ownable.transfer_ownership(new_owner);
         }
 
-        fn get_owner(ref self: ContractState) -> ContractAddress {
+        fn owner(ref self: ContractState) -> ContractAddress {
             return self.ownable.owner();
         }
 
