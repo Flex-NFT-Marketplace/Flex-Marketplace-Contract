@@ -5,11 +5,9 @@ trait ICurrencyManager<TState> {
     fn initializer(ref self: TState, owner: ContractAddress, proxy_admin: ContractAddress);
     fn add_currency(ref self: TState, currency: ContractAddress);
     fn remove_currency(ref self: TState, currency: ContractAddress);
-    fn transfer_contract_ownership(ref self: TState, new_owner: ContractAddress);
-    fn contract_owner(self: @TState) -> ContractAddress;
     fn is_currency_whitelisted(self: @TState, currency: ContractAddress) -> bool;
-    fn whitelisted_currency_count(self: @TState) -> u256;
-    fn whitelisted_currency(self: @TState, index: u256) -> ContractAddress;
+    fn whitelisted_currency_count(self: @TState) -> usize;
+    fn whitelisted_currency(self: @TState, index: usize) -> ContractAddress;
 }
 
 #[starknet::contract]
@@ -29,9 +27,9 @@ mod CurrencyManager {
 
     #[storage]
     struct Storage {
-        whitelisted_currency_count: u256,
-        whitelisted_currencies: LegacyMap::<u256, ContractAddress>,
-        whitelisted_currency_index: LegacyMap::<ContractAddress, u256>,
+        whitelisted_currency_count: usize,
+        whitelisted_currencies: LegacyMap::<usize, ContractAddress>,
+        whitelisted_currency_index: LegacyMap::<ContractAddress, usize>,
         #[substorage(v0)]
         ownable: OwnableComponent::Storage
     }
@@ -95,14 +93,6 @@ mod CurrencyManager {
             self.emit(CurrencyRemoved { currency, timestamp });
         }
 
-        fn transfer_contract_ownership(ref self: ContractState, new_owner: ContractAddress) {
-            self.ownable.assert_only_owner();
-            self.ownable.transfer_ownership(new_owner);
-        }
-        fn contract_owner(self: @ContractState) -> ContractAddress {
-            self.ownable.owner()
-        }
-
         fn is_currency_whitelisted(self: @ContractState, currency: ContractAddress) -> bool {
             let index = self.whitelisted_currency_index.read(currency);
             if (index == 0) {
@@ -111,11 +101,11 @@ mod CurrencyManager {
             true
         }
 
-        fn whitelisted_currency_count(self: @ContractState) -> u256 {
+        fn whitelisted_currency_count(self: @ContractState) -> usize {
             self.whitelisted_currency_count.read()
         }
 
-        fn whitelisted_currency(self: @ContractState, index: u256) -> ContractAddress {
+        fn whitelisted_currency(self: @ContractState, index: usize) -> ContractAddress {
             self.whitelisted_currencies.read(index)
         }
     }
