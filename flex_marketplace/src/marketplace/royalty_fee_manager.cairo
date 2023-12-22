@@ -1,10 +1,13 @@
 use starknet::ContractAddress;
 use starknet::class_hash::ClassHash;
+use flex::marketplace::royalty_fee_registry::{
+    IRoyaltyFeeRegistryDispatcher, IRoyaltyFeeRegistryDispatcherTrait
+};
 #[starknet::interface]
 trait IRoyaltyFeeManager<TState> {
     fn initializer(ref self: TState, fee_registry: ContractAddress, owner: ContractAddress,);
     fn INTERFACE_ID_ERC2981(self: @TState) -> felt252;
-    fn get_royalty_fee_registry(self: @TState) -> ContractAddress;
+    fn get_royalty_fee_registry(self: @TState) -> IRoyaltyFeeRegistryDispatcher;
     fn calculate_royalty_fee_and_get_recipient(
         self: @TState, collection: ContractAddress, token_id: u256, amount: u128
     ) -> (ContractAddress, u128);
@@ -30,9 +33,7 @@ mod RoyaltyFeeManager {
     use super::ClassHash;
     use super::IERC2981Dispatcher;
     use super::IERC2981DispatcherTrait;
-    use flex::marketplace::royalty_fee_registry::{
-        IRoyaltyFeeRegistryDispatcher, IRoyaltyFeeRegistryDispatcherTrait
-    };
+    use super::{IRoyaltyFeeRegistryDispatcher, IRoyaltyFeeRegistryDispatcherTrait};
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
     component!(path: UpgradeableComponent, storage: upgradable, event: UpgradeableEvent);
 
@@ -44,7 +45,7 @@ mod RoyaltyFeeManager {
     #[storage]
     struct Storage {
         INTERFACE_ID_ERC2981: felt252,
-        royalty_fee_registry: ContractAddress,
+        royalty_fee_registry: IRoyaltyFeeRegistryDispatcher,
         #[substorage(v0)]
         ownable: OwnableComponent::Storage,
         #[substorage(v0)]
@@ -66,7 +67,9 @@ mod RoyaltyFeeManager {
             ref self: ContractState, fee_registry: ContractAddress, owner: ContractAddress,
         ) {
             self.INTERFACE_ID_ERC2981.write(0x2a55205a);
-            self.royalty_fee_registry.write(fee_registry);
+            self
+                .royalty_fee_registry
+                .write(IRoyaltyFeeRegistryDispatcher { contract_address: fee_registry });
             self.ownable.initializer(owner);
         }
 
@@ -74,7 +77,7 @@ mod RoyaltyFeeManager {
             return self.INTERFACE_ID_ERC2981.read();
         }
 
-        fn get_royalty_fee_registry(self: @ContractState) -> ContractAddress {
+        fn get_royalty_fee_registry(self: @ContractState) -> IRoyaltyFeeRegistryDispatcher {
             return self.royalty_fee_registry.read();
         }
 
@@ -82,10 +85,7 @@ mod RoyaltyFeeManager {
             self: @ContractState, collection: ContractAddress, token_id: u256, amount: u128
         ) -> (ContractAddress, u128) {
             let feeRegistry = self.get_royalty_fee_registry();
-            let (receiver, royaltyAmount) = IRoyaltyFeeRegistryDispatcher {
-                contract_address: feeRegistry
-            }
-                .get_royalty_fee_info(collection, amount);
+            let (receiver, royaltyAmount) = feeRegistry.get_royalty_fee_info(collection, amount);
             if (!receiver.is_zero()) {
                 return (receiver, royaltyAmount);
             }
