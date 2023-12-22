@@ -1,3 +1,17 @@
+use core::fmt::{Display, Error, Formatter, Debug};
+
+impl DisplayContractAddress of Display<starknet::ContractAddress> {
+    fn fmt(self: @starknet::ContractAddress, ref f: Formatter) -> Result<(), Error> {
+        write!(f, "{}", *self)
+    }
+}
+
+impl DebugContractAddress of Debug<starknet::ContractAddress> {
+    fn fmt(self: @starknet::ContractAddress, ref f: Formatter) -> Result<(), Error> {
+        Display::fmt(self, ref f)
+    }
+}
+
 mod marketplace {
     mod launchpad {
         mod ERC721_launchpad_migrated;
@@ -21,7 +35,7 @@ mod marketplace {
     mod currency_manager;
     mod ERC721_flex;
     mod execution_manager;
-    mod market_place;
+    mod marketplace;
     mod proxy;
     mod royalty_fee_manager;
     mod royalty_fee_registry;
@@ -35,3 +49,4 @@ mod marketplace {
     mod transfer_manager_ERC1155;
     mod transfer_selector_NFT;
 }
+
