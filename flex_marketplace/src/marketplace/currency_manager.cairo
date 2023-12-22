@@ -10,6 +10,12 @@ trait ICurrencyManager<TState> {
     fn whitelisted_currency(self: @TState, index: usize) -> ContractAddress;
 }
 
+#[starknet::interface]
+trait ICurrencyManager<TState> {
+    fn owner(self: @TState) -> ContractAddress;
+    fn transfer_ownership(ref self: TState, new_owner: ContractAddress);
+}
+
 #[starknet::contract]
 mod CurrencyManager {
     use openzeppelin::access::ownable::interface::IOwnable;
@@ -40,6 +46,7 @@ mod CurrencyManager {
     enum Event {
         CurrencyRemoved: CurrencyRemoved,
         CurrencyWhitelisted: CurrencyWhitelisted,
+        #[flat]
         OwnableEvent: OwnableComponent::Event,
     }
 
