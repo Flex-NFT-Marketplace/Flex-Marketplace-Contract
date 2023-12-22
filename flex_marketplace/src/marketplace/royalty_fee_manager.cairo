@@ -33,7 +33,6 @@ mod RoyaltyFeeManager {
     use flex::marketplace::royalty_fee_registry::{
         IRoyaltyFeeRegistryDispatcher, IRoyaltyFeeRegistryDispatcherTrait
     };
-    use zeroable::Zeroable;
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
     component!(path: UpgradeableComponent, storage: upgradable, event: UpgradeableEvent);
 
