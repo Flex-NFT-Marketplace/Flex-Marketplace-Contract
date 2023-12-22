@@ -11,7 +11,7 @@ trait ICurrencyManager<TState> {
 }
 
 #[starknet::interface]
-trait ICurrencyManager<TState> {
+trait ICurrencyManage<TState> {
     fn owner(self: @TState) -> ContractAddress;
     fn transfer_ownership(ref self: TState, new_owner: ContractAddress);
 }
