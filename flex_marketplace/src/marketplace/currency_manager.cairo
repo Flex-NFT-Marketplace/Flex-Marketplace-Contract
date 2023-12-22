@@ -30,6 +30,7 @@ mod CurrencyManager {
         whitelisted_currency_count: usize,
         whitelisted_currencies: LegacyMap::<usize, ContractAddress>,
         whitelisted_currency_index: LegacyMap::<ContractAddress, usize>,
+        initialized: bool,
         #[substorage(v0)]
         ownable: OwnableComponent::Storage
     }
@@ -59,7 +60,8 @@ mod CurrencyManager {
         fn initializer(
             ref self: ContractState, owner: ContractAddress, proxy_admin: ContractAddress
         ) {
-            // how to use the proxy_admin here?
+            assert!(!self.initialized.read(), "CurrencyManager: already initialized");
+            self.initialized.write(true);
             self.ownable.initializer(owner);
         }
 
@@ -78,7 +80,7 @@ mod CurrencyManager {
         fn remove_currency(ref self: ContractState, currency: ContractAddress) {
             self.ownable.assert_only_owner();
             let index = self.whitelisted_currency_index.read(currency);
-             assert!(!index.is_zero(), "CurrencyManager: currency {} not whitelisted", currency);
+            assert!(!index.is_zero(), "CurrencyManager: currency {} not whitelisted", currency);
             let count = self.whitelisted_currency_count.read();
 
             let currency_at_last_index = self.whitelisted_currencies.read(count);
