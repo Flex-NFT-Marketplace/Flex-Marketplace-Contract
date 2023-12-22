@@ -66,7 +66,7 @@ mod CurrencyManager {
         fn add_currency(ref self: ContractState, currency: ContractAddress) {
             self.ownable.assert_only_owner();
             let index = self.whitelisted_currency_index.read(currency);
-            assert(index == 0, 'currency already whitelisted');
+            assert!(index.is_zero(), "CurrencyManager: currency {} already whitelisted", currency);
             let new_count = self.whitelisted_currency_count.read() + 1;
             self.whitelisted_currency_index.write(currency, new_count);
             self.whitelisted_currencies.write(new_count, currency);
@@ -78,7 +78,7 @@ mod CurrencyManager {
         fn remove_currency(ref self: ContractState, currency: ContractAddress) {
             self.ownable.assert_only_owner();
             let index = self.whitelisted_currency_index.read(currency);
-            assert(index != 0, 'currency not whitelisted');
+             assert!(!index.is_zero(), "CurrencyManager: currency {} not whitelisted", currency);
             let count = self.whitelisted_currency_count.read();
 
             let currency_at_last_index = self.whitelisted_currencies.read(count);
