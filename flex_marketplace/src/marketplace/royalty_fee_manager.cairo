@@ -1,22 +1,14 @@
-use flex::marketplace::royalty_fee_registry;
 use starknet::ContractAddress;
 use starknet::class_hash::ClassHash;
 #[starknet::interface]
 trait IRoyaltyFeeManager<TState> {
     fn initializer(ref self: TState, fee_registry: ContractAddress, owner: ContractAddress,);
-    fn transferOwnership(ref self: TState, new_owner: ContractAddress);
-    fn get_owner(ref self: TState) -> ContractAddress;
     fn INTERFACE_ID_ERC2981(self: @TState) -> felt252;
     fn get_royalty_fee_registry(self: @TState) -> ContractAddress;
     fn calculate_royalty_fee_and_get_recipient(
         self: @TState, collection: ContractAddress, token_id: u256, amount: u128
     ) -> (ContractAddress, u128);
     fn upgrade(ref self: TState, impl_hash: ClassHash);
-}
-
-#[starknet::interface]
-trait IERC165<TContractState> {
-    fn supportsInterface(ref self: TContractState, interfaceId: felt252) -> bool;
 }
 
 #[starknet::interface]
@@ -28,20 +20,19 @@ trait IERC2981<TContractState> {
 
 #[starknet::contract]
 mod RoyaltyFeeManager {
+    use openzeppelin::upgrades::upgradeable::UpgradeableComponent::InternalTrait;
     use openzeppelin::access::ownable::OwnableComponent;
-    use openzeppelin::access::ownable::interface::IOwnable;
-    use openzeppelin::access::ownable::ownable::OwnableComponent::InternalTrait;
+    use openzeppelin::upgrades::UpgradeableComponent;
+    use openzeppelin::introspection::interface::{ISRC5Dispatcher, ISRC5DispatcherTrait};
     use starknet::get_caller_address;
     use starknet::{ContractAddress, contract_address_const};
     use super::ClassHash;
-    use super::IERC165Dispatcher;
-    use super::IERC165DispatcherTrait;
     use super::IERC2981Dispatcher;
     use super::IERC2981DispatcherTrait;
-    use super::royalty_fee_registry::IRoyaltyFeeRegistryDispatcher;
-    use super::royalty_fee_registry::IRoyaltyFeeRegistryDispatcherTrait;
+    use flex::marketplace::royalty_fee_registry::{IRoyaltyFeeRegistryDispatcher,IRoyaltyFeeRegistryDispatcherTrait};
     use zeroable::Zeroable;
-    component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
+    component!(path: OwnableComponent, storage: ownable, event: OwnableEvent); 
+    component!(path: UpgradeableComponent, storage: upgradable, event: UpgradeableEvent);
 
     #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
@@ -53,13 +44,16 @@ mod RoyaltyFeeManager {
         INTERFACE_ID_ERC2981: felt252,
         royalty_fee_registry: ContractAddress,
         #[substorage(v0)]
-        ownable: OwnableComponent::Storage
+        ownable: OwnableComponent::Storage,
+        #[substorage(v0)]
+        upgradable: UpgradeableComponent::Storage,
     }
 
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
         OwnableEvent: OwnableComponent::Event,
+        UpgradeableEvent: UpgradeableComponent::Event,
     }
 
     #[external(v0)]
@@ -70,14 +64,6 @@ mod RoyaltyFeeManager {
             self.INTERFACE_ID_ERC2981.write(0x2a55205a);
             self.royalty_fee_registry.write(fee_registry);
             self.ownable.initializer(owner);
-        }
-
-        fn transferOwnership(ref self: ContractState, new_owner: ContractAddress) {
-            self.ownable.transfer_ownership(new_owner);
-        }
-
-        fn get_owner(ref self: ContractState) -> ContractAddress {
-            return self.ownable.owner();
         }
 
         fn INTERFACE_ID_ERC2981(self: @ContractState) -> felt252 {
@@ -100,8 +86,8 @@ mod RoyaltyFeeManager {
                 return (receiver, royaltyAmount);
             }
             let interfaceIDERC2981 = self.INTERFACE_ID_ERC2981();
-            let supportsERC2981: bool = IERC165Dispatcher { contract_address: collection }
-                .supportsInterface(interfaceIDERC2981);
+            let supportsERC2981: bool = ISRC5Dispatcher { contract_address: collection }
+                .supports_interface(interfaceIDERC2981);
             if (supportsERC2981) {
                 let (receiverERC2981, royaltyAmountERC2981) = IERC2981Dispatcher {
                     contract_address: collection
@@ -114,8 +100,7 @@ mod RoyaltyFeeManager {
 
         fn upgrade(ref self: ContractState, impl_hash: ClassHash) {
             self.ownable.assert_only_owner();
-            assert(!impl_hash.is_zero(), 'Class hash cannot be zero');
-            starknet::replace_class_syscall(impl_hash).unwrap();
+            self.upgradable._upgrade(impl_hash);
         }
     }
 }
