@@ -11,6 +11,7 @@ trait IRoyaltyFeeManager<TState> {
     fn upgrade(ref self: TState, impl_hash: ClassHash);
 }
 
+
 #[starknet::interface]
 trait IERC2981<TContractState> {
     fn royaltyInfo(
@@ -29,9 +30,11 @@ mod RoyaltyFeeManager {
     use super::ClassHash;
     use super::IERC2981Dispatcher;
     use super::IERC2981DispatcherTrait;
-    use flex::marketplace::royalty_fee_registry::{IRoyaltyFeeRegistryDispatcher,IRoyaltyFeeRegistryDispatcherTrait};
+    use flex::marketplace::royalty_fee_registry::{
+        IRoyaltyFeeRegistryDispatcher, IRoyaltyFeeRegistryDispatcherTrait
+    };
     use zeroable::Zeroable;
-    component!(path: OwnableComponent, storage: ownable, event: OwnableEvent); 
+    component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
     component!(path: UpgradeableComponent, storage: upgradable, event: UpgradeableEvent);
 
     #[abi(embed_v0)]
@@ -52,7 +55,9 @@ mod RoyaltyFeeManager {
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
+        #[flat]
         OwnableEvent: OwnableComponent::Event,
+        #[flat]
         UpgradeableEvent: UpgradeableComponent::Event,
     }
 
