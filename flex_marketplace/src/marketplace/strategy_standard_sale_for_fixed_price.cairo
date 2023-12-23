@@ -67,7 +67,7 @@ mod StrategyStandardSaleForFixedPrice {
         }
 
         fn protocol_fee(self: @ContractState) -> u128 {
-            return self.protocol_fee.read();
+            self.protocol_fee.read()
         }
 
         fn can_execute_taker_ask(
