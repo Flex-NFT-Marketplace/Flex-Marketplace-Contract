@@ -18,7 +18,6 @@ trait IStrategyStandardSaleForFixedPrice<TState> {
 
 #[starknet::contract]
 mod StrategyStandardSaleForFixedPrice {
-    use core::option::OptionTrait;
     use starknet::{ContractAddress, contract_address_const};
     use starknet::class_hash::ClassHash;
     use starknet::get_block_timestamp;
@@ -77,27 +76,27 @@ mod StrategyStandardSaleForFixedPrice {
             maker_bid: MakerOrder,
             extra_params: Span<felt252>
         ) -> (bool, u256, u128) {
-            let priceMatch: bool = maker_bid.price == taker_ask.price;
-            let tokenIdMatch: bool = maker_bid.tokenId == taker_ask.tokenId;
-            let startTimeValid: bool = maker_bid.startTime < get_block_timestamp();
-            let endTimeValid: bool = maker_bid.endTime > get_block_timestamp();
-            if (priceMatch && tokenIdMatch && startTimeValid && endTimeValid) {
-                return (true, maker_bid.tokenId, maker_bid.amount);
+            let price_match: bool = maker_bid.price == taker_ask.price;
+            let token_id_match: bool = maker_bid.token_id == taker_ask.token_id;
+            let start_time_valid: bool = maker_bid.start_time < get_block_timestamp();
+            let end_time_valid: bool = maker_bid.end_time > get_block_timestamp();
+            if (price_match && token_id_match && start_time_valid && end_time_valid) {
+                return (true, maker_bid.token_id, maker_bid.amount);
             } else {
-                return (false, maker_bid.tokenId, maker_bid.amount);
+                return (false, maker_bid.token_id, maker_bid.amount);
             }
         }
         fn can_execute_taker_bid(
             self: @ContractState, taker_bid: TakerOrder, maker_ask: MakerOrder
         ) -> (bool, u256, u128) {
-            let priceMatch: bool = maker_ask.price == taker_bid.price;
-            let tokenIdMatch: bool = maker_ask.tokenId == taker_bid.tokenId;
-            let startTimeValid: bool = maker_ask.startTime < get_block_timestamp();
-            let endTimeValid: bool = maker_ask.endTime > get_block_timestamp();
-            if (priceMatch && tokenIdMatch && startTimeValid && endTimeValid) {
-                return (true, maker_ask.tokenId, maker_ask.amount);
+            let price_match: bool = maker_ask.price == taker_bid.price;
+            let token_id_match: bool = maker_ask.token_id == taker_bid.token_id;
+            let start_time_valid: bool = maker_ask.start_time < get_block_timestamp();
+            let end_time_valid: bool = maker_ask.end_time > get_block_timestamp();
+            if (price_match && token_id_match && start_time_valid && end_time_valid) {
+                return (true, maker_ask.token_id, maker_ask.amount);
             } else {
-                return (false, maker_ask.tokenId, maker_ask.amount);
+                return (false, maker_ask.token_id, maker_ask.amount);
             }
         }
 
