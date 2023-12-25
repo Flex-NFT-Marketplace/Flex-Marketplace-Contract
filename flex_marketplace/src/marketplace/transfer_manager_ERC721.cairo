@@ -1,7 +1,7 @@
 use starknet::ContractAddress;
 
 #[starknet::interface]
-trait IERC721<TState> {
+trait ITransferManagerNFT<TState> {
     fn initializer(
         ref self: TState,
         address: ContractAddress,
@@ -17,13 +17,11 @@ trait IERC721<TState> {
         amount: u128
     );
     fn update_marketplace(ref self: TState, address: ContractAddress);
-    fn transfer_ownership(ref self: TState, new_owner: ContractAddress);
-    fn owner(self: @TState) -> ContractAddress;
     fn get_marketplace(self: @TState) -> ContractAddress;
 }
 
 #[starknet::contract]
-mod ERC721 {
+mod TransferManagerNFT {
     use starknet::{ContractAddress, contract_address_const};
 
     use flex::marketplace::utils::order_types::{MakerOrder, TakerOrder};
@@ -46,11 +44,12 @@ mod ERC721 {
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
+        #[flat]
         OwnableEvent: OwnableComponent::Event
     }
 
     #[external(v0)]
-    impl ERC721Impl of super::IERC721<ContractState> {
+    impl TransferManagerNFTImpl of super::ITransferManagerNFT<ContractState> {
         fn initializer(
             ref self: ContractState,
             address: ContractAddress,
@@ -70,14 +69,6 @@ mod ERC721 {
         }
 
         fn update_marketplace(ref self: ContractState, address: ContractAddress) { // TODO
-        }
-
-        fn transfer_ownership(ref self: ContractState, new_owner: ContractAddress) { // TODO
-        }
-
-        fn owner(self: @ContractState) -> ContractAddress {
-            // TODO
-            contract_address_const::<0>()
         }
 
         fn get_marketplace(self: @ContractState) -> ContractAddress {

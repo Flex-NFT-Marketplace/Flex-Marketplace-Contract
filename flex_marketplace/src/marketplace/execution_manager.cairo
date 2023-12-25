@@ -3,11 +3,11 @@ use starknet::ContractAddress;
 #[starknet::interface]
 trait IExecutionManager<TState> {
     fn initializer(ref self: TState, owner: ContractAddress, proxy_admin: ContractAddress);
-    fn add_strategy(ref self: TState, strategy: felt252);
-    fn remove_strategy(ref self: TState, strategy: felt252);
+    fn add_strategy(ref self: TState, strategy: ContractAddress);
+    fn remove_strategy(ref self: TState, strategy: ContractAddress);
     fn transfer_ownership(ref self: TState, new_owner: ContractAddress);
     fn owner(self: @TState) -> ContractAddress;
-    fn is_strategy_whitelisted(self: @TState, strategy: felt252) -> bool;
+    fn is_strategy_whitelisted(self: @TState, strategy: ContractAddress) -> bool;
     fn get_whitelisted_strategies_count(self: @TState) -> usize;
     fn get_whitelisted_strategy(self: @TState, index: usize) -> felt252;
 }
@@ -60,10 +60,10 @@ mod ExecutionManager {
         ) { // TODO
         }
 
-        fn add_strategy(ref self: ContractState, strategy: felt252) { // TODO
+        fn add_strategy(ref self: ContractState, strategy: ContractAddress) { // TODO
         }
 
-        fn remove_strategy(ref self: ContractState, strategy: felt252) { // TODO
+        fn remove_strategy(ref self: ContractState, strategy: ContractAddress) { // TODO
         }
 
         fn transfer_ownership(ref self: ContractState, new_owner: ContractAddress) { // TODO
@@ -74,7 +74,7 @@ mod ExecutionManager {
             contract_address_const::<0>()
         }
 
-        fn is_strategy_whitelisted(self: @ContractState, strategy: felt252) -> bool {
+        fn is_strategy_whitelisted(self: @ContractState, strategy: ContractAddress) -> bool {
             // TODO
             true
         }
