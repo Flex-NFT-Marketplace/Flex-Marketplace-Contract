@@ -4,7 +4,7 @@ use starknet::ContractAddress;
 trait ITransferManagerNFT<TState> {
     fn initializer(
         ref self: TState,
-        address: ContractAddress,
+        marketplace: ContractAddress,
         owner: ContractAddress,
         proxy_admin: ContractAddress
     );
@@ -16,16 +16,20 @@ trait ITransferManagerNFT<TState> {
         token_id: u256,
         amount: u128
     );
-    fn update_marketplace(ref self: TState, address: ContractAddress);
+    fn update_marketplace(ref self: TState, new_address: ContractAddress);
     fn get_marketplace(self: @TState) -> ContractAddress;
 }
 
 #[starknet::contract]
 mod TransferManagerNFT {
-    use starknet::{ContractAddress, contract_address_const};
+    use starknet::{ContractAddress, get_caller_address};
 
+    use flex::{DebugContractAddress, DisplayContractAddress};
     use flex::marketplace::utils::order_types::{MakerOrder, TakerOrder};
 
+    use openzeppelin::token::erc721::interface::{
+        IERC721CamelOnlyDispatcher, IERC721CamelOnlyDispatcherTrait
+    };
     use openzeppelin::access::ownable::OwnableComponent;
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 
@@ -52,10 +56,13 @@ mod TransferManagerNFT {
     impl TransferManagerNFTImpl of super::ITransferManagerNFT<ContractState> {
         fn initializer(
             ref self: ContractState,
-            address: ContractAddress,
+            marketplace: ContractAddress,
             owner: ContractAddress,
             proxy_admin: ContractAddress
-        ) { // TODO
+        ) {
+            // TODO: verify the role of Proxy here.
+            self.marketplace.write(marketplace);
+            self.ownable.initializer(owner);
         }
 
         fn transfer_non_fungible_token(
@@ -65,15 +72,23 @@ mod TransferManagerNFT {
             to: ContractAddress,
             token_id: u256,
             amount: u128
-        ) { // TODO
+        ) {
+            let caller = get_caller_address();
+            assert!(
+                caller == self.get_marketplace(),
+                "TransferManagerNFT: caller {} is not MarketPlace",
+                caller
+            );
+            IERC721CamelOnlyDispatcher { contract_address: collection }
+                .transferFrom(from, to, token_id);
         }
 
-        fn update_marketplace(ref self: ContractState, address: ContractAddress) { // TODO
+        fn update_marketplace(ref self: ContractState, new_address: ContractAddress) {
+            self.marketplace.write(new_address);
         }
 
         fn get_marketplace(self: @ContractState) -> ContractAddress {
-            // TODO
-            contract_address_const::<0>()
+            self.marketplace.read()
         }
     }
 }
