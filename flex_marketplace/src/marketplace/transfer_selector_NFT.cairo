@@ -7,16 +7,13 @@ trait ITransferSelectorNFT<TState> {
         transfer_manager_ERC721: ContractAddress,
         transfer_manager_ERC1155: ContractAddress,
         owner: ContractAddress,
-        proxy_admin: ContractAddress
     );
     fn add_collection_transfer_manager(
-        ref self: TState, collection: ContractAddress, transfer_manger: ContractAddress
+        ref self: TState, collection: ContractAddress, transfer_manager: ContractAddress
     );
     fn remove_collection_transfer_manager(ref self: TState, collection: ContractAddress);
     fn update_TRANSFER_MANAGER_ERC721(ref self: TState, manager: ContractAddress);
     fn update_TRANSFER_MANAGER_ERC1155(ref self: TState, manager: ContractAddress);
-    fn transfer_ownership(ref self: TState, new_owner: ContractAddress);
-    fn owner(self: @TState) -> ContractAddress;
     fn get_INTERFACE_ID_ERC721(self: @TState) -> felt252;
     fn get_INTERFACE_ID_ERC1155(self: @TState) -> felt252;
     fn get_TRANSFER_MANAGER_ERC721(self: @TState) -> ContractAddress;
@@ -31,25 +28,30 @@ trait ITransferSelectorNFT<TState> {
 
 #[starknet::contract]
 mod TransferSelectorNFT {
-    use starknet::{ContractAddress, contract_address_const};
+    use starknet::{ContractAddress, contract_address_const, get_block_timestamp};
 
+    use flex::{DebugContractAddress, DisplayContractAddress};
     use flex::marketplace::utils::order_types::{MakerOrder, TakerOrder};
+    use flex::marketplace::transfer_manager_ERC721::{
+        ITransferManagerNFTDispatcher, ITransferManagerNFTDispatcherTrait
+    };
 
+    use openzeppelin::introspection::interface::{ISRC5CamelDispatcher, ISRC5CamelDispatcherTrait};
     use openzeppelin::access::ownable::OwnableComponent;
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 
     #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
-
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
 
     #[storage]
     struct Storage {
+        initialized: bool,
         INTERFACE_ID_ERC721: felt252,
         INTERFACE_ID_ERC1155: felt252,
         TRANSFER_MANAGER_ERC721: ContractAddress,
         TRANSFER_MANAGER_ERC1155: ContractAddress,
-        transfer_manager_selector_for_collection: felt252,
+        transfer_manager_selector_for_collection: LegacyMap::<ContractAddress, ContractAddress>,
         #[substorage(v0)]
         ownable: OwnableComponent::Storage
     }
@@ -83,70 +85,110 @@ mod TransferSelectorNFT {
             transfer_manager_ERC721: ContractAddress,
             transfer_manager_ERC1155: ContractAddress,
             owner: ContractAddress,
-            proxy_admin: ContractAddress
-        ) { // TODO
+        ) {
+            assert!(!self.initialized.read(), "TransferSelectorNFT: already initialized");
+            self.initialized.write(true);
+            self.INTERFACE_ID_ERC721.write(0x80ac58cd);
+            self.INTERFACE_ID_ERC1155.write(0xd9b67a26);
+            self.TRANSFER_MANAGER_ERC721.write(transfer_manager_ERC721);
+            self.TRANSFER_MANAGER_ERC1155.write(transfer_manager_ERC1155);
+            self.ownable.initializer(owner);
         }
 
         fn add_collection_transfer_manager(
-            ref self: ContractState, collection: ContractAddress, transfer_manger: ContractAddress
-        ) { // TODO
+            ref self: ContractState, collection: ContractAddress, transfer_manager: ContractAddress
+        ) {
+            self.ownable.assert_only_owner();
+            assert!(
+                !collection.is_zero(), "TransferSelectorNFT: invalid collection {}", collection
+            );
+            assert!(
+                !transfer_manager.is_zero(),
+                "TransferSelectorNFT: invalid transfer manager {}",
+                transfer_manager
+            );
+            self.transfer_manager_selector_for_collection.write(collection, transfer_manager);
+            self
+                .emit(
+                    CollectionTransferManagerAdded {
+                        collection, transfer_manager, timestamp: get_block_timestamp()
+                    }
+                );
         }
 
         fn remove_collection_transfer_manager(
             ref self: ContractState, collection: ContractAddress
-        ) { // TODO
+        ) {
+            self.ownable.assert_only_owner();
+            let transfer_manager = self.transfer_manager_selector_for_collection.read(collection);
+            assert!(
+                !transfer_manager.is_zero(),
+                "TransferSelectorNFT: invalid transfer manager {}",
+                transfer_manager
+            );
+            self
+                .transfer_manager_selector_for_collection
+                .write(collection, contract_address_const::<0>());
+            self
+                .emit(
+                    CollectionTransferManagerRemoved {
+                        collection, timestamp: get_block_timestamp()
+                    }
+                );
         }
 
-        fn update_TRANSFER_MANAGER_ERC721(
-            ref self: ContractState, manager: ContractAddress
-        ) { // TODO
+        fn update_TRANSFER_MANAGER_ERC721(ref self: ContractState, manager: ContractAddress) {
+            self.TRANSFER_MANAGER_ERC721.write(manager);
         }
 
-        fn update_TRANSFER_MANAGER_ERC1155(
-            ref self: ContractState, manager: ContractAddress
-        ) { // TODO
-        }
-
-        fn transfer_ownership(ref self: ContractState, new_owner: ContractAddress) { // TODO
-        }
-
-        fn owner(self: @ContractState) -> ContractAddress {
-            // TODO
-            contract_address_const::<0>()
+        fn update_TRANSFER_MANAGER_ERC1155(ref self: ContractState, manager: ContractAddress) {
+            self.TRANSFER_MANAGER_ERC1155.write(manager);
         }
 
         fn get_INTERFACE_ID_ERC721(self: @ContractState) -> felt252 {
-            // TODO
-            0
+            self.INTERFACE_ID_ERC721.read()
         }
 
         fn get_INTERFACE_ID_ERC1155(self: @ContractState) -> felt252 {
-            // TODO
-            0
+            self.INTERFACE_ID_ERC1155.read()
         }
 
         fn get_TRANSFER_MANAGER_ERC721(self: @ContractState) -> ContractAddress {
-            // TODO
-            contract_address_const::<0>()
+            self.TRANSFER_MANAGER_ERC721.read()
         }
 
         fn get_TRANSFER_MANAGER_ERC1155(self: @ContractState) -> ContractAddress {
-            // TODO
-            contract_address_const::<0>()
+            self.TRANSFER_MANAGER_ERC1155.read()
         }
 
         fn transfer_manager_selector_for_collection(
             self: @ContractState, collection: ContractAddress
         ) -> ContractAddress {
-            // TODO
-            contract_address_const::<0>()
+            self.transfer_manager_selector_for_collection.read(collection)
         }
 
         fn check_transfer_manager_for_token(
             self: @ContractState, collection: ContractAddress
         ) -> ContractAddress {
-            // TODO
-            contract_address_const::<0>()
+            let transfer_manager = self.transfer_manager_selector_for_collection.read(collection);
+            if !transfer_manager.is_zero() {
+                return transfer_manager;
+            }
+
+            let transfer_manager_ERC721 = self.get_TRANSFER_MANAGER_ERC721();
+            let supports_ERC721 = ISRC5CamelDispatcher { contract_address: collection }
+                .supportsInterface(self.INTERFACE_ID_ERC721.read());
+            if supports_ERC721 {
+                return transfer_manager_ERC721;
+            }
+
+            let transfer_manager_ERC1155 = self.get_TRANSFER_MANAGER_ERC1155();
+            let supports_ERC1155 = ISRC5CamelDispatcher { contract_address: collection }
+                .supportsInterface(self.INTERFACE_ID_ERC1155.read());
+            if supports_ERC1155 {
+                return transfer_manager_ERC1155;
+            }
+            return contract_address_const::<0>();
         }
     }
 }
