@@ -1,7 +1,7 @@
 use starknet::{ContractAddress, ClassHash};
 
 use flex::marketplace::utils::order_types::{MakerOrder, TakerOrder};
-
+#[starknet::interface]
 trait IMarketPlace<TState> {
     fn initializer(
         ref self: TState,
