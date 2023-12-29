@@ -2,9 +2,7 @@ use starknet::ContractAddress;
 
 #[starknet::interface]
 trait IRoyaltyFeeRegistry<TState> {
-    fn initializer(
-        ref self: TState, fee_limit: u128, owner: ContractAddress, proxy_admim: ContractAddress
-    );
+    fn initializer(ref self: TState, fee_limit: u128, owner: ContractAddress);
     fn update_royalty_fee_limit(ref self: TState, fee_limit: u128);
     fn update_royalty_info_collection(
         ref self: TState,
@@ -13,8 +11,6 @@ trait IRoyaltyFeeRegistry<TState> {
         receiver: ContractAddress,
         fee: u128
     );
-    fn transfer_ownership(ref self: TState, new_owner: ContractAddress);
-    fn owner(ref self: TState) -> ContractAddress;
     fn get_royalty_fee_limit(self: @TState) -> u128;
     fn get_royalty_fee_info(
         self: @TState, collection: ContractAddress, amount: u128
@@ -26,7 +22,7 @@ trait IRoyaltyFeeRegistry<TState> {
 
 #[starknet::contract]
 mod RoyaltyFeeRegistry {
-    use starknet::{ContractAddress, contract_address_const};
+    use starknet::{ContractAddress, contract_address_const, get_block_timestamp};
 
     use openzeppelin::access::ownable::OwnableComponent;
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
@@ -45,8 +41,9 @@ mod RoyaltyFeeRegistry {
 
     #[storage]
     struct Storage {
+        initialized: bool,
         royalty_fee_limit: u128,
-        royalty_fee_info_collection: LegacyMap::<felt252, FeeInfo>,
+        royalty_fee_info_collection: LegacyMap::<ContractAddress, FeeInfo>,
         #[substorage(v0)]
         ownable: OwnableComponent::Storage
     }
@@ -69,22 +66,29 @@ mod RoyaltyFeeRegistry {
     struct RoyaltyFeeUpdate {
         collection: ContractAddress,
         setter: ContractAddress,
-        receive: ContractAddress,
+        receiver: ContractAddress,
         fee: u128,
         timestamp: u64,
     }
 
     #[external(v0)]
     impl RoyaltyFeeRegistryImpl of super::IRoyaltyFeeRegistry<ContractState> {
-        fn initializer(
-            ref self: ContractState,
-            fee_limit: u128,
-            owner: ContractAddress,
-            proxy_admim: ContractAddress
-        ) { // TODO
+        fn initializer(ref self: ContractState, fee_limit: u128, owner: ContractAddress,) {
+            assert!(!self.initialized.read(), "RoyaltyFeeRegistry: already initialized");
+            self.initialized.write(true);
+            assert!(
+                fee_limit <= 9500, "RoyaltyFeeRegistry: fee_limit {} exceeds MAX_FEE", fee_limit
+            );
+            self.ownable.initializer(owner)
         }
 
-        fn update_royalty_fee_limit(ref self: ContractState, fee_limit: u128) { // TODO
+        fn update_royalty_fee_limit(ref self: ContractState, fee_limit: u128) {
+            self.ownable.assert_only_owner();
+            assert!(
+                fee_limit <= 9500, "RoyaltyFeeRegistry: fee_limit {} exceeds MAX_FEE", fee_limit
+            );
+            self.royalty_fee_limit.write(fee_limit);
+            self.emit(NewRoyaltyFeeLimit { fee_limit, timestamp: get_block_timestamp() });
         }
 
         fn update_royalty_info_collection(
@@ -93,34 +97,38 @@ mod RoyaltyFeeRegistry {
             setter: ContractAddress,
             receiver: ContractAddress,
             fee: u128
-        ) { // TODO
-        }
-
-        fn transfer_ownership(ref self: ContractState, new_owner: ContractAddress) { // TODO
-        }
-
-        fn owner(ref self: ContractState) -> ContractAddress {
-            // TODO
-            contract_address_const::<0>()
+        ) {
+            self.ownable.assert_only_owner();
+            let fee_limit = self.get_royalty_fee_limit();
+            assert!(
+                fee <= fee_limit, "RoyaltyFeeRegistry: fee {} exceeds fee limit {}", fee, fee_limit
+            );
+            self.royalty_fee_info_collection.write(collection, FeeInfo { setter, receiver, fee });
+            self
+                .emit(
+                    RoyaltyFeeUpdate {
+                        collection, setter, receiver, fee, timestamp: get_block_timestamp()
+                    }
+                );
         }
 
         fn get_royalty_fee_limit(self: @ContractState) -> u128 {
-            // TODO
-            0
+            self.royalty_fee_limit.read()
         }
 
         fn get_royalty_fee_info(
             self: @ContractState, collection: ContractAddress, amount: u128
         ) -> (ContractAddress, u128) {
-            // TODO
-            (contract_address_const::<0>(), 0)
+            let fee_info = self.royalty_fee_info_collection.read(collection);
+            let royalty_amount = amount * fee_info.fee / 10_000;
+            (fee_info.receiver, royalty_amount)
         }
 
         fn get_royalty_fee_info_collection(
             self: @ContractState, collection: ContractAddress
         ) -> (ContractAddress, ContractAddress, u128) {
-            // TODO
-            (contract_address_const::<0>(), contract_address_const::<0>(), 0)
+            let fee_info = self.royalty_fee_info_collection.read(collection);
+            (fee_info.setter, fee_info.receiver, fee_info.fee)
         }
     }
 }
