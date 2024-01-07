@@ -6,12 +6,12 @@ use flex::marketplace::royalty_fee_registry::{
 #[starknet::interface]
 trait IRoyaltyFeeManager<TState> {
     fn initializer(ref self: TState, fee_registry: ContractAddress, owner: ContractAddress,);
+    fn upgrade(ref self: TState, impl_hash: ClassHash);
     fn INTERFACE_ID_ERC2981(self: @TState) -> felt252;
-    fn get_royalty_fee_registry(self: @TState) -> IRoyaltyFeeRegistryDispatcher;
     fn calculate_royalty_fee_and_get_recipient(
         self: @TState, collection: ContractAddress, token_id: u256, amount: u128
     ) -> (ContractAddress, u128);
-    fn upgrade(ref self: TState, impl_hash: ClassHash);
+    fn get_royalty_fee_registry(self: @TState) -> IRoyaltyFeeRegistryDispatcher;
 }
 
 
@@ -73,12 +73,13 @@ mod RoyaltyFeeManager {
             self.ownable.initializer(owner);
         }
 
-        fn INTERFACE_ID_ERC2981(self: @ContractState) -> felt252 {
-            return self.INTERFACE_ID_ERC2981.read();
+        fn upgrade(ref self: ContractState, impl_hash: ClassHash) {
+            self.ownable.assert_only_owner();
+            self.upgradable._upgrade(impl_hash);
         }
 
-        fn get_royalty_fee_registry(self: @ContractState) -> IRoyaltyFeeRegistryDispatcher {
-            return self.royalty_fee_registry.read();
+        fn INTERFACE_ID_ERC2981(self: @ContractState) -> felt252 {
+            return self.INTERFACE_ID_ERC2981.read();
         }
 
         fn calculate_royalty_fee_and_get_recipient(
@@ -102,9 +103,8 @@ mod RoyaltyFeeManager {
             return (receiver, royaltyAmount);
         }
 
-        fn upgrade(ref self: ContractState, impl_hash: ClassHash) {
-            self.ownable.assert_only_owner();
-            self.upgradable._upgrade(impl_hash);
+        fn get_royalty_fee_registry(self: @ContractState) -> IRoyaltyFeeRegistryDispatcher {
+            return self.royalty_fee_registry.read();
         }
     }
 }

@@ -7,8 +7,8 @@ const STARKNET_MESSAGE: felt252 = 110930206544689809660069706067448260453;
 const HASH_MESSAGE_SELECTOR: felt252 =
     563771258078353655219004671487831885088158240957819730493696170021701903504;
 
+#[starknet::interface]
 trait ISignatureChecker2<TState> {
-    fn initializer(ref self: TState, proxy_admin: ContractAddress);
     fn compute_maker_order_hash(self: @TState, hash_domain: felt252, order: MakerOrder) -> felt252;
     fn verify_maker_order_signature(
         self: @TState, hash_domain: felt252, order: MakerOrder, order_signature: Array<felt252>
@@ -28,9 +28,8 @@ mod SignatureChecker2 {
     #[storage]
     struct Storage {}
 
+    #[external(v0)]
     impl SignatureChecker2Impl of super::ISignatureChecker2<ContractState> {
-        fn initializer(ref self: ContractState, proxy_admin: ContractAddress) { // TODO
-        }
         fn compute_maker_order_hash(
             self: @ContractState, hash_domain: felt252, order: MakerOrder
         ) -> felt252 {
