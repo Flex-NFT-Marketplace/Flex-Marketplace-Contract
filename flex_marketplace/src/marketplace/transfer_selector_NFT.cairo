@@ -18,7 +18,7 @@ trait ITransferSelectorNFT<TState> {
     fn get_INTERFACE_ID_ERC1155(self: @TState) -> felt252;
     fn get_TRANSFER_MANAGER_ERC721(self: @TState) -> ContractAddress;
     fn get_TRANSFER_MANAGER_ERC1155(self: @TState) -> ContractAddress;
-    fn transfer_manager_selector_for_collection(
+    fn get_transfer_manager_selector_for_collection(
         self: @TState, collection: ContractAddress
     ) -> ContractAddress;
     fn check_transfer_manager_for_token(
@@ -161,7 +161,7 @@ mod TransferSelectorNFT {
             self.TRANSFER_MANAGER_ERC1155.read()
         }
 
-        fn transfer_manager_selector_for_collection(
+        fn get_transfer_manager_selector_for_collection(
             self: @ContractState, collection: ContractAddress
         ) -> ContractAddress {
             self.transfer_manager_selector_for_collection.read(collection)

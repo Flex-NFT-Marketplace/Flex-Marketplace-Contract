@@ -2,7 +2,7 @@ use starknet::ContractAddress;
 use starknet::class_hash::ClassHash;
 #[starknet::interface]
 trait IERC1155TransferManager<TState> {
-    fn initializer(ref self: TState, address: ContractAddress, owner: ContractAddress,);
+    fn initializer(ref self: TState, marketplace: ContractAddress, owner: ContractAddress,);
     fn transfer_non_fungible_token(
         ref self: TState,
         collection: ContractAddress,
@@ -66,9 +66,11 @@ mod ERC1155TransferManager {
 
     #[external(v0)]
     impl ERC1155TransferManagerImpl of super::IERC1155TransferManager<ContractState> {
-        fn initializer(ref self: ContractState, address: ContractAddress, owner: ContractAddress,) {
+        fn initializer(
+            ref self: ContractState, marketplace: ContractAddress, owner: ContractAddress,
+        ) {
             self.ownable.initializer(owner);
-            self.marketplace.write(address);
+            self.marketplace.write(marketplace);
         }
 
         fn transfer_non_fungible_token(
