@@ -71,6 +71,9 @@ fn ACCOUNT4() -> ContractAddress {
 fn PROXY_ADMIN() -> ContractAddress {
     contract_address_const::<'PROXY_ADMIN'>()
 }
+fn ZERO_ADDRESS() -> ContractAddress {
+    contract_address_const::<0>()
+}
 
 fn setup() -> Dispatchers {
     let contract = declare('MarketPlace');
@@ -143,9 +146,9 @@ fn initialize_test(dsp: Dispatchers) {
     dsp
         .transfer_selector
         .initializer(
-            PROXY_ADMIN(),
             dsp.transfer_manager_erc721.contract_address,
-            dsp.transfer_manager_erc1155.contract_address
+            dsp.transfer_manager_erc1155.contract_address,
+            OWNER(),
         );
     // Initialise TransferManagerNFT
     dsp

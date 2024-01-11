@@ -1,8 +1,9 @@
 use core::fmt::{Display, Error, Formatter, Debug};
+use starknet::contract_address_to_felt252;
 
 impl DisplayContractAddress of Display<starknet::ContractAddress> {
     fn fmt(self: @starknet::ContractAddress, ref f: Formatter) -> Result<(), Error> {
-        write!(f, "{}", *self)
+        write!(f, "{}", contract_address_to_felt252(*self))
     }
 }
 
