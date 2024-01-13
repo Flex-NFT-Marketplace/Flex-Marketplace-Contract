@@ -1,14 +1,21 @@
 use core::fmt::{Display, Error, Formatter, Debug};
+use starknet::{ContractAddress, contract_address_const};
 
-impl DisplayContractAddress of Display<starknet::ContractAddress> {
-    fn fmt(self: @starknet::ContractAddress, ref f: Formatter) -> Result<(), Error> {
+impl DisplayContractAddress of Display<ContractAddress> {
+    fn fmt(self: @ContractAddress, ref f: Formatter) -> Result<(), Error> {
         write!(f, "{}", *self)
     }
 }
 
-impl DebugContractAddress of Debug<starknet::ContractAddress> {
+impl DebugContractAddress of Debug<ContractAddress> {
     fn fmt(self: @starknet::ContractAddress, ref f: Formatter) -> Result<(), Error> {
         Display::fmt(self, ref f)
+    }
+}
+
+impl DefaultContractAddress of Default<ContractAddress> {
+    fn default() -> ContractAddress {
+        contract_address_const::<0>()
     }
 }
 

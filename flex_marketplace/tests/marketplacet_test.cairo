@@ -1,41 +1,75 @@
-use tests::utils::{setup, initialize_test};
+use snforge_std::{start_prank, stop_prank, PrintTrait, CheatTarget};
+use tests::utils::{
+    setup, initialize_test, deploy_mock_nft, ACCOUNT1, ACCOUNT2, OWNER, ZERO_ADDRESS
+};
+use flex::marketplace::marketplace::{IMarketPlaceDispatcher, IMarketPlaceDispatcherTrait};
+use flex::marketplace::utils::order_types::{MakerOrder, TakerOrder};
+use flex::DefaultContractAddress;
 
 #[test]
 fn test_cancel_all_orders_for_sender_success() {
     let dsp = setup();
     initialize_test(dsp);
-// TODO
+
+    start_prank(
+        CheatTarget::One(dsp.marketplace.contract_address),
+        ACCOUNT1()
+    );
+    dsp.marketplace.cancel_all_orders_for_sender(1);
+    let new_min_nonce = dsp.marketplace.get_user_min_order_nonce(ACCOUNT1());
+    assert(new_min_nonce == 1, 'wrong min nonce');
 }
 
 #[test]
-#[should_panic()]
+#[should_panic(expected: ("MarketPlace: current min nonce 0 is not < than 0", ))]
 fn test_cancel_all_orders_for_sender_fails_wrong_min_nonce() {
     let dsp = setup();
     initialize_test(dsp);
-    assert(false, '');
-// TODO
+
+    start_prank(
+        CheatTarget::One(dsp.marketplace.contract_address),
+        ACCOUNT1()
+    );
+    dsp.marketplace.cancel_all_orders_for_sender(0);
 }
 
 #[test]
 fn test_carcel_maker_order_success() {
     let dsp = setup();
     initialize_test(dsp);
-// TODO
+
+    start_prank(
+        CheatTarget::One(dsp.marketplace.contract_address),
+        ACCOUNT1()
+    );
+    dsp.marketplace.cancel_maker_order(1);
+    let is_orde_cancelled = dsp.marketplace.get_is_user_order_nonce_executed_or_cancelled(ACCOUNT1(), 1);
+    assert(is_orde_cancelled, 'orded not cancelled');
 }
 
 #[test]
-#[should_panic()]
+#[should_panic(expected: ("MarketPlace: current min nonce 0 is not < than 0", ))]
 fn test_carcel_maker_order_fails_wrong_min_nonce() {
     let dsp = setup();
     initialize_test(dsp);
-    assert(false, '');
-// TODO
+
+    start_prank(
+        CheatTarget::One(dsp.marketplace.contract_address),
+        ACCOUNT1()
+    );
+    dsp.marketplace.cancel_maker_order(0);
 }
 
 #[test]
 fn test_match_ask_with_taker_bid_success() {
     let dsp = setup();
     initialize_test(dsp);
+    let mut maker_order: MakerOrder = Default::default();
+    maker_order.is_order_ask = true;
+    let mut taker_bid: TakerOrder = Default::default();
+
+    dsp.marketplace.match_ask_with_taker_bid(taker_bid, maker_ask, )
+
 // TODO
 }
 

@@ -71,6 +71,9 @@ fn ACCOUNT4() -> ContractAddress {
 fn PROXY_ADMIN() -> ContractAddress {
     contract_address_const::<'PROXY_ADMIN'>()
 }
+fn ZERO_ADDRESS() -> ContractAddress {
+    contract_address_const::<0>()
+}
 
 fn setup() -> Dispatchers {
     let contract = declare('MarketPlace');
@@ -153,6 +156,11 @@ fn initialize_test(dsp: Dispatchers) {
         .initializer(dsp.marketplace.contract_address, OWNER(), PROXY_ADMIN());
     // Initialise TransferManagerERC1155
     dsp.transfer_manager_erc1155.initializer(dsp.marketplace.contract_address, OWNER());
+}
+
+fn deploy_mock_nft() -> ContractAddress {
+    let contract = declare('ERC721');
+    contract.deploy(@array![]).expect('failed ERC721')
 }
 
 #[test]

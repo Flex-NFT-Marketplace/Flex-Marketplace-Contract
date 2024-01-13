@@ -1,6 +1,7 @@
 use starknet::{ContractAddress, ClassHash};
 
 use flex::marketplace::utils::order_types::{MakerOrder, TakerOrder};
+
 #[starknet::interface]
 trait IMarketPlace<TState> {
     fn initializer(
@@ -16,7 +17,7 @@ trait IMarketPlace<TState> {
     );
     fn upgrade(ref self: TState, new_class_hash: ClassHash);
     fn cancel_all_orders_for_sender(ref self: TState, min_nonce: u128);
-    fn carcel_maker_order(ref self: TState, order_nonce: u128);
+    fn cancel_maker_order(ref self: TState, order_nonce: u128);
     fn match_ask_with_taker_bid(
         ref self: TState,
         taker_bid: TakerOrder,
@@ -314,7 +315,7 @@ mod MarketPlace {
                 );
         }
 
-        fn carcel_maker_order(ref self: ContractState, order_nonce: u128) {
+        fn cancel_maker_order(ref self: ContractState, order_nonce: u128) {
             let caller = get_caller_address();
             let current_min_nonce = self.user_min_order_nonce.read(caller);
             assert!(
