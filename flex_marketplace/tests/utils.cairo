@@ -147,9 +147,9 @@ fn initialize_test(dsp: Dispatchers) {
     dsp
         .transfer_selector
         .initializer(
-            PROXY_ADMIN(),
             dsp.transfer_manager_erc721.contract_address,
-            dsp.transfer_manager_erc1155.contract_address
+            dsp.transfer_manager_erc1155.contract_address,
+            OWNER(),
         );
     // Initialise TransferManagerNFT
     dsp
