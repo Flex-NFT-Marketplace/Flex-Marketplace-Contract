@@ -1,8 +1,9 @@
 use core::fmt::{Display, Error, Formatter, Debug};
+use starknet::contract_address_to_felt252;
 
 impl DisplayContractAddress of Display<starknet::ContractAddress> {
     fn fmt(self: @starknet::ContractAddress, ref f: Formatter) -> Result<(), Error> {
-        write!(f, "{}", *self)
+        write!(f, "{}", contract_address_to_felt252(*self))
     }
 }
 
@@ -48,4 +49,8 @@ mod marketplace {
     mod transfer_manager_ERC721;
     mod transfer_manager_ERC1155;
     mod transfer_selector_NFT;
+}
+
+mod mocks {
+    mod erc721;
 }

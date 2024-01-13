@@ -21,22 +21,22 @@ trait IMarketPlace<TState> {
         ref self: TState,
         taker_bid: TakerOrder,
         maker_ask: MakerOrder,
-        maker_ask_signature: Span<felt252>,
+        maker_ask_signature: Array<felt252>,
         custom_non_fungible_token_recepient: ContractAddress
     );
     fn match_bid_with_taker_ask(
         ref self: TState,
         taker_ask: TakerOrder,
         maker_bid: MakerOrder,
-        maker_bid_signature: Span<felt252>,
-        extra_params: Span<felt252>
+        maker_bid_signature: Array<felt252>,
+        extra_params: Array<felt252>
     );
     fn execute_auction_sale(
         ref self: TState,
         maker_ask: MakerOrder,
-        maker_ask_signature: Span<felt252>,
+        maker_ask_signature: Array<felt252>,
         maker_bid: MakerOrder,
-        maker_bid_signature: Span<felt252>
+        maker_bid_signature: Array<felt252>
     );
     fn update_hash_domain(ref self: TState, hash: felt252);
     fn update_protocol_fee_recepient(ref self: TState, recipient: ContractAddress);
@@ -63,7 +63,7 @@ trait IExecutionStrategy<TState> {
     fn protocol_fee(self: @TState) -> u128;
 
     fn can_execute_taker_ask(
-        self: @TState, taker_ask: TakerOrder, maker_bid: MakerOrder, extra_params: Span<felt252>
+        self: @TState, taker_ask: TakerOrder, maker_bid: MakerOrder, extra_params: Array<felt252>
     ) -> (bool, u256, u128);
 
     fn can_execute_taker_bid(
@@ -92,12 +92,9 @@ mod MarketPlace {
     use flex::{DebugContractAddress, DisplayContractAddress};
     use flex::marketplace::{
         currency_manager::{ICurrencyManagerDispatcher, ICurrencyManagerDispatcherTrait},
-        execution_manager::IExecutionManagerDispatcher,
-        execution_manager::IExecutionManagerDispatcherTrait,
-        royalty_fee_manager::IRoyaltyFeeManagerDispatcher,
-        royalty_fee_manager::IRoyaltyFeeManagerDispatcherTrait,
-        signature_checker::ISignatureCheckerDispatcher,
-        signature_checker::ISignatureCheckerDispatcherTrait,
+        execution_manager::{IExecutionManagerDispatcher, IExecutionManagerDispatcherTrait},
+        royalty_fee_manager::{IRoyaltyFeeManagerDispatcher, IRoyaltyFeeManagerDispatcherTrait},
+        signature_checker2::{ISignatureChecker2Dispatcher, ISignatureChecker2DispatcherTrait},
         transfer_selector_NFT::{
             ITransferSelectorNFTDispatcher, ITransferSelectorNFTDispatcherTrait
         },
@@ -135,7 +132,7 @@ mod MarketPlace {
         execution_manager: IExecutionManagerDispatcher,
         royalty_fee_manager: IRoyaltyFeeManagerDispatcher,
         transfer_selector_NFT: ITransferSelectorNFTDispatcher,
-        signature_checker: ISignatureCheckerDispatcher,
+        signature_checker: ISignatureChecker2Dispatcher,
         user_min_order_nonce: LegacyMap::<ContractAddress, u128>,
         is_user_order_nonce_executed_or_cancelled: LegacyMap::<(ContractAddress, u128), bool>,
         #[substorage(v0)]
@@ -289,7 +286,9 @@ mod MarketPlace {
             self
                 .royalty_fee_manager
                 .write(IRoyaltyFeeManagerDispatcher { contract_address: fee_manager });
-            self.signature_checker.write(ISignatureCheckerDispatcher { contract_address: checker });
+            self
+                .signature_checker
+                .write(ISignatureChecker2Dispatcher { contract_address: checker });
         }
 
         fn upgrade(ref self: ContractState, new_class_hash: ClassHash) {
@@ -332,7 +331,7 @@ mod MarketPlace {
             ref self: ContractState,
             taker_bid: TakerOrder,
             maker_ask: MakerOrder,
-            maker_ask_signature: Span<felt252>,
+            maker_ask_signature: Array<felt252>,
             custom_non_fungible_token_recepient: ContractAddress
         ) {
             self.reentrancyguard.start();
@@ -415,8 +414,8 @@ mod MarketPlace {
             ref self: ContractState,
             taker_ask: TakerOrder,
             maker_bid: MakerOrder,
-            maker_bid_signature: Span<felt252>,
-            extra_params: Span<felt252>
+            maker_bid_signature: Array<felt252>,
+            extra_params: Array<felt252>
         ) {
             self.reentrancyguard.start();
 
@@ -489,9 +488,9 @@ mod MarketPlace {
         fn execute_auction_sale(
             ref self: ContractState,
             maker_ask: MakerOrder,
-            maker_ask_signature: Span<felt252>,
+            maker_ask_signature: Array<felt252>,
             maker_bid: MakerOrder,
-            maker_bid_signature: Span<felt252>
+            maker_bid_signature: Array<felt252>
         ) {
             self.reentrancyguard.start();
 
@@ -605,7 +604,9 @@ mod MarketPlace {
 
         fn update_signature_checker(ref self: ContractState, checker: ContractAddress) {
             self.ownable.assert_only_owner();
-            self.signature_checker.write(ISignatureCheckerDispatcher { contract_address: checker });
+            self
+                .signature_checker
+                .write(ISignatureChecker2Dispatcher { contract_address: checker });
             self.emit(NewSignatureChecker { checker, timestamp: get_block_timestamp() });
         }
 
@@ -727,7 +728,7 @@ mod MarketPlace {
         }
 
         fn validate_order(
-            self: @ContractState, order: @MakerOrder, order_signature: Span<felt252>
+            self: @ContractState, order: @MakerOrder, order_signature: Array<felt252>
         ) {
             let executed_order_cancelled = self
                 .get_is_user_order_nonce_executed_or_cancelled(*order.signer, *order.nonce);
