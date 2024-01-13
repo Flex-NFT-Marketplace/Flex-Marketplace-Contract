@@ -50,3 +50,7 @@ mod marketplace {
     mod transfer_manager_ERC1155;
     mod transfer_selector_NFT;
 }
+
+mod mocks {
+    mod erc721;
+}
