@@ -17,24 +17,14 @@ trait IERC1155TransferManager<TState> {
     fn upgrade(ref self: TState, impl_hash: ClassHash);
 }
 
-#[starknet::interface]
-trait IERC1155<TContractState> {
-    fn safe_transfer_from(
-        ref self: TContractState,
-        from: ContractAddress,
-        to: ContractAddress,
-        id: u256,
-        amount: u128,
-        data: Span<felt252>
-    );
-}
-
 #[starknet::contract]
 mod ERC1155TransferManager {
-    use starknet::{ContractAddress, contract_address_const};
+    use starknet::{ContractAddress, contract_address_const, get_caller_address};
+
     use super::ClassHash;
-    use super::{IERC1155Dispatcher, IERC1155DispatcherTrait};
-    use starknet::get_caller_address;
+    use flex::{DebugContractAddress, DisplayContractAddress};
+    use flex::mocks::erc1155::{IERC1155Dispatcher, IERC1155DispatcherTrait};
+
     use openzeppelin::access::ownable::OwnableComponent;
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
     #[abi(embed_v0)]
@@ -84,7 +74,11 @@ mod ERC1155TransferManager {
         ) {
             let caller: ContractAddress = get_caller_address();
             let marketplace: ContractAddress = self.get_marketplace();
-            assert(caller == marketplace, 'caller is not marketplace');
+            assert!(
+                caller == marketplace,
+                "ERC1155TransferManager: caller {} is not marketplace",
+                caller
+            );
             IERC1155Dispatcher { contract_address: collection }
                 .safe_transfer_from(from, to, token_id, amount, data);
         }

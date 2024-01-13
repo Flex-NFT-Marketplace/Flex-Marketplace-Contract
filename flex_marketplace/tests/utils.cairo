@@ -33,6 +33,9 @@ use flex::marketplace::{
         TransferSelectorNFT, ITransferSelectorNFTDispatcher, ITransferSelectorNFTDispatcherTrait
     },
 };
+use flex::mocks::erc721::ERC721;
+
+use flex::mocks::erc1155::ERC1155;
 
 const HASH_DOMAIN: felt252 = 'HASH_DOMAIN';
 const FEE_LIMIT: u128 = 1_000;
@@ -146,9 +149,9 @@ fn initialize_test(dsp: Dispatchers) {
     dsp
         .transfer_selector
         .initializer(
-            PROXY_ADMIN(),
             dsp.transfer_manager_erc721.contract_address,
-            dsp.transfer_manager_erc1155.contract_address
+            dsp.transfer_manager_erc1155.contract_address,
+            OWNER(),
         );
     // Initialise TransferManagerNFT
     dsp
@@ -156,6 +159,11 @@ fn initialize_test(dsp: Dispatchers) {
         .initializer(dsp.marketplace.contract_address, OWNER(), PROXY_ADMIN());
     // Initialise TransferManagerERC1155
     dsp.transfer_manager_erc1155.initializer(dsp.marketplace.contract_address, OWNER());
+}
+
+fn deploy_mock_1155() -> ContractAddress {
+    let contract = declare('ERC1155');
+    contract.deploy(@array![]).expect('failed marketplace')
 }
 
 fn deploy_mock_nft() -> ContractAddress {
