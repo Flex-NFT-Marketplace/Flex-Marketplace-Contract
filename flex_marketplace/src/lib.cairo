@@ -53,4 +53,5 @@ mod marketplace {
 
 mod mocks {
     mod erc1155;
+    mod erc721;
 }

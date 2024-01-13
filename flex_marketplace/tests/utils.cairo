@@ -33,6 +33,7 @@ use flex::marketplace::{
         TransferSelectorNFT, ITransferSelectorNFTDispatcher, ITransferSelectorNFTDispatcherTrait
     },
 };
+use flex::mocks::erc721::ERC721;
 
 use flex::mocks::erc1155::ERC1155;
 
@@ -163,6 +164,11 @@ fn initialize_test(dsp: Dispatchers) {
 fn deploy_mock_1155() -> ContractAddress {
     let contract = declare('ERC1155');
     contract.deploy(@array![]).expect('failed marketplace')
+}
+
+fn deploy_mock_nft() -> ContractAddress {
+    let contract = declare('ERC721');
+    contract.deploy(@array![]).expect('failed ERC721')
 }
 
 #[test]
