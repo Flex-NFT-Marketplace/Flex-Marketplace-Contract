@@ -1,5 +1,6 @@
 use starknet::ContractAddress;
 
+
 #[starknet::interface]
 trait ITransferSelectorNFT<TState> {
     fn initializer(
@@ -123,7 +124,7 @@ mod TransferSelectorNFT {
             let transfer_manager = self.transfer_manager_selector_for_collection.read(collection);
             assert!(
                 !transfer_manager.is_zero(),
-                "TransferSelectorNFT: invalid transfer manager {}",
+                "TransferSelectorNFT: tried to remove an invalid transfer manager: {}",
                 transfer_manager
             );
             self
@@ -138,10 +139,12 @@ mod TransferSelectorNFT {
         }
 
         fn update_TRANSFER_MANAGER_ERC721(ref self: ContractState, manager: ContractAddress) {
+            self.ownable.assert_only_owner();
             self.TRANSFER_MANAGER_ERC721.write(manager);
         }
 
         fn update_TRANSFER_MANAGER_ERC1155(ref self: ContractState, manager: ContractAddress) {
+            self.ownable.assert_only_owner();
             self.TRANSFER_MANAGER_ERC1155.write(manager);
         }
 
