@@ -61,13 +61,11 @@ trait IMarketPlace<TState> {
 
 #[starknet::interface]
 trait IExecutionStrategy<TState> {
-    fn protocol_fee(self: @TState) -> u128;
-
-    fn can_execute_taker_ask(
+    fn protocolFee(self: @TState) -> u128;
+    fn canExecuteTakerAsk(
         self: @TState, taker_ask: TakerOrder, maker_bid: MakerOrder, extra_params: Array<felt252>
     ) -> (bool, u256, u128);
-
-    fn can_execute_taker_bid(
+    fn canExecuteTakerBid(
         self: @TState, taker_bid: TakerOrder, maker_ask: MakerOrder
     ) -> (bool, u256, u128);
 }
@@ -125,6 +123,7 @@ mod MarketPlace {
     impl ReentrancyGuardInternalImpl = ReentrancyGuardComponent::InternalImpl<ContractState>;
 
 
+    use snforge_std::PrintTrait;
     #[storage]
     struct Storage {
         hash_domain: felt252,
@@ -340,13 +339,11 @@ mod MarketPlace {
             assert!(!caller.is_zero(), "MarketPlace: invalid caller address {:?}", caller);
             assert!(maker_ask.is_order_ask, "MarketPlace: maker ask is not an ask order");
             assert!(!taker_bid.is_order_ask, "MarketPlace: taker bid is an ask order");
-
             self.validate_order(@maker_ask, maker_ask_signature);
-
             let (can_execute, token_id, amount) = IExecutionStrategyDispatcher {
                 contract_address: maker_ask.strategy
             }
-                .can_execute_taker_bid(taker_bid, maker_ask);
+                .canExecuteTakerBid(taker_bid, maker_ask);
 
             assert!(can_execute, "Marketplace: order cannot be executed");
 
@@ -365,26 +362,20 @@ mod MarketPlace {
                     taker_bid.price,
                     maker_ask.min_percentage_to_ask
                 );
-
             let mut non_fungible_token_recipient = contract_address_const::<0>();
             if custom_non_fungible_token_recepient.is_zero() {
                 non_fungible_token_recipient = taker_bid.taker;
             } else {
                 non_fungible_token_recipient = custom_non_fungible_token_recepient;
             };
-
             self
-                .transfer_fees_and_funds(
-                    maker_ask.strategy,
+                .transfer_non_fungible_token(
                     maker_ask.collection,
-                    token_id,
-                    maker_ask.currency,
-                    taker_bid.taker,
                     maker_ask.signer,
-                    taker_bid.price,
-                    maker_ask.min_percentage_to_ask
+                    non_fungible_token_recipient,
+                    token_id,
+                    amount
                 );
-
             let order_hash = self
                 .signature_checker
                 .read()
@@ -436,19 +427,17 @@ mod MarketPlace {
             let (can_execute, token_id, amount) = IExecutionStrategyDispatcher {
                 contract_address: maker_bid.strategy
             }
-                .can_execute_taker_ask(taker_ask, maker_bid, extra_params);
+                .canExecuteTakerAsk(taker_ask, maker_bid, extra_params);
 
             assert!(can_execute, "Marketplace: taker ask cannot be executed");
 
             self
                 .is_user_order_nonce_executed_or_cancelled
                 .write((maker_bid.signer, maker_bid.nonce), true);
-
             self
                 .transfer_non_fungible_token(
                     maker_bid.collection, taker_ask.taker, maker_bid.signer, token_id, amount
                 );
-
             self
                 .transfer_fees_and_funds(
                     maker_bid.strategy,
@@ -460,7 +449,6 @@ mod MarketPlace {
                     taker_ask.price,
                     taker_ask.min_percentage_to_ask
                 );
-
             let order_hash = self
                 .signature_checker
                 .read()
@@ -504,7 +492,7 @@ mod MarketPlace {
                 contract_address: maker_ask.strategy
             };
             let relayer = auction_strategy.auctionRelayer();
-            assert!(caller == relayer, "MarketPlace: caller {} is not relayer {}", caller, relayer);
+            assert!(caller == relayer, "MarketPlace: caller is not relayer");
 
             self.validate_order(@maker_ask, maker_ask_signature);
             self.validate_order(@maker_bid, maker_bid_signature);
@@ -531,7 +519,6 @@ mod MarketPlace {
                     maker_bid.price,
                     maker_ask.min_percentage_to_ask
                 );
-
             self
                 .transfer_non_fungible_token(
                     maker_ask.collection, maker_ask.signer, maker_bid.signer, token_id, amount
@@ -667,21 +654,16 @@ mod MarketPlace {
 
             let protocol_fee_amount = self.calculate_protocol_fee(strategy, amount);
             let recipient = self.get_protocol_fee_recipient();
-
             let currency_erc20 = IERC20CamelDispatcher { contract_address: currency };
-
             if !protocol_fee_amount.is_zero() && !recipient.is_zero() {
                 currency_erc20.transferFrom(from, recipient, protocol_fee_amount.into());
             }
-
             let (recipient, royalty_amount) = self
                 .royalty_fee_manager
                 .read()
                 .calculate_royalty_fee_and_get_recipient(collection, token_id, amount);
-
             if !royalty_amount.is_zero() && !recipient.is_zero() {
                 currency_erc20.transferFrom(from, recipient, royalty_amount.into());
-
                 self
                     .emit(
                         RoyaltyPayment {
@@ -724,7 +706,7 @@ mod MarketPlace {
             self: @ContractState, execution_strategy: ContractAddress, amount: u128
         ) -> u128 {
             let fee = IExecutionStrategyDispatcher { contract_address: execution_strategy }
-                .protocol_fee();
+                .protocolFee();
             amount * fee / 10_000
         }
 
@@ -733,7 +715,6 @@ mod MarketPlace {
         ) {
             let executed_order_cancelled = self
                 .get_is_user_order_nonce_executed_or_cancelled(*order.signer, *order.nonce);
-
             let min_nonce = self.get_user_min_order_nonce(*order.signer);
             assert!(!executed_order_cancelled, "MarketPlace: executed order is cancelled");
             assert!(
@@ -742,19 +723,16 @@ mod MarketPlace {
                 min_nonce,
                 *order.nonce
             );
-
             assert!(
                 !(*order.signer).is_zero(), "MarketPlace: invalid order signer {}", *order.signer
             );
             assert!(
                 !(*order.amount).is_zero(), "MarketPlace: invalid order amount {}", *order.amount
             );
-
             self
                 .signature_checker
                 .read()
                 .verify_maker_order_signature(self.get_hash_domain(), *order, order_signature);
-
             let currency_whitelisted = self
                 .currency_manager
                 .read()
@@ -762,12 +740,15 @@ mod MarketPlace {
             assert!(
                 currency_whitelisted, "MarketPlace: currency {} is not whitelisted", *order.currency
             );
-
             let strategy_whitelisted = self
                 .execution_manager
                 .read()
                 .is_strategy_whitelisted(*order.strategy);
-            assert!(strategy_whitelisted, "MarketPlace: strategy is not whitelisted");
+            assert!(
+                strategy_whitelisted,
+                "MarketPlace: strategy {} is not whitelisted",
+                (*order.strategy)
+            );
         }
     }
 }

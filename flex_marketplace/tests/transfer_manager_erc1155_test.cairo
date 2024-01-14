@@ -12,8 +12,7 @@ const TOKEN_ID: u256 = 1;
 #[test]
 fn test_transfer_non_fungible_token_success() {
     let dsp = setup();
-    initialize_test(dsp);
-    let collection = deploy_mock_1155();
+    let mocks = initialize_test(dsp);
 
     start_prank(
         CheatTarget::One(dsp.transfer_manager_erc1155.contract_address),
@@ -22,7 +21,7 @@ fn test_transfer_non_fungible_token_success() {
     dsp
         .transfer_manager_erc1155
         .transfer_non_fungible_token(
-            collection, ACCOUNT1(), ACCOUNT2(), TOKEN_ID, 1, array![].span()
+            mocks.erc1155, ACCOUNT1(), ACCOUNT2(), TOKEN_ID, 1, array![].span()
         );
 }
 
@@ -30,22 +29,20 @@ fn test_transfer_non_fungible_token_success() {
 #[should_panic(expected: ("ERC1155TransferManager: caller 0 is not marketplace",))]
 fn test_transfer_non_fungible_token_fails_caller_not_marketplace() {
     let dsp = setup();
-    initialize_test(dsp);
-    let collection = deploy_mock_1155();
+    let mocks = initialize_test(dsp);
 
     start_prank(CheatTarget::One(dsp.transfer_manager_erc1155.contract_address), ZERO_ADDRESS());
     dsp
         .transfer_manager_erc1155
         .transfer_non_fungible_token(
-            collection, ACCOUNT1(), ACCOUNT2(), TOKEN_ID, 1, array![].span()
+            mocks.erc1155, ACCOUNT1(), ACCOUNT2(), TOKEN_ID, 1, array![].span()
         );
 }
 
 #[test]
 fn test_update_marketplace_success() {
     let dsp = setup();
-    initialize_test(dsp);
-    let collection = deploy_mock_1155();
+    let mocks = initialize_test(dsp);
     let new_marketplace = starknet::contract_address_const::<'new_marketplace'>();
 
     start_prank(CheatTarget::One(dsp.transfer_manager_erc1155.contract_address), OWNER());

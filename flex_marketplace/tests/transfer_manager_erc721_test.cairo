@@ -11,8 +11,7 @@ const TOKEN_ID: u256 = 1;
 #[test]
 fn test_transfer_non_fungible_token_success() {
     let dsp = setup();
-    initialize_test(dsp);
-    let collection = deploy_mock_nft();
+    let mocks = initialize_test(dsp);
 
     start_prank(
         CheatTarget::One(dsp.transfer_manager_erc721.contract_address),
@@ -20,27 +19,25 @@ fn test_transfer_non_fungible_token_success() {
     );
     dsp
         .transfer_manager_erc721
-        .transfer_non_fungible_token(collection, ACCOUNT1(), ACCOUNT2(), TOKEN_ID, 1);
+        .transfer_non_fungible_token(mocks.erc721, ACCOUNT1(), ACCOUNT2(), TOKEN_ID, 1);
 }
 
 #[test]
 #[should_panic(expected: ("TransferManagerNFT: caller 0 is not MarketPlace",))]
 fn test_transfer_non_fungible_token_fails_caller_not_marketplace() {
     let dsp = setup();
-    initialize_test(dsp);
-    let collection = deploy_mock_nft();
+    let mocks = initialize_test(dsp);
 
     start_prank(CheatTarget::One(dsp.transfer_manager_erc721.contract_address), ZERO_ADDRESS());
     dsp
         .transfer_manager_erc721
-        .transfer_non_fungible_token(collection, ACCOUNT1(), ACCOUNT2(), TOKEN_ID, 1);
+        .transfer_non_fungible_token(mocks.erc721, ACCOUNT1(), ACCOUNT2(), TOKEN_ID, 1);
 }
 
 #[test]
 fn test_update_marketplace_success() {
     let dsp = setup();
-    initialize_test(dsp);
-    let collection = deploy_mock_nft();
+    let mocks = initialize_test(dsp);
     let new_marketplace = starknet::contract_address_const::<'new_marketplace'>();
 
     start_prank(

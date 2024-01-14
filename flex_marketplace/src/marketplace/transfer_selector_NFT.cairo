@@ -45,6 +45,8 @@ mod TransferSelectorNFT {
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
 
+    use snforge_std::PrintTrait;
+
     #[storage]
     struct Storage {
         initialized: bool,
