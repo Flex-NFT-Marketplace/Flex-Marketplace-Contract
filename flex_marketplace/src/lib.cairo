@@ -1,5 +1,5 @@
 use core::fmt::{Display, Error, Formatter, Debug};
-use starknet::contract_address_to_felt252;
+use starknet::{contract_address_to_felt252, ContractAddress, contract_address_const};
 
 impl DisplayContractAddress of Display<starknet::ContractAddress> {
     fn fmt(self: @starknet::ContractAddress, ref f: Formatter) -> Result<(), Error> {
@@ -7,9 +7,15 @@ impl DisplayContractAddress of Display<starknet::ContractAddress> {
     }
 }
 
-impl DebugContractAddress of Debug<starknet::ContractAddress> {
+impl DebugContractAddress of Debug<ContractAddress> {
     fn fmt(self: @starknet::ContractAddress, ref f: Formatter) -> Result<(), Error> {
         Display::fmt(self, ref f)
+    }
+}
+
+impl DefaultContractAddress of Default<ContractAddress> {
+    fn default() -> ContractAddress {
+        contract_address_const::<0>()
     }
 }
 
@@ -52,6 +58,9 @@ mod marketplace {
 }
 
 mod mocks {
+    mod account;
+    mod erc20;
     mod erc1155;
     mod erc721;
+    mod strategy;
 }

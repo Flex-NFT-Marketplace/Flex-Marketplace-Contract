@@ -1,6 +1,7 @@
 use starknet::ContractAddress;
+use flex::DefaultContractAddress;
 
-#[derive(Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde, Default)]
 struct MakerOrder {
     is_order_ask: bool, // 1 = ask / 0 = bid
     signer: ContractAddress, // signer of the maker order
@@ -17,7 +18,7 @@ struct MakerOrder {
     params: felt252,
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(Copy, Drop, Serde, Default)]
 struct TakerOrder {
     is_order_ask: bool, // 1 = ask / 0 = bid
     taker: ContractAddress, // caller
