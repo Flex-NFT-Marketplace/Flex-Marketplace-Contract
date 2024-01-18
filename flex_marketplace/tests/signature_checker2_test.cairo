@@ -1,4 +1,4 @@
-use tests::utils::{setup, initialize_test, deploy_mock_account};
+use tests::utils::{setup, initialize_test};
 use poseidon::poseidon_hash_span;
 
 use snforge_std::signature::stark_curve::{
