@@ -6,7 +6,7 @@ use starknet::{
 use snforge_std::{
     PrintTrait, declare, ContractClassTrait, start_warp, start_prank, stop_prank, CheatTarget
 };
-use snforge_std::signature::KeyPairTrait;
+use snforge_std::signature::{KeyPairTrait, KeyPair};
 use snforge_std::signature::stark_curve::{
     StarkCurveKeyPairImpl, StarkCurveSignerImpl, StarkCurveVerifierImpl
 };
@@ -137,7 +137,7 @@ fn setup() -> Dispatchers {
     }
 }
 
-#[derive(Copy, Drop, Serde)]
+#[derive(Copy, Drop)]
 struct Mocks {
     account: ContractAddress,
     erc20: ContractAddress,
@@ -145,7 +145,8 @@ struct Mocks {
     erc1155: ContractAddress,
     strategy: ContractAddress,
     maker_signature: (felt252, felt252),
-    taker_signature: (felt252, felt252)
+    taker_signature: (felt252, felt252),
+    key_pair: KeyPair<felt252, felt252>,
 }
 
 fn initialize_test(dsp: Dispatchers) -> Mocks {
@@ -233,7 +234,8 @@ fn initialize_test(dsp: Dispatchers) -> Mocks {
         erc1155,
         strategy,
         maker_signature: (r1, s1),
-        taker_signature: (r2, s2)
+        taker_signature: (r2, s2),
+        key_pair
     }
 }
 

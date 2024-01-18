@@ -65,8 +65,10 @@ mod SignatureChecker2 {
             order_signature: Array<felt252>
         ) {
             let hash = self.compute_maker_order_hash(hash_domain, order);
-            ISRC6CamelOnlyDispatcher { contract_address: order.signer }
+            let result = ISRC6CamelOnlyDispatcher { contract_address: order.signer }
                 .isValidSignature(hash, order_signature);
+
+            assert!(result == starknet::VALIDATED, "SignatureChecker: Invalid signature");
         }
     }
 }
