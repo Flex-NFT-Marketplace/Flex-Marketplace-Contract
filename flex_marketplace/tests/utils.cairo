@@ -204,6 +204,7 @@ fn initialize_test(dsp: Dispatchers) -> Mocks {
     IERC20Dispatcher { contract_address: erc20 }.transfer(account, (1000 * E18).into());
 
     dsp.execution_manager.add_strategy(strategy);
+    dsp.currency_manager.add_currency(erc20);
 
     dsp
         .transfer_selector

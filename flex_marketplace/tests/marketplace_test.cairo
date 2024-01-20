@@ -204,6 +204,7 @@ fn test_execute_auction_sale_success() {
     maker_bid.strategy = mocks.strategy;
     maker_bid.price = 1_000_000;
     maker_bid.amount = 1;
+    maker_bid.currency = mocks.erc20;
 
     start_prank(CheatTarget::One(dsp.marketplace.contract_address), RELAYER());
     dsp.marketplace.execute_auction_sale(maker_ask, array![r1, s1], maker_bid, array![r2, s2]);
