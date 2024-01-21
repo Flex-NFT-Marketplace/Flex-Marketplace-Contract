@@ -15,7 +15,7 @@ fn test_add_strategy_success() {
 }
 
 #[test]
-#[should_panic(expected: ("ExecutionManager: strategy 1 already whitelisted",))]
+#[should_panic(expected: ("ExecutionManager: strategy 4702676443917603889 already whitelisted",))]
 fn test_add_strategy_fails_strategy_already_whitelisted() {
     let dsp = setup();
     initialize_test(dsp);
@@ -50,7 +50,7 @@ fn test_remove_strategy_success() {
 }
 
 #[test]
-#[should_panic(expected: ("ExecutionManager: strategy 1 not whitelisted",))]
+#[should_panic(expected: ("ExecutionManager: strategy 4702676443917603889 not whitelisted",))]
 fn test_remove_strategy_fails_strategy_not_whitelisted() {
     let dsp = setup();
     initialize_test(dsp);
@@ -86,7 +86,7 @@ fn get_whitelisted_strategies_count() {
 
     let whitelisted_count = dsp.execution_manager.get_whitelisted_strategies_count();
 
-    assert!(whitelisted_count == 2, "COUNT ERROR: Expected 2 but found {}", whitelisted_count);
+    assert!(whitelisted_count == 3, "COUNT ERROR: Expected 3 but found {}", whitelisted_count);
 }
 
 #[test]
@@ -96,7 +96,7 @@ fn get_whitelisted_strategy() {
     start_prank(CheatTarget::One(dsp.execution_manager.contract_address), OWNER());
     dsp.execution_manager.add_strategy(ACCOUNT1());
 
-    let _strategy = dsp.execution_manager.get_whitelisted_strategy(1);
+    let _strategy = dsp.execution_manager.get_whitelisted_strategy(2);
 
     assert!(_strategy == ACCOUNT1(), "STRATEGY ERROR");
 }
