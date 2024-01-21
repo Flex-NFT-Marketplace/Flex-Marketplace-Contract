@@ -1,10 +1,11 @@
 use tests::utils::{setup, initialize_test};
 use poseidon::poseidon_hash_span;
 
-use snforge_std::signature::stark_curve::{
-    StarkCurveKeyPairImpl, StarkCurveSignerImpl
+use snforge_std::signature::stark_curve::{StarkCurveKeyPairImpl, StarkCurveSignerImpl};
+use flex::marketplace::signature_checker2::{
+    ISignatureChecker2Dispatcher, ISignatureChecker2DispatcherTrait, STARKNET_MESSAGE,
+    HASH_MESSAGE_SELECTOR
 };
-use flex::marketplace::signature_checker2::{ISignatureChecker2Dispatcher, ISignatureChecker2DispatcherTrait,STARKNET_MESSAGE, HASH_MESSAGE_SELECTOR};
 use flex::marketplace::utils::order_types::MakerOrder;
 
 #[test]
@@ -40,7 +41,10 @@ fn test_compute_maker_order_hash_success(hash_domain: felt252) {
 
     let order_hash = poseidon_hash_span(hash_params.span());
 
-    assert(order_hash == dsp.signature_checker.compute_maker_order_hash(hash_domain, maker_order), 'Failed hash computation');
+    assert(
+        order_hash == dsp.signature_checker.compute_maker_order_hash(hash_domain, maker_order),
+        'Failed hash computation'
+    );
 }
 
 #[test]
@@ -77,6 +81,6 @@ fn test_verify_maker_order_signature_success(hash_domain: felt252) {
     ];
 
     let order_hash = poseidon_hash_span(hash_params.span());
-    let (r, s) : (felt252, felt252) = mocks.key_pair.sign(order_hash);
+    let (r, s): (felt252, felt252) = mocks.key_pair.sign(order_hash);
     dsp.signature_checker.verify_maker_order_signature(hash_domain, maker_order, array![r, s]);
 }

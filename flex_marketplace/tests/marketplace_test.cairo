@@ -3,13 +3,13 @@ use tests::utils::{
     setup, initialize_test, deploy_mock_nft, ACCOUNT1, ACCOUNT2, OWNER, ZERO_ADDRESS, RELAYER,
     deploy_mock_execution_strategy, deploy_mock_account, deploy_mock_erc20, E18
 };
-use snforge_std::signature::stark_curve::{
-    StarkCurveKeyPairImpl, StarkCurveSignerImpl
-};
+use snforge_std::signature::stark_curve::{StarkCurveKeyPairImpl, StarkCurveSignerImpl};
 use flex::marketplace::execution_manager::{
     IExecutionManagerDispatcher, IExecutionManagerDispatcherTrait
 };
-use flex::marketplace::signature_checker2::{ISignatureChecker2Dispatcher, ISignatureChecker2DispatcherTrait};
+use flex::marketplace::signature_checker2::{
+    ISignatureChecker2Dispatcher, ISignatureChecker2DispatcherTrait
+};
 use flex::marketplace::marketplace::{IMarketPlaceDispatcher, IMarketPlaceDispatcherTrait};
 use flex::marketplace::utils::order_types::{MakerOrder, TakerOrder};
 use flex::DefaultContractAddress;
@@ -71,8 +71,10 @@ fn test_match_ask_with_taker_bid_success() {
     maker_order.strategy = mocks.strategy;
     maker_order.currency = mocks.erc20;
 
-    let maker_order_hash = dsp.signature_checker.compute_maker_order_hash(dsp.marketplace.get_hash_domain(), maker_order);
-    
+    let maker_order_hash = dsp
+        .signature_checker
+        .compute_maker_order_hash(dsp.marketplace.get_hash_domain(), maker_order);
+
     let (r, s): (felt252, felt252) = mocks.key_pair.sign(maker_order_hash);
 
     let mut taker_bid: TakerOrder = Default::default();
@@ -137,8 +139,10 @@ fn test_match_bid_with_taker_ask_success() {
     maker_bid.strategy = mocks.strategy;
     maker_bid.currency = mocks.erc20;
 
-    let maker_order_hash = dsp.signature_checker.compute_maker_order_hash(dsp.marketplace.get_hash_domain(), maker_bid);
-    
+    let maker_order_hash = dsp
+        .signature_checker
+        .compute_maker_order_hash(dsp.marketplace.get_hash_domain(), maker_bid);
+
     let (r, s): (felt252, felt252) = mocks.key_pair.sign(maker_order_hash);
 
     let mut taker_ask: TakerOrder = Default::default();
@@ -207,7 +211,9 @@ fn test_execute_auction_sale_success() {
     maker_ask.collection = mocks.erc721;
     maker_ask.currency = mocks.erc20;
 
-    let maker_ask_hash = dsp.signature_checker.compute_maker_order_hash(dsp.marketplace.get_hash_domain(), maker_ask);
+    let maker_ask_hash = dsp
+        .signature_checker
+        .compute_maker_order_hash(dsp.marketplace.get_hash_domain(), maker_ask);
 
     let (r1, s1): (felt252, felt252) = mocks.key_pair.sign(maker_ask_hash);
 
@@ -218,7 +224,9 @@ fn test_execute_auction_sale_success() {
     maker_bid.amount = 1;
     maker_bid.currency = mocks.erc20;
 
-    let maker_bid_hash = dsp.signature_checker.compute_maker_order_hash(dsp.marketplace.get_hash_domain(), maker_bid);
+    let maker_bid_hash = dsp
+        .signature_checker
+        .compute_maker_order_hash(dsp.marketplace.get_hash_domain(), maker_bid);
 
     let (r2, s2): (felt252, felt252) = mocks.key_pair.sign(maker_bid_hash);
 
