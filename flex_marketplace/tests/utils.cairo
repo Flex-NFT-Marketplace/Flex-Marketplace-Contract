@@ -217,8 +217,6 @@ fn initialize_test(dsp: Dispatchers) -> Mocks {
 
     dsp.fee_registry.update_royalty_info_collection(erc721, OWNER(), RECIPIENT(), 1000);
 
-    dsp.currency_manager.add_currency(erc20);
-
     stop_prank(CheatTarget::All(()));
 
     start_prank(CheatTarget::One(erc20), ACCOUNT1());
