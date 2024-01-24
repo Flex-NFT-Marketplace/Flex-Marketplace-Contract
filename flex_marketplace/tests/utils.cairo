@@ -3,6 +3,7 @@ use starknet::{
     ContractAddress, contract_address_const, get_block_timestamp, get_contract_address,
     get_caller_address, class_hash::ClassHash
 };
+use starknet::testing;
 use snforge_std::{
     PrintTrait, declare, ContractClassTrait, start_warp, start_prank, stop_prank, CheatTarget
 };
@@ -270,3 +271,28 @@ fn deploy_test() {
     let dsp = setup();
     initialize_test(dsp);
 }
+/// Pop the earliest unpopped logged event for the contract as the requested type
+/// and checks there's no more keys or data left on the event, preventing unaccounted params.
+///
+/// This function also removes the first key from the event, to match the event
+/// structure key params without the event ID.
+///
+/// This method doesn't currently work for components events that are not flattened
+/// because an extra key is added, pushing the event ID key to the second position.
+fn pop_log<T, +Drop<T>, +starknet::Event<T>>(address: ContractAddress) -> Option<T> {
+    let (mut keys, mut data) = testing::pop_log_raw(address)?;
+
+    // Remove the event ID from the keys
+    keys.pop_front();
+
+    let ret = starknet::Event::deserialize(ref keys, ref data);
+    assert(data.is_empty(), 'Event has extra data');
+    assert(keys.is_empty(), 'Event has extra keys');
+    ret
+}
+
+fn assert_no_events_left(address: ContractAddress) {
+    assert(testing::pop_log_raw(address).is_none(), 'Events remaining on queue');
+}
+
+

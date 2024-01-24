@@ -1,3 +1,5 @@
+use starknet::{ContractAddress, contract_address_const};
+
 #[starknet::interface]
 trait IER721CamelOnly<TState> {
     fn transferFrom(
@@ -31,6 +33,10 @@ mod ERC721 {
     struct Storage {
         #[substorage(v0)]
         src5: SRC5Component::Storage,
+        name: felt252,
+        symbol: felt252,
+        owners: LegacyMap::<u256, ContractAddress>,
+        balances: LegacyMap::<ContractAddress, u256>,
     }
 
     #[event]
@@ -40,9 +46,23 @@ mod ERC721 {
         SRC5Event: SRC5Component::Event,
     }
 
+    fn RECIPIENT() -> starknet::ContractAddress {
+        starknet::contract_address_const::<'RECIPIENT'>()
+    }
+    fn ACCOUNT1() -> ContractAddress {
+        starknet::contract_address_const::<'ACCOUNT1'>()
+    }
+    fn ACCOUNT2() -> ContractAddress {
+        starknet::contract_address_const::<'ACCOUNT2'>()
+    }
+
     #[constructor]
-    fn constructor(ref self: ContractState,) {
+    fn constructor(ref self: ContractState) {
         self.src5.register_interface(0x80ac58cd);
+        self.name.write('flex');
+        self.symbol.write('fNFT');
+        self._mint(ACCOUNT1(), 1);
+        self._mint(ACCOUNT2(), 2);
     }
 
     #[external(v0)]
@@ -55,11 +75,6 @@ mod ERC721 {
         ) {}
     }
 
-
-    fn RECIPIENT() -> starknet::ContractAddress {
-        starknet::contract_address_const::<'RECIPIENT'>()
-    }
-
     #[external(v0)]
     impl IERC2981Impl of super::IERC2981<ContractState> {
         fn royaltyInfo(
@@ -68,4 +83,14 @@ mod ERC721 {
             (RECIPIENT(), 5000)
         }
     }
+
+    #[generate_trait]
+    impl StorageImpl of StorageTrait {
+        fn _mint(ref self: ContractState, to: ContractAddress, token_id: u256) {
+            assert(!to.is_zero(), 'ERC721: mint to 0');
+            self.balances.write(to, self.balances.read(to) + 1.into());
+            self.owners.write(token_id, to);
+        }
+    }
 }
+
