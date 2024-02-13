@@ -9,7 +9,7 @@ use tests::utils::{setup, initialize_test, ACCOUNT1, OWNER};
 fn test_add_currency_success() {
     let dsp = setup();
     initialize_test(dsp);
-    
+
     start_prank(CheatTarget::One(dsp.currency_manager.contract_address), OWNER());
 
     dsp.currency_manager.add_currency(ACCOUNT1());
@@ -18,7 +18,11 @@ fn test_add_currency_success() {
 }
 
 #[test]
-#[should_panic(expected: ("CurrencyManager: currency 710010689975950048888168914535176849151458040976071544013000098827867207947 already whitelisted",))]
+#[should_panic(
+    expected: (
+        "CurrencyManager: currency 710010689975950048888168914535176849151458040976071544013000098827867207947 already whitelisted",
+    )
+)]
 fn test_add_currency_fails_currency_already_whitelisted() {
     let dsp = setup();
     let mocks = initialize_test(dsp);
