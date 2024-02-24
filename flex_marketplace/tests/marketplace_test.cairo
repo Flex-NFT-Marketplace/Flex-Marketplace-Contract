@@ -12,7 +12,8 @@ use flex::marketplace::signature_checker2::{
 };
 use flex::marketplace::marketplace::{IMarketPlaceDispatcher, IMarketPlaceDispatcherTrait};
 use flex::marketplace::utils::order_types::{MakerOrder, TakerOrder};
-use flex::DefaultContractAddress;
+use flex::mocks::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
+
 
 #[test]
 fn test_cancel_all_orders_for_sender_success() {
@@ -36,7 +37,7 @@ fn test_cancel_all_orders_for_sender_fails_wrong_min_nonce() {
 }
 
 #[test]
-fn test_carcel_maker_order_success() {
+fn test_cancel_maker_order_success() {
     let dsp = setup();
     initialize_test(dsp);
 
@@ -50,7 +51,7 @@ fn test_carcel_maker_order_success() {
 
 #[test]
 #[should_panic(expected: ("MarketPlace: current min nonce 0 is not < than 0",))]
-fn test_carcel_maker_order_fails_wrong_min_nonce() {
+fn test_cancel_maker_order_fails_wrong_min_nonce() {
     let dsp = setup();
     initialize_test(dsp);
 
@@ -62,6 +63,12 @@ fn test_carcel_maker_order_fails_wrong_min_nonce() {
 fn test_match_ask_with_taker_bid_success() {
     let dsp = setup();
     let mocks = initialize_test(dsp);
+    let nft = IERC721Dispatcher { contract_address: mocks.erc721 };
+
+    start_prank(CheatTarget::One(mocks.erc721), mocks.account);
+    nft.mint(mocks.account);
+    nft.approve(dsp.transfer_manager_erc721.contract_address, 1);
+    stop_prank(CheatTarget::One(mocks.erc721));
 
     let mut maker_order: MakerOrder = Default::default();
     maker_order.is_order_ask = true;
@@ -131,6 +138,12 @@ fn test_match_ask_with_taker_bid_fails_taker_bid_is_ask_order() {
 fn test_match_bid_with_taker_ask_success() {
     let dsp = setup();
     let mocks = initialize_test(dsp);
+    let nft = IERC721Dispatcher { contract_address: mocks.erc721 };
+
+    start_prank(CheatTarget::One(mocks.erc721), ACCOUNT1());
+    nft.mint(ACCOUNT1());
+    nft.approve(dsp.transfer_manager_erc721.contract_address, 1);
+    stop_prank(CheatTarget::One(mocks.erc721));
 
     let mut maker_bid: MakerOrder = Default::default();
     maker_bid.collection = mocks.erc721;
@@ -202,6 +215,7 @@ fn test_match_bid_with_taker_ask_fails_taker_ask_is_not_an_ask_order() {
 fn test_execute_auction_sale_success() {
     let dsp = setup();
     let mocks = initialize_test(dsp);
+    let nft = IERC721Dispatcher { contract_address: mocks.erc721 };
 
     let mut maker_ask: MakerOrder = Default::default();
     maker_ask.is_order_ask = true;
@@ -210,6 +224,11 @@ fn test_execute_auction_sale_success() {
     maker_ask.amount = 1;
     maker_ask.collection = mocks.erc721;
     maker_ask.currency = mocks.erc20;
+
+    start_prank(CheatTarget::One(mocks.erc721), mocks.account);
+    nft.mint(mocks.account);
+    nft.approve(dsp.transfer_manager_erc721.contract_address, 1);
+    stop_prank(CheatTarget::One(mocks.erc721));
 
     let maker_ask_hash = dsp
         .signature_checker
