@@ -10,7 +10,7 @@ trait IERC721<TContractState> {
 #[starknet::contract]
 mod ERC721 {
     use openzeppelin::token::erc721::erc721::ERC721Component::InternalTrait;
-use starknet::ContractAddress;
+    use starknet::ContractAddress;
     use openzeppelin::introspection::src5::SRC5Component;
     use openzeppelin::token::erc721::ERC721Component;
 
@@ -68,7 +68,6 @@ use starknet::ContractAddress;
         fn _mint_with_uri(ref self: ContractState, recipient: ContractAddress) {
             let token_id = self.id.read() + 1;
             self.id.write(token_id);
-
 
             self.erc721._mint(recipient, token_id);
             self.erc721._set_token_uri(token_id, TOKEN_URI);

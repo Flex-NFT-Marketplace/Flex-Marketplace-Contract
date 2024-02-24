@@ -19,10 +19,7 @@ fn test_transfer_non_fungible_token_success() {
     let dsp = setup();
     let mocks = initialize_test(dsp);
     let nft = IERC721Dispatcher { contract_address: mocks.erc721 };
-    start_prank(
-        CheatTarget::One(mocks.erc721),
-        ACCOUNT1()
-    );
+    start_prank(CheatTarget::One(mocks.erc721), ACCOUNT1());
     nft.mint(ACCOUNT1());
     nft.approve(dsp.marketplace.contract_address, TOKEN_ID);
 
