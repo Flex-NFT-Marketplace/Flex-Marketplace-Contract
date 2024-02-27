@@ -80,6 +80,15 @@ mod TransferSelectorNFT {
         timestamp: u64
     }
 
+    #[constructor]
+    fn constructor(
+        ref self: ContractState,
+        transfer_manager_ERC721: ContractAddress,
+        transfer_manager_ERC1155: ContractAddress,
+        owner: ContractAddress
+    ) {
+        self.initializer(transfer_manager_ERC721, transfer_manager_ERC1155, owner);
+    }
 
     #[external(v0)]
     impl TransferSelectorNFTImpl of super::ITransferSelectorNFT<ContractState> {

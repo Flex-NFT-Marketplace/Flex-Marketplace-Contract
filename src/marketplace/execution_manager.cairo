@@ -54,6 +54,14 @@ mod ExecutionManager {
         timestamp: u64
     }
 
+    #[constructor]
+    fn constructor(
+        ref self: ContractState,
+        owner: ContractAddress
+    ) {
+        self.initializer(owner);
+    }
+
     #[external(v0)]
     impl ExecutionManagerImpl of super::IExecutionManager<ContractState> {
         fn initializer(ref self: ContractState, owner: ContractAddress) {

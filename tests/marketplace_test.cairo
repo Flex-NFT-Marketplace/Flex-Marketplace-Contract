@@ -322,12 +322,12 @@ fn test_update_hash_domain() {
 }
 
 #[test]
-fn test_update_protocol_fee_recepient() {
+fn test_update_protocol_fee_recipient() {
     let dsp = setup();
     let mocks = initialize_test(dsp);
 
     start_prank(CheatTarget::One(dsp.marketplace.contract_address), OWNER());
-    dsp.marketplace.update_protocol_fee_recepient(ACCOUNT1());
+    dsp.marketplace.update_protocol_fee_recipient(ACCOUNT1());
     let actual = dsp.marketplace.get_protocol_fee_recipient();
     assert(actual == ACCOUNT1(), 'failed fee recipient update');
 }

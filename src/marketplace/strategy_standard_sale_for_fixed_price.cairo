@@ -52,6 +52,15 @@ mod StrategyStandardSaleForFixedPrice {
         UpgradeableEvent: UpgradeableComponent::Event,
     }
 
+    #[constructor]
+    fn constructor(
+        ref self: ContractState,
+        fee: u128,
+        owner: ContractAddress
+    ) {
+        self.initializer(fee, owner);
+    }
+
     #[external(v0)]
     impl StrategyStandardSaleForFixedPriceImpl of super::IStrategyStandardSaleForFixedPrice<
         ContractState

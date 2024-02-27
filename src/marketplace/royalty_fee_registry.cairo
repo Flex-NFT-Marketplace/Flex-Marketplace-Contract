@@ -71,6 +71,15 @@ mod RoyaltyFeeRegistry {
         timestamp: u64,
     }
 
+    #[constructor]
+    fn constructor(
+        ref self: ContractState,
+        fee_limit: u128,
+        owner: ContractAddress
+    ) {
+        self.initializer(fee_limit, owner);
+    }
+
     #[external(v0)]
     impl RoyaltyFeeRegistryImpl of super::IRoyaltyFeeRegistry<ContractState> {
         fn initializer(ref self: ContractState, fee_limit: u128, owner: ContractAddress,) {

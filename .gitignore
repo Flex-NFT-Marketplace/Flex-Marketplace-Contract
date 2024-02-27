@@ -1,7 +1,7 @@
 .tool-versions
-flex_marketplace/target/
+target/
 
-flex_marketplace/.snfoundry_cache/
+.snfoundry_cache/
 
 tool-versions
 

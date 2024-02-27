@@ -54,6 +54,15 @@ mod CurrencyManager {
         timestamp: u64,
     }
 
+    #[constructor]
+    fn constructor(
+        ref self: ContractState,
+        owner: ContractAddress,
+        proxy_admin: ContractAddress
+    ) {
+        self.initializer(owner, proxy_admin);
+    }
+
     #[external(v0)]
     impl CurrencyManagerImpl of super::ICurrencyManager<ContractState> {
         fn initializer(

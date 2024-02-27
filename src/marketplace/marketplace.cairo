@@ -7,7 +7,7 @@ trait IMarketPlace<TState> {
     fn initializer(
         ref self: TState,
         hash: felt252,
-        recepient: ContractAddress,
+        recipient: ContractAddress,
         currency: ContractAddress,
         execution: ContractAddress,
         fee_manager: ContractAddress,
@@ -23,7 +23,7 @@ trait IMarketPlace<TState> {
         taker_bid: TakerOrder,
         maker_ask: MakerOrder,
         maker_ask_signature: Array<felt252>,
-        custom_non_fungible_token_recepient: ContractAddress
+        custom_non_fungible_token_recipient: ContractAddress
     );
     fn match_bid_with_taker_ask(
         ref self: TState,
@@ -40,7 +40,7 @@ trait IMarketPlace<TState> {
         maker_bid_signature: Array<felt252>
     );
     fn update_hash_domain(ref self: TState, hash: felt252);
-    fn update_protocol_fee_recepient(ref self: TState, recipient: ContractAddress);
+    fn update_protocol_fee_recipient(ref self: TState, recipient: ContractAddress);
     fn update_currency_manager(ref self: TState, manager: ContractAddress);
     fn update_execution_manager(ref self: TState, manager: ContractAddress);
     fn update_royalty_fee_manager(ref self: TState, manager: ContractAddress);
@@ -263,12 +263,27 @@ mod MarketPlace {
         timestamp: u64,
     }
 
+    #[constructor]
+    fn constructor(
+        ref self: ContractState,
+        hash: felt252,
+        recipient: ContractAddress,
+        currency: ContractAddress,
+        execution: ContractAddress,
+        fee_manager: ContractAddress,
+        checker: ContractAddress,
+        owner: ContractAddress,
+        proxy_admin: ContractAddress
+    ) {
+        self.initializer(hash, recipient, currency, execution, fee_manager, checker, owner, proxy_admin);
+    }
+
     #[external(v0)]
     impl MarketPlaceImpl of super::IMarketPlace<ContractState> {
         fn initializer(
             ref self: ContractState,
             hash: felt252,
-            recepient: ContractAddress,
+            recipient: ContractAddress,
             currency: ContractAddress,
             execution: ContractAddress,
             fee_manager: ContractAddress,
@@ -278,7 +293,7 @@ mod MarketPlace {
         ) {
             self.ownable.initializer(owner);
             self.hash_domain.write(hash);
-            self.protocol_fee_recipient.write(recepient);
+            self.protocol_fee_recipient.write(recipient);
             self.currency_manager.write(ICurrencyManagerDispatcher { contract_address: currency });
             self
                 .execution_manager
@@ -332,7 +347,7 @@ mod MarketPlace {
             taker_bid: TakerOrder,
             maker_ask: MakerOrder,
             maker_ask_signature: Array<felt252>,
-            custom_non_fungible_token_recepient: ContractAddress
+            custom_non_fungible_token_recipient: ContractAddress
         ) {
             self.reentrancyguard.start();
             let caller = get_caller_address();
@@ -363,10 +378,10 @@ mod MarketPlace {
                     maker_ask.min_percentage_to_ask
                 );
             let mut non_fungible_token_recipient = contract_address_const::<0>();
-            if custom_non_fungible_token_recepient.is_zero() {
+            if custom_non_fungible_token_recipient.is_zero() {
                 non_fungible_token_recipient = taker_bid.taker;
             } else {
-                non_fungible_token_recipient = custom_non_fungible_token_recepient;
+                non_fungible_token_recipient = custom_non_fungible_token_recipient;
             };
             self
                 .transfer_non_fungible_token(
@@ -556,7 +571,7 @@ mod MarketPlace {
             self.emit(NewHashDomain { hash, timestamp: get_block_timestamp() });
         }
 
-        fn update_protocol_fee_recepient(ref self: ContractState, recipient: ContractAddress) {
+        fn update_protocol_fee_recipient(ref self: ContractState, recipient: ContractAddress) {
             self.ownable.assert_only_owner();
             self.protocol_fee_recipient.write(recipient);
             self.emit(NewProtocolFeeRecipient { recipient, timestamp: get_block_timestamp() });

@@ -52,6 +52,16 @@ mod TransferManagerNFT {
         OwnableEvent: OwnableComponent::Event
     }
 
+    #[constructor]
+    fn constructor(
+        ref self: ContractState,
+        marketplace: ContractAddress,
+        owner: ContractAddress,
+        proxy_admin: ContractAddress
+    ) {
+        self.initializer(marketplace, owner, proxy_admin);
+    }
+
     #[external(v0)]
     impl TransferManagerNFTImpl of super::ITransferManagerNFT<ContractState> {
         fn initializer(

@@ -61,6 +61,15 @@ mod RoyaltyFeeManager {
         UpgradeableEvent: UpgradeableComponent::Event,
     }
 
+    #[constructor]
+    fn constructor(
+        ref self: ContractState,
+        fee_registry: ContractAddress,
+        owner: ContractAddress
+    ) {
+        self.initializer(fee_registry, owner);
+    }
+
     #[external(v0)]
     impl RoyaltyFeeManagerImpl of super::IRoyaltyFeeManager<ContractState> {
         fn initializer(

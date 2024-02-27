@@ -29,8 +29,3 @@ def hex_to_felt(val):
 def felt_to_hex(val):
     print(val + ":")
     return hex(val)
-
-
-# print(str_to_felt_array('https://gateway.pinata.cloud/ipfs/QmSzDqZGkjMVGuTyxhKC49JX2CJjn82KrkUDMPWqj37zzJ/'))
-print(str_to_felt_array('https://ipfs.io/ipfs/QmUiDKEX2owkZUHHUadomuVnjbW3EFfuowjfQndFuJDm77'))
-# print(str_to_felt('FP'))

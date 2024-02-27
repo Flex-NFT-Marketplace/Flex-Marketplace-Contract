@@ -28,6 +28,11 @@ mod SignatureChecker2 {
     #[storage]
     struct Storage {}
 
+    #[constructor]
+    fn constructor(
+        ref self: ContractState
+    ) {}
+
     #[external(v0)]
     impl SignatureChecker2Impl of super::ISignatureChecker2<ContractState> {
         fn compute_maker_order_hash(
