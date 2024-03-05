@@ -747,7 +747,7 @@ mod MarketPlace {
             self
                 .signature_checker
                 .read()
-                .verify_maker_order_signature(self.get_hash_domain(), *order, order_signature);
+                .verify_maker_order_signature_v2(*order, order_signature);
             let currency_whitelisted = self
                 .currency_manager
                 .read()
