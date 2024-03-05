@@ -7,9 +7,6 @@ const STARKNET_MESSAGE: felt252 = 110930206544689809660069706067448260453;
 const HASH_MESSAGE_SELECTOR: felt252 =
     563771258078353655219004671487831885088158240957819730493696170021701903504;
 
-const STARKNET_DOMAIN_TYPE_HASH: felt252 =
-    selector!("StarkNetDomain(name:felt,version:felt,chainId:felt)");
-
 const STARKNET_MAKER_ORDER_TYPE_HASH: felt252 =
     selector!(
         "MakerOrder(isOrderAsk:u8,signer:felt,collection:felt,price:u128,tokenId:u256,amount:u128,strategy:felt,currency:felt,nonce:u128,startTime:u64,endTime:u64,minPercentageToAsk:u128,params:felt)u256(low:felt,high:felt)"
@@ -23,9 +20,9 @@ trait ISignatureChecker2<TState> {
     fn verify_maker_order_signature(
         self: @TState, hash_domain: felt252, order: MakerOrder, order_signature: Array<felt252>
     );
-    fn compute_message_hash(self: @TState, order: MakerOrder) -> felt252;
+    fn compute_message_hash(self: @TState, domain_hash: felt252, order: MakerOrder) -> felt252;
     fn verify_maker_order_signature_v2(
-        self: @TState, order: MakerOrder, order_signature: Array<felt252>
+        self: @TState, domain_hash: felt252, order: MakerOrder, order_signature: Array<felt252>
     );
 }
 
@@ -61,13 +58,12 @@ mod SignatureChecker2 {
 
     #[external(v0)]
     impl SignatureChecker2Impl of super::ISignatureChecker2<ContractState> {
-        fn compute_message_hash(self: @ContractState, order: MakerOrder) -> felt252 {
-            let domain = StarknetDomain {
-                name: 'Mint Square', version: 2, chain_id: get_tx_info().unbox().chain_id
-            };
+        fn compute_message_hash(
+            self: @ContractState, domain_hash: felt252, order: MakerOrder
+        ) -> felt252 {
             let mut state = PedersenTrait::new(0);
             state = state.update_with('StarkNet Message');
-            state = state.update_with(domain.hash_struct());
+            state = state.update_with(domain_hash);
             state = state.update_with(order.signer);
             state = state.update_with(order.hash_struct());
             state = state.update_with(4);
@@ -116,9 +112,12 @@ mod SignatureChecker2 {
         }
 
         fn verify_maker_order_signature_v2(
-            self: @ContractState, order: MakerOrder, order_signature: Array<felt252>
+            self: @ContractState,
+            domain_hash: felt252,
+            order: MakerOrder,
+            order_signature: Array<felt252>
         ) {
-            let hash = self.compute_message_hash(order);
+            let hash = self.compute_message_hash(domain_hash, order);
             let account: AccountABIDispatcher = AccountABIDispatcher {
                 contract_address: order.signer
             };
@@ -130,15 +129,6 @@ mod SignatureChecker2 {
 
     trait IStructHash<T> {
         fn hash_struct(self: @T) -> felt252;
-    }
-    impl StructHashStarknetDomain of IStructHash<StarknetDomain> {
-        fn hash_struct(self: @StarknetDomain) -> felt252 {
-            let mut state = PedersenTrait::new(0);
-            state = state.update_with(super::STARKNET_DOMAIN_TYPE_HASH);
-            state = state.update_with(*self);
-            state = state.update_with(4);
-            state.finalize()
-        }
     }
 
     impl StructHashMarkerOrder of IStructHash<MakerOrder> {

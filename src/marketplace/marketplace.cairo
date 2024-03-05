@@ -6,7 +6,8 @@ use flex::marketplace::utils::order_types::{MakerOrder, TakerOrder};
 trait IMarketPlace<TState> {
     fn initializer(
         ref self: TState,
-        hash: felt252,
+        domain_name: felt252,
+        domain_ver: felt252,
         recipient: ContractAddress,
         currency: ContractAddress,
         execution: ContractAddress,
@@ -39,7 +40,7 @@ trait IMarketPlace<TState> {
         maker_bid: MakerOrder,
         maker_bid_signature: Array<felt252>
     );
-    fn update_hash_domain(ref self: TState, hash: felt252);
+    fn update_hash_domain(ref self: TState, domain_name: felt252, domain_ver: felt252,);
     fn update_protocol_fee_recipient(ref self: TState, recipient: ContractAddress);
     fn update_currency_manager(ref self: TState, manager: ContractAddress);
     fn update_execution_manager(ref self: TState, manager: ContractAddress);
@@ -58,6 +59,9 @@ trait IMarketPlace<TState> {
         self: @TState, user: ContractAddress, nonce: u128
     ) -> bool;
 }
+
+const STARKNET_DOMAIN_TYPE_HASH: felt252 =
+    selector!("StarkNetDomain(name:felt,version:felt,chainId:felt)");
 
 #[starknet::interface]
 trait IExecutionStrategy<TState> {
@@ -80,14 +84,18 @@ trait IAuctionStrategy<TState> {
 
 #[starknet::contract]
 mod MarketPlace {
+    use flex::marketplace::marketplace::IMarketPlace;
     use super::{
         IExecutionStrategyDispatcher, IExecutionStrategyDispatcherTrait, IAuctionStrategyDispatcher,
-        IAuctionStrategyDispatcherTrait
+        IAuctionStrategyDispatcherTrait, STARKNET_DOMAIN_TYPE_HASH
     };
     use starknet::{
-        ContractAddress, ClassHash, contract_address_const, get_block_timestamp, get_caller_address
+        ContractAddress, ClassHash, contract_address_const, get_block_timestamp, get_caller_address,
+        get_tx_info
     };
 
+    use pedersen::PedersenTrait;
+    use hash::{HashStateTrait, HashStateExTrait};
     use flex::{DebugContractAddress, DisplayContractAddress};
     use flex::marketplace::{
         currency_manager::{ICurrencyManagerDispatcher, ICurrencyManagerDispatcherTrait},
@@ -263,10 +271,18 @@ mod MarketPlace {
         timestamp: u64,
     }
 
+    #[derive(Drop, Copy, Serde, Hash)]
+    struct StarknetDomain {
+        name: felt252,
+        version: felt252,
+        chain_id: felt252,
+    }
+
     #[constructor]
     fn constructor(
         ref self: ContractState,
-        hash: felt252,
+        domain_name: felt252,
+        domain_ver: felt252,
         recipient: ContractAddress,
         currency: ContractAddress,
         execution: ContractAddress,
@@ -275,14 +291,26 @@ mod MarketPlace {
         owner: ContractAddress,
         proxy_admin: ContractAddress
     ) {
-        self.initializer(hash, recipient, currency, execution, fee_manager, checker, owner, proxy_admin);
+        self
+            .initializer(
+                domain_name,
+                domain_ver,
+                recipient,
+                currency,
+                execution,
+                fee_manager,
+                checker,
+                owner,
+                proxy_admin
+            );
     }
 
     #[external(v0)]
     impl MarketPlaceImpl of super::IMarketPlace<ContractState> {
         fn initializer(
             ref self: ContractState,
-            hash: felt252,
+            domain_name: felt252,
+            domain_ver: felt252,
             recipient: ContractAddress,
             currency: ContractAddress,
             execution: ContractAddress,
@@ -292,7 +320,10 @@ mod MarketPlace {
             proxy_admin: ContractAddress
         ) {
             self.ownable.initializer(owner);
-            self.hash_domain.write(hash);
+            let domain = StarknetDomain {
+                name: domain_name, version: domain_ver, chain_id: get_tx_info().unbox().chain_id
+            };
+            self.hash_domain.write(domain.hash_struct());
             self.protocol_fee_recipient.write(recipient);
             self.currency_manager.write(ICurrencyManagerDispatcher { contract_address: currency });
             self
@@ -565,8 +596,12 @@ mod MarketPlace {
             self.reentrancyguard.end();
         }
 
-        fn update_hash_domain(ref self: ContractState, hash: felt252) {
+        fn update_hash_domain(ref self: ContractState, domain_name: felt252, domain_ver: felt252,) {
             self.ownable.assert_only_owner();
+            let domain = StarknetDomain {
+                name: domain_name, version: domain_ver, chain_id: get_tx_info().unbox().chain_id
+            };
+            let hash = domain.hash_struct();
             self.hash_domain.write(hash);
             self.emit(NewHashDomain { hash, timestamp: get_block_timestamp() });
         }
@@ -747,7 +782,7 @@ mod MarketPlace {
             self
                 .signature_checker
                 .read()
-                .verify_maker_order_signature_v2(*order, order_signature);
+                .verify_maker_order_signature_v2(self.get_hash_domain(), *order, order_signature);
             let currency_whitelisted = self
                 .currency_manager
                 .read()
@@ -764,6 +799,19 @@ mod MarketPlace {
                 "MarketPlace: strategy {} is not whitelisted",
                 (*order.strategy)
             );
+        }
+    }
+
+    trait IStructHash<T> {
+        fn hash_struct(self: @T) -> felt252;
+    }
+    impl StructHashStarknetDomain of IStructHash<StarknetDomain> {
+        fn hash_struct(self: @StarknetDomain) -> felt252 {
+            let mut state = PedersenTrait::new(0);
+            state = state.update_with(STARKNET_DOMAIN_TYPE_HASH);
+            state = state.update_with(*self);
+            state = state.update_with(4);
+            state.finalize()
         }
     }
 }
