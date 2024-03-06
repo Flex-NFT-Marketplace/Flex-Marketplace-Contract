@@ -1,7 +1,6 @@
 use tests::utils::{
-    Dispatchers, HASH_DOMAIN, RECIPIENT, OWNER, PROXY_ADMIN, ACCOUNT1,
-    ACCOUNT2, deploy_mock_1155, deploy_mock_erc20, deploy_mock_nft,
-    deploy_mock_execution_strategy, FEE_LIMIT
+    Dispatchers, HASH_DOMAIN, RECIPIENT, OWNER, PROXY_ADMIN, ACCOUNT1, ACCOUNT2, deploy_mock_1155,
+    deploy_mock_erc20, deploy_mock_nft, deploy_mock_execution_strategy, FEE_LIMIT
 };
 use starknet::ContractAddress;
 use flex::marketplace::{
@@ -10,14 +9,14 @@ use flex::marketplace::{
     royalty_fee_manager::{IRoyaltyFeeManagerDispatcher, IRoyaltyFeeManagerDispatcherTrait},
     royalty_fee_registry::{IRoyaltyFeeRegistryDispatcher, IRoyaltyFeeRegistryDispatcherTrait},
     currency_manager::{ICurrencyManagerDispatcher, ICurrencyManagerDispatcherTrait},
-    transfer_manager_ERC1155::{IERC1155TransferManagerDispatcher, IERC1155TransferManagerDispatcherTrait},
+    transfer_manager_ERC1155::{
+        IERC1155TransferManagerDispatcher, IERC1155TransferManagerDispatcherTrait
+    },
     transfer_manager_ERC721::{ITransferManagerNFTDispatcher, ITransferManagerNFTDispatcherTrait},
     transfer_selector_NFT::{ITransferSelectorNFTDispatcher, ITransferSelectorNFTDispatcherTrait}
 };
 use flex::mocks::account::Account;
-use snforge_std::{
-    declare, ContractClassTrait, start_prank, stop_prank, CheatTarget
-};
+use snforge_std::{declare, ContractClassTrait, start_prank, stop_prank, CheatTarget};
 
 #[derive(Copy, Drop)]
 struct Mocks {
@@ -82,12 +81,7 @@ fn initialize_test(dsp: Dispatchers) -> Mocks {
     dsp.fee_registry.update_royalty_info_collection(erc721, OWNER(), OWNER(), 1000);
     stop_prank(CheatTarget::All(()));
 
-    Mocks {
-        erc20,
-        erc721,
-        erc1155,
-        strategy,
-    }
+    Mocks { erc20, erc721, erc1155, strategy, }
 }
 
 fn deploy_mock_accounts(public_keys: Array<felt252>) -> Array<ContractAddress> {
@@ -99,7 +93,7 @@ fn deploy_mock_accounts(public_keys: Array<felt252>) -> Array<ContractAddress> {
     let mut accounts: Array<ContractAddress> = ArrayTrait::<ContractAddress>::new();
 
     loop {
-        if(i == len) {
+        if (i == len) {
             break;
         }
         let account = contract.deploy(@array![*public_keys.at(i)]).expect('Failed Account');
@@ -107,6 +101,5 @@ fn deploy_mock_accounts(public_keys: Array<felt252>) -> Array<ContractAddress> {
 
         i += 1;
     };
-
     accounts
 }
