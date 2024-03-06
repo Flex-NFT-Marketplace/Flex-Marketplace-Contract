@@ -679,7 +679,7 @@ mod MarketPlace {
 
             currency_erc20
                 .transferFrom(
-                    from, recipient, (amount - protocol_fee_amount - royalty_amount).into()
+                    from, to, (amount - protocol_fee_amount - royalty_amount).into()
                 );
         }
 
