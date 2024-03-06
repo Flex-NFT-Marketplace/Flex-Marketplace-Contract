@@ -4,12 +4,14 @@ use starknet::ContractAddress;
 trait IERC721<TContractState> {
     fn mint(ref self: TContractState, recipient: ContractAddress);
     fn approve(ref self: TContractState, to: ContractAddress, token_id: u256);
+    fn balance_of(self: @TContractState, account: ContractAddress) -> u256;
 }
 
 
 #[starknet::contract]
 mod ERC721 {
-    use openzeppelin::token::erc721::erc721::ERC721Component::InternalTrait;
+    use openzeppelin::token::erc721::interface::IERC721;
+use openzeppelin::token::erc721::erc721::ERC721Component::InternalTrait;
     use starknet::ContractAddress;
     use openzeppelin::introspection::src5::SRC5Component;
     use openzeppelin::token::erc721::ERC721Component;
@@ -60,6 +62,10 @@ mod ERC721 {
 
         fn approve(ref self: ContractState, to: ContractAddress, token_id: u256) {
             self.erc721._approve(to, token_id);
+        }
+
+        fn balance_of(self: @ContractState, account: ContractAddress) -> u256 {
+            self.erc721.balance_of(account)
         }
     }
 
