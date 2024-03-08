@@ -1,10 +1,13 @@
-use snforge_std::{start_prank, stop_prank, PrintTrait, CheatTarget};
+use snforge_std::{start_prank, stop_prank, PrintTrait, CheatTarget, declare};
 use tests::utils::{
     setup, initialize_test, deploy_mock_nft, ACCOUNT1, ACCOUNT2, OWNER, ZERO_ADDRESS
 };
 use flex::marketplace::transfer_manager_ERC721::{
     ITransferManagerNFTDispatcher, ITransferManagerNFTDispatcherTrait
 };
+use flex::mocks::erc721::{IERC721Dispatcher, IERC721DispatcherTrait};
+use starknet::ContractAddress;
+
 
 const TOKEN_ID: u256 = 1;
 
@@ -12,6 +15,10 @@ const TOKEN_ID: u256 = 1;
 fn test_transfer_non_fungible_token_success() {
     let dsp = setup();
     let mocks = initialize_test(dsp);
+    let nft = IERC721Dispatcher { contract_address: mocks.erc721 };
+    start_prank(CheatTarget::One(mocks.erc721), ACCOUNT1());
+    nft.mint(ACCOUNT1());
+    nft.approve(dsp.transfer_manager_erc721.contract_address, TOKEN_ID);
 
     start_prank(
         CheatTarget::One(dsp.transfer_manager_erc721.contract_address),

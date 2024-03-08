@@ -1,36 +1,35 @@
-#[starknet::interface]
-trait IER721CamelOnly<TState> {
-    fn transferFrom(
-        ref self: TState,
-        from: starknet::ContractAddress,
-        to: starknet::ContractAddress,
-        token_id: u256
-    );
-}
+use starknet::ContractAddress;
 
 #[starknet::interface]
-trait IERC2981<TContractState> {
-    fn royaltyInfo(
-        ref self: TContractState, tokenId: u256, salePrice: u128
-    ) -> (starknet::ContractAddress, u128);
+trait IERC721<TContractState> {
+    fn mint(ref self: TContractState, recipient: ContractAddress);
+    fn approve(ref self: TContractState, to: ContractAddress, token_id: u256);
+    fn balance_of(self: @TContractState, account: ContractAddress) -> u256;
 }
+
 
 #[starknet::contract]
 mod ERC721 {
-    use starknet::{ContractAddress, get_caller_address};
+    use openzeppelin::token::erc721::interface::IERC721;
+    use openzeppelin::token::erc721::erc721::ERC721Component::InternalTrait;
+    use starknet::ContractAddress;
     use openzeppelin::introspection::src5::SRC5Component;
-    component!(path: SRC5Component, storage: src5, event: SRC5Event);
+    use openzeppelin::token::erc721::ERC721Component;
 
-    #[abi(embed_v0)]
-    impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
-    #[abi(embed_v0)]
-    impl SRC5CamelImpl = SRC5Component::SRC5CamelImpl<ContractState>;
-    impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
+    component!(path: SRC5Component, storage: src5, event: SRC5Event);
+    component!(path: ERC721Component, storage: erc721, event: ERC721Event);
+
+    const NAME: felt252 = 'FLEX TOKEN';
+    const SYMBOL: felt252 = 'FLX';
+    const TOKEN_URI: felt252 = '';
 
     #[storage]
     struct Storage {
+        id: u256,
         #[substorage(v0)]
-        src5: SRC5Component::Storage,
+        erc721: ERC721Component::Storage,
+        #[substorage(v0)]
+        src5: SRC5Component::Storage
     }
 
     #[event]
@@ -38,34 +37,46 @@ mod ERC721 {
     enum Event {
         #[flat]
         SRC5Event: SRC5Component::Event,
+        #[flat]
+        ERC721Event: ERC721Component::Event
     }
+
+    #[abi(embed_v0)]
+    impl ERC721CamelOnlyImpl = ERC721Component::ERC721CamelOnlyImpl<ContractState>;
+    impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
+
+    // src5
+    #[abi(embed_v0)]
+    impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
 
     #[constructor]
-    fn constructor(ref self: ContractState,) {
-        self.src5.register_interface(0x80ac58cd);
+    fn constructor(ref self: ContractState) {
+        self.erc721.initializer(NAME, SYMBOL);
     }
 
-    #[external(v0)]
-    impl IERC721CamelOnlyImpl of super::IER721CamelOnly<ContractState> {
-        fn transferFrom(
-            ref self: ContractState,
-            from: starknet::ContractAddress,
-            to: starknet::ContractAddress,
-            token_id: u256
-        ) {}
+    #[abi(embed_v0)]
+    impl ERC721 of super::IERC721<ContractState> {
+        fn mint(ref self: ContractState, recipient: ContractAddress) {
+            self._mint_with_uri(recipient);
+        }
+
+        fn approve(ref self: ContractState, to: ContractAddress, token_id: u256) {
+            self.erc721._approve(to, token_id);
+        }
+
+        fn balance_of(self: @ContractState, account: ContractAddress) -> u256 {
+            self.erc721.balance_of(account)
+        }
     }
 
+    #[generate_trait]
+    impl Private of PrivateTrait {
+        fn _mint_with_uri(ref self: ContractState, recipient: ContractAddress) {
+            let token_id = self.id.read() + 1;
+            self.id.write(token_id);
 
-    fn RECIPIENT() -> starknet::ContractAddress {
-        starknet::contract_address_const::<'RECIPIENT'>()
-    }
-
-    #[external(v0)]
-    impl IERC2981Impl of super::IERC2981<ContractState> {
-        fn royaltyInfo(
-            ref self: ContractState, tokenId: u256, salePrice: u128
-        ) -> (starknet::ContractAddress, u128) {
-            (RECIPIENT(), 5000)
+            self.erc721._mint(recipient, token_id);
+            self.erc721._set_token_uri(token_id, TOKEN_URI);
         }
     }
 }

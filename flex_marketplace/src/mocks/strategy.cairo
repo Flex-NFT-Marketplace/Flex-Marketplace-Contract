@@ -25,6 +25,8 @@ mod Strategy {
     use flex::marketplace::utils::order_types::{MakerOrder, TakerOrder};
     use starknet::ContractAddress;
 
+    const E18: u128 = 1_000_000_000_000_000_000;
+
     #[storage]
     struct Storage {}
 
@@ -39,12 +41,12 @@ mod Strategy {
             maker_bid: super::MakerOrder,
             extra_params: Array<felt252>
         ) -> (bool, u256, u128) {
-            (true, 1, 1)
+            (true, 1, E18)
         }
         fn canExecuteTakerBid(
             self: @ContractState, taker_bid: super::TakerOrder, maker_ask: super::MakerOrder
         ) -> (bool, u256, u128) {
-            (true, 1, 1)
+            (true, 1, E18)
         }
     }
 
@@ -56,7 +58,7 @@ mod Strategy {
         fn canExecuteAuctionSale(
             self: @ContractState, maker_ask: MakerOrder, maker_bid: MakerOrder
         ) -> (bool, u256, u128) {
-            (true, 1, 1)
+            (true, 1, E18)
         }
     }
 }

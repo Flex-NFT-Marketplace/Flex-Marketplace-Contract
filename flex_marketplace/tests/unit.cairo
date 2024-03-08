@@ -1,0 +1,9 @@
+mod currency_manager_test;
+mod execution_manager_test;
+mod marketplace_test;
+mod royalty_fee_manager_test;
+mod royalty_fee_registry_test;
+mod signature_checker2_test;
+mod transfer_manager_erc721_test;
+mod transfer_manager_erc1155_test;
+mod transfer_selector_nft_test;

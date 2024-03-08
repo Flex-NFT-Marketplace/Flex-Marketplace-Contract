@@ -678,9 +678,7 @@ mod MarketPlace {
             }
 
             currency_erc20
-                .transferFrom(
-                    from, recipient, (amount - protocol_fee_amount - royalty_amount).into()
-                );
+                .transferFrom(from, to, (amount - protocol_fee_amount - royalty_amount).into());
         }
 
         fn transfer_non_fungible_token(
