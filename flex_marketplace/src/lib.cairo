@@ -36,11 +36,12 @@ mod marketplace {
         mod merkle;
         mod order_types;
         mod reentrancy_guard;
+        mod openedition;
     }
 
+    mod openedition;
     mod contract_deployer;
     mod currency_manager;
-    mod ERC721_flex;
     mod execution_manager;
     mod marketplace;
     mod proxy;
