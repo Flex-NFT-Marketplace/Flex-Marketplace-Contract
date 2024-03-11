@@ -2,7 +2,7 @@ use starknet::ContractAddress;
 
 #[starknet::interface]
 trait ICurrencyManager<TState> {
-    fn initializer(ref self: TState, owner: ContractAddress, proxy_admin: ContractAddress);
+    fn initializer(ref self: TState, owner: ContractAddress);
     fn add_currency(ref self: TState, currency: ContractAddress);
     fn remove_currency(ref self: TState, currency: ContractAddress);
     fn is_currency_whitelisted(self: @TState, currency: ContractAddress) -> bool;
@@ -57,16 +57,15 @@ mod CurrencyManager {
     #[constructor]
     fn constructor(
         ref self: ContractState,
-        owner: ContractAddress,
-        proxy_admin: ContractAddress
+        owner: ContractAddress
     ) {
-        self.initializer(owner, proxy_admin);
+        self.initializer(owner);
     }
 
     #[external(v0)]
     impl CurrencyManagerImpl of super::ICurrencyManager<ContractState> {
         fn initializer(
-            ref self: ContractState, owner: ContractAddress, proxy_admin: ContractAddress
+            ref self: ContractState, owner: ContractAddress
         ) {
             assert!(!self.initialized.read(), "CurrencyManager: already initialized");
             self.initialized.write(true);

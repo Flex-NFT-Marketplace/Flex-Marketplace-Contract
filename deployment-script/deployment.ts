@@ -21,7 +21,7 @@ async function deploy() {
     const compiledCurrencyManagerCasm = json.parse(fs.readFileSync("../target/dev/flex_CurrencyManager.compiled_contract_class.json").toString("ascii"))
     const compiledCurrencyManagerSierra = json.parse(fs.readFileSync("../target/dev/flex_CurrencyManager.contract_class.json").toString("ascii"))
     const currencyManagerCallData: CallData = new CallData(compiledCurrencyManagerSierra.abi)
-    const currencyManagerConstructor: Calldata = currencyManagerCallData.compile("constructor", { owner: account0.address, proxy_admin: account0.address })
+    const currencyManagerConstructor: Calldata = currencyManagerCallData.compile("constructor", { owner: account0.address })
     const deployCurrencyManagerResponse = await account0.declareAndDeploy({
         contract: compiledCurrencyManagerSierra,
         casm: compiledCurrencyManagerCasm,
@@ -117,7 +117,16 @@ async function deploy() {
     const compiledMarketplaceCasm = json.parse(fs.readFileSync("../target/dev/flex_MarketPlace.compiled_contract_class.json").toString("ascii"))
     const compiledMarketplaceSierra = json.parse(fs.readFileSync("../target/dev/flex_MarketPlace.contract_class.json").toString("ascii"))
     const marketplaceCallData: CallData = new CallData(compiledMarketplaceSierra.abi)
-    const marketplaceConstructor: Calldata = marketplaceCallData.compile("constructor", { hash: "1161338756782444142862655110517618273593182489677642162506529284371874760008", recipient: account0.address, currency: deployCurrencyManagerResponse.deploy.contract_address, execution: deployExecutionManagerResponse.deploy.contract_address, royalty_manager: deployRoyaltyFeeManagerResponse.deploy.contract_address, checker: deploySignatureChecker2Response.deploy.contract_address, owner: account0.address, proxy_admin: account0.address })
+    const marketplaceConstructor: Calldata = marketplaceCallData.compile("constructor", {
+        domain_name: "Flex",
+        domain_ver: "1",
+        recipient: account0.address,
+        currency: deployCurrencyManagerResponse.deploy.contract_address,
+        execution: deployExecutionManagerResponse.deploy.contract_address,
+        royalty_manager: deployRoyaltyFeeManagerResponse.deploy.contract_address,
+        checker: deploySignatureChecker2Response.deploy.contract_address,
+        owner: account0.address
+    })
     const deployMarketplaceResponse = await account0.declareAndDeploy({
         contract: compiledMarketplaceSierra,
         casm: compiledMarketplaceCasm,

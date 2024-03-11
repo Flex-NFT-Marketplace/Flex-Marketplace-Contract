@@ -41,8 +41,7 @@ async function deploy() {
             execution: "0x506e8991aa19400ea8d0e2170d32253592452c31928ca4255b3f0138a42753c",
             royalty_manager: "0x15847ab0292274d7c559e25bdf73b015d92c7d5be08bb1560aa0ff9380ec86a",
             checker: "0x03b6ae6c8f0c9042398b2692c655180610cba4a58fd49bef49a8cead68bf14f5",
-            owner: account0.address,
-            proxy_admin: account0.address
+            owner: account0.address
         })
     const deployMarketplaceResponse = await account0.declareAndDeploy({
         contract: compiledMarketplaceSierra,
