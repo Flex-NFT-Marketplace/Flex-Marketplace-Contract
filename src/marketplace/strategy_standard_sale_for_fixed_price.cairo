@@ -8,12 +8,11 @@ trait IStrategyStandardSaleForFixedPrice<TState> {
     fn update_protocol_fee(ref self: TState, fee: u128);
     fn protocol_fee(self: @TState) -> u128;
     fn can_execute_taker_ask(
-        self: @TState, taker_ask: TakerOrder, maker_bid: MakerOrder, extra_params: Span<felt252>
+        self: @TState, taker_ask: TakerOrder, maker_bid: MakerOrder
     ) -> (bool, u256, u128);
     fn can_execute_taker_bid(
         self: @TState, taker_bid: TakerOrder, maker_ask: MakerOrder
     ) -> (bool, u256, u128);
-    fn upgrade(ref self: TState, impl_hash: ClassHash);
 }
 
 #[starknet::contract]
@@ -21,11 +20,8 @@ mod StrategyStandardSaleForFixedPrice {
     use starknet::{ContractAddress, contract_address_const};
     use starknet::class_hash::ClassHash;
     use starknet::get_block_timestamp;
-    use openzeppelin::upgrades::upgradeable::UpgradeableComponent::InternalTrait;
-    use openzeppelin::upgrades::UpgradeableComponent;
     use openzeppelin::access::ownable::OwnableComponent;
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
-    component!(path: UpgradeableComponent, storage: upgradable, event: UpgradeableEvent);
 
     #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
@@ -36,11 +32,10 @@ mod StrategyStandardSaleForFixedPrice {
 
     #[storage]
     struct Storage {
+        initialized: bool,
         protocol_fee: u128,
         #[substorage(v0)]
         ownable: OwnableComponent::Storage,
-        #[substorage(v0)]
-        upgradable: UpgradeableComponent::Storage,
     }
 
     #[event]
@@ -48,8 +43,6 @@ mod StrategyStandardSaleForFixedPrice {
     enum Event {
         #[flat]
         OwnableEvent: OwnableComponent::Event,
-        #[flat]
-        UpgradeableEvent: UpgradeableComponent::Event,
     }
 
     #[constructor]
@@ -66,6 +59,8 @@ mod StrategyStandardSaleForFixedPrice {
         ContractState
     > {
         fn initializer(ref self: ContractState, fee: u128, owner: ContractAddress) {
+            assert!(!self.initialized.read(), "StrategyStandardSaleForFixedPrice: already initialized");
+            self.initialized.write(true);
             self.ownable.initializer(owner);
             self.protocol_fee.write(fee);
         }
@@ -83,7 +78,6 @@ mod StrategyStandardSaleForFixedPrice {
             self: @ContractState,
             taker_ask: TakerOrder,
             maker_bid: MakerOrder,
-            extra_params: Span<felt252>
         ) -> (bool, u256, u128) {
             let price_match: bool = maker_bid.price == taker_ask.price;
             let token_id_match: bool = maker_bid.token_id == taker_ask.token_id;
@@ -95,8 +89,11 @@ mod StrategyStandardSaleForFixedPrice {
                 return (false, maker_bid.token_id, maker_bid.amount);
             }
         }
+
         fn can_execute_taker_bid(
-            self: @ContractState, taker_bid: TakerOrder, maker_ask: MakerOrder
+            self: @ContractState,
+            taker_bid: TakerOrder,
+            maker_ask: MakerOrder
         ) -> (bool, u256, u128) {
             let price_match: bool = maker_ask.price == taker_bid.price;
             let token_id_match: bool = maker_ask.token_id == taker_bid.token_id;
@@ -107,11 +104,6 @@ mod StrategyStandardSaleForFixedPrice {
             } else {
                 return (false, maker_ask.token_id, maker_ask.amount);
             }
-        }
-
-        fn upgrade(ref self: ContractState, impl_hash: ClassHash) {
-            self.ownable.assert_only_owner();
-            self.upgradable._upgrade(impl_hash);
         }
     }
 }

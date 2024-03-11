@@ -27,6 +27,7 @@ mod ERC1155TransferManager {
 
     use openzeppelin::access::ownable::OwnableComponent;
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
+
     #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
@@ -38,6 +39,7 @@ mod ERC1155TransferManager {
 
     #[storage]
     struct Storage {
+        initialized: bool,
         marketplace: ContractAddress,
         #[substorage(v0)]
         ownable: OwnableComponent::Storage,
@@ -54,11 +56,24 @@ mod ERC1155TransferManager {
         UpgradeableEvent: UpgradeableComponent::Event,
     }
 
+    #[constructor]
+    fn constructor(
+        ref self: ContractState,
+        marketplace: ContractAddress,
+        owner: ContractAddress,
+    ) {
+        self.initializer(marketplace, owner);
+    }
+
     #[external(v0)]
     impl ERC1155TransferManagerImpl of super::IERC1155TransferManager<ContractState> {
         fn initializer(
-            ref self: ContractState, marketplace: ContractAddress, owner: ContractAddress,
+            ref self: ContractState,
+            marketplace: ContractAddress,
+            owner: ContractAddress,
         ) {
+            assert!(!self.initialized.read(), "ERC1155TransferManager: already initialized");
+            self.initialized.write(true);
             self.ownable.initializer(owner);
             self.marketplace.write(marketplace);
         }
@@ -72,10 +87,9 @@ mod ERC1155TransferManager {
             amount: u128,
             data: Span<felt252>,
         ) {
-            let caller: ContractAddress = get_caller_address();
-            let marketplace: ContractAddress = self.get_marketplace();
+            let caller = get_caller_address();
             assert!(
-                caller == marketplace,
+                caller == self.get_marketplace(),
                 "ERC1155TransferManager: caller {} is not marketplace",
                 caller
             );

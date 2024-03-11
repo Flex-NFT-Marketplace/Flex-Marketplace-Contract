@@ -6,7 +6,6 @@ use flex::marketplace::royalty_fee_registry::{
 #[starknet::interface]
 trait IRoyaltyFeeManager<TState> {
     fn initializer(ref self: TState, fee_registry: ContractAddress, owner: ContractAddress,);
-    fn upgrade(ref self: TState, impl_hash: ClassHash);
     fn INTERFACE_ID_ERC2981(self: @TState) -> felt252;
     fn calculate_royalty_fee_and_get_recipient(
         self: @TState, collection: ContractAddress, token_id: u256, amount: u128
@@ -24,9 +23,7 @@ trait IERC2981<TContractState> {
 
 #[starknet::contract]
 mod RoyaltyFeeManager {
-    use openzeppelin::upgrades::upgradeable::UpgradeableComponent::InternalTrait;
     use openzeppelin::access::ownable::OwnableComponent;
-    use openzeppelin::upgrades::UpgradeableComponent;
     use openzeppelin::introspection::interface::{ISRC5Dispatcher, ISRC5DispatcherTrait};
     use starknet::get_caller_address;
     use starknet::{ContractAddress, contract_address_const};
@@ -35,7 +32,6 @@ mod RoyaltyFeeManager {
     use super::IERC2981DispatcherTrait;
     use super::{IRoyaltyFeeRegistryDispatcher, IRoyaltyFeeRegistryDispatcherTrait};
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
-    component!(path: UpgradeableComponent, storage: upgradable, event: UpgradeableEvent);
 
     #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
@@ -44,12 +40,11 @@ mod RoyaltyFeeManager {
 
     #[storage]
     struct Storage {
+        initialized: bool,
         INTERFACE_ID_ERC2981: felt252,
         royalty_fee_registry: IRoyaltyFeeRegistryDispatcher,
         #[substorage(v0)]
         ownable: OwnableComponent::Storage,
-        #[substorage(v0)]
-        upgradable: UpgradeableComponent::Storage,
     }
 
     #[event]
@@ -57,8 +52,6 @@ mod RoyaltyFeeManager {
     enum Event {
         #[flat]
         OwnableEvent: OwnableComponent::Event,
-        #[flat]
-        UpgradeableEvent: UpgradeableComponent::Event,
     }
 
     #[constructor]
@@ -75,16 +68,13 @@ mod RoyaltyFeeManager {
         fn initializer(
             ref self: ContractState, fee_registry: ContractAddress, owner: ContractAddress,
         ) {
+            assert!(!self.initialized.read(), "RoyaltyFeeRegistry: already initialized");
+            self.initialized.write(true);
             self.INTERFACE_ID_ERC2981.write(0x2a55205a);
             self
                 .royalty_fee_registry
                 .write(IRoyaltyFeeRegistryDispatcher { contract_address: fee_registry });
             self.ownable.initializer(owner);
-        }
-
-        fn upgrade(ref self: ContractState, impl_hash: ClassHash) {
-            self.ownable.assert_only_owner();
-            self.upgradable._upgrade(impl_hash);
         }
 
         fn INTERFACE_ID_ERC2981(self: @ContractState) -> felt252 {
@@ -99,16 +89,17 @@ mod RoyaltyFeeManager {
             if (!receiver.is_zero()) {
                 return (receiver, royaltyAmount);
             }
-            let interfaceIDERC2981 = self.INTERFACE_ID_ERC2981();
-            let supportsERC2981: bool = ISRC5Dispatcher { contract_address: collection }
-                .supports_interface(interfaceIDERC2981);
-            if (supportsERC2981) {
-                let (receiverERC2981, royaltyAmountERC2981) = IERC2981Dispatcher {
-                    contract_address: collection
-                }
-                    .royaltyInfo(token_id, amount);
-                return (receiverERC2981, royaltyAmountERC2981);
-            }
+            // Remove support for ERC2981
+            // let interfaceIDERC2981 = self.INTERFACE_ID_ERC2981();
+            // let supportsERC2981: bool = ISRC5Dispatcher { contract_address: collection }
+            //     .supports_interface(interfaceIDERC2981);
+            // if (supportsERC2981) {
+            //     let (receiverERC2981, royaltyAmountERC2981) = IERC2981Dispatcher {
+            //         contract_address: collection
+            //     }
+            //         .royaltyInfo(token_id, amount);
+            //     return (receiverERC2981, royaltyAmountERC2981);
+            // }
             return (receiver, royaltyAmount);
         }
 

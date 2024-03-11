@@ -6,3 +6,4 @@ target/
 tool-versions
 
 .vscode/
+node_modules/

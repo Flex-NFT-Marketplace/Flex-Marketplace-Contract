@@ -113,32 +113,32 @@ async function deploy() {
     })
     console.log("✅ SignatureChecker2 Deployed: ", deploySignatureChecker2Response.deploy.contract_address)
 
-    console.log("\n📦 Deploying Marketplace...")
-    const compiledMarketplaceCasm = json.parse(fs.readFileSync("../target/dev/flex_Marketplace.compiled_contract_class.json").toString("ascii"))
-    const compiledMarketplaceSierra = json.parse(fs.readFileSync("../target/dev/flex_Marketplace.contract_class.json").toString("ascii"))
+    console.log("\n📦 Deploying MarketPlace...")
+    const compiledMarketplaceCasm = json.parse(fs.readFileSync("../target/dev/flex_MarketPlace.compiled_contract_class.json").toString("ascii"))
+    const compiledMarketplaceSierra = json.parse(fs.readFileSync("../target/dev/flex_MarketPlace.contract_class.json").toString("ascii"))
     const marketplaceCallData: CallData = new CallData(compiledMarketplaceSierra.abi)
-    const marketplaceConstructor: Calldata = marketplaceCallData.compile("constructor", { hash: "0x484153485f444f4d41494e", recipient: account0.address, currency: ethAddress, execution: deployExecutionManagerResponse.deploy.contract_address, fee_manager: deployRoyaltyFeeManagerResponse.deploy.contract_address, checker: deploySignatureChecker2Response.deploy.contract_address, owner: account0.address, proxy_admin: account0.address })
+    const marketplaceConstructor: Calldata = marketplaceCallData.compile("constructor", { hash: "1161338756782444142862655110517618273593182489677642162506529284371874760008", recipient: account0.address, currency: deployCurrencyManagerResponse.deploy.contract_address, execution: deployExecutionManagerResponse.deploy.contract_address, royalty_manager: deployRoyaltyFeeManagerResponse.deploy.contract_address, checker: deploySignatureChecker2Response.deploy.contract_address, owner: account0.address, proxy_admin: account0.address })
     const deployMarketplaceResponse = await account0.declareAndDeploy({
         contract: compiledMarketplaceSierra,
         casm: compiledMarketplaceCasm,
         constructorCalldata: marketplaceConstructor
     })
-    console.log("✅ Marketplace Deployed: ", deployMarketplaceResponse.deploy.contract_address)
+    console.log("✅ MarketPlace Deployed: ", deployMarketplaceResponse.deploy.contract_address)
 
     const marketplaceContract = new Contract(compiledMarketplaceSierra.abi, deployMarketplaceResponse.deploy.contract_address, provider)
     marketplaceContract.connect(account0);
 
-    console.log("\n📦 Deploying TransferManagerNFT...")
+    console.log("\n📦 Deploying TransferManagerERC721...")
     const compiledTransferManagerNFTCasm = json.parse(fs.readFileSync("../target/dev/flex_TransferManagerNFT.compiled_contract_class.json").toString("ascii"))
     const compiledTransferManagerNFTSierra = json.parse(fs.readFileSync("../target/dev/flex_TransferManagerNFT.contract_class.json").toString("ascii"))
     const transferManagerNFTCallData: CallData = new CallData(compiledTransferManagerNFTSierra.abi)
-    const transferManagerNFTConstructor: Calldata = transferManagerNFTCallData.compile("constructor", { marketplace: 0, owner: account0.address, proxy_admin: account0.address })
+    const transferManagerNFTConstructor: Calldata = transferManagerNFTCallData.compile("constructor", { marketplace: deployMarketplaceResponse.deploy.contract_address, owner: account0.address })
     const deployTransferManagerNFTResponse = await account0.declareAndDeploy({
         contract: compiledTransferManagerNFTSierra,
         casm: compiledTransferManagerNFTCasm,
         constructorCalldata: transferManagerNFTConstructor
     })
-    console.log("✅ TransferManagerNFT ERC721 Deployed: ", deployTransferManagerNFTResponse.deploy.contract_address)
+    console.log("✅ TransferManagerERC721 Deployed: ", deployTransferManagerNFTResponse.deploy.contract_address)
 
     console.log("\n📦 Deploying TransferSelectorNFT...")
     const compiledTransferSelectorNFTCasm = json.parse(fs.readFileSync("../target/dev/flex_TransferSelectorNFT.compiled_contract_class.json").toString("ascii"))
@@ -157,6 +157,12 @@ async function deploy() {
     const add_transferSelector_tx = await marketplaceContract.update_transfer_selector_NFT(transferSelectorCall.calldata)
     await provider.waitForTransaction(add_transferSelector_tx.transaction_hash)
     console.log("✅ TransferSelectorNFT whitelisted.")
+
+    console.log("\n📦 Set ProtocolFeeRecipient...")
+    const protocolFeeRecipientCall = marketplaceContract.populate("update_protocol_fee_recipient", [account0.address])
+    const set_protocolFeeRecipient_tx = await marketplaceContract.update_protocol_fee_recipient(protocolFeeRecipientCall.calldata)
+    await provider.waitForTransaction(set_protocolFeeRecipient_tx.transaction_hash)
+    console.log("✅ ProtocolFeeRecipient set.")
 }
 
 deploy()

@@ -43,7 +43,6 @@ mod marketplace {
     mod ERC721_flex;
     mod execution_manager;
     mod marketplace;
-    mod proxy;
     mod royalty_fee_manager;
     mod royalty_fee_registry;
     mod signature_checker;

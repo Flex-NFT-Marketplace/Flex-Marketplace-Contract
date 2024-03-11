@@ -14,8 +14,8 @@ trait IExecutionStrategy<TState> {
 
 #[starknet::interface]
 trait IAuctionStrategy<TState> {
-    fn auctionRelayer(self: @TState) -> ContractAddress;
-    fn canExecuteAuctionSale(
+    fn auction_relayer(self: @TState) -> ContractAddress;
+    fn can_execute_auction_sale(
         self: @TState, maker_ask: MakerOrder, maker_bid: MakerOrder
     ) -> (bool, u256, u128);
 }
@@ -50,10 +50,10 @@ mod Strategy {
 
     #[external(v0)]
     impl MockAuctionStrategyImpl of super::IAuctionStrategy<ContractState> {
-        fn auctionRelayer(self: @ContractState) -> ContractAddress {
+        fn auction_relayer(self: @ContractState) -> ContractAddress {
             starknet::contract_address_const::<'RELAYER'>()
         }
-        fn canExecuteAuctionSale(
+        fn can_execute_auction_sale(
             self: @ContractState, maker_ask: MakerOrder, maker_bid: MakerOrder
         ) -> (bool, u256, u128) {
             (true, 1, 1)

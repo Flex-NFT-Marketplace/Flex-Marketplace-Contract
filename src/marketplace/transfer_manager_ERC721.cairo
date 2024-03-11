@@ -6,7 +6,6 @@ trait ITransferManagerNFT<TState> {
         ref self: TState,
         marketplace: ContractAddress,
         owner: ContractAddress,
-        proxy_admin: ContractAddress
     );
     fn transfer_non_fungible_token(
         ref self: TState,
@@ -35,14 +34,14 @@ mod TransferManagerNFT {
 
     #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
-
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
 
     #[storage]
     struct Storage {
+        initialized: bool,
         marketplace: ContractAddress,
         #[substorage(v0)]
-        ownable: OwnableComponent::Storage
+        ownable: OwnableComponent::Storage,
     }
 
     #[event]
@@ -57,9 +56,8 @@ mod TransferManagerNFT {
         ref self: ContractState,
         marketplace: ContractAddress,
         owner: ContractAddress,
-        proxy_admin: ContractAddress
     ) {
-        self.initializer(marketplace, owner, proxy_admin);
+        self.initializer(marketplace, owner);
     }
 
     #[external(v0)]
@@ -68,9 +66,9 @@ mod TransferManagerNFT {
             ref self: ContractState,
             marketplace: ContractAddress,
             owner: ContractAddress,
-            proxy_admin: ContractAddress
         ) {
-            // TODO: verify the role of Proxy here.
+            assert!(!self.initialized.read(), "TransferManagerNFTImpl: already initialized");
+            self.initialized.write(true);
             self.marketplace.write(marketplace);
             self.ownable.initializer(owner);
         }
@@ -86,7 +84,7 @@ mod TransferManagerNFT {
             let caller = get_caller_address();
             assert!(
                 caller == self.get_marketplace(),
-                "TransferManagerNFT: caller {} is not MarketPlace",
+                "ERC721TransferManager: caller {} is not MarketPlace",
                 caller
             );
             IERC721CamelOnlyDispatcher { contract_address: collection }
@@ -94,6 +92,7 @@ mod TransferManagerNFT {
         }
 
         fn update_marketplace(ref self: ContractState, new_address: ContractAddress) {
+            self.ownable.assert_only_owner();
             self.marketplace.write(new_address);
         }
 
