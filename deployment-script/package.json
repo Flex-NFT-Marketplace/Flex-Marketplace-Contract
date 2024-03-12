@@ -12,6 +12,7 @@
 	"scripts": {
 		"deploy": "scarb build && ts-node ./deployment.ts",
 		"marketplace-deploy": "scarb build && ts-node ./deploymentMarketplace.ts",
+		"transfermanager1155-deploy": "scarb build && ts-node ./deploymentTransferManager1155.ts",
 		"signaturechecker-deploy": "scarb build && ts-node ./deploymentSignatureChecker.ts"
 	},
 	"license": "MIT"
