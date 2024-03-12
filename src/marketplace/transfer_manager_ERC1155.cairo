@@ -12,9 +12,8 @@ trait IERC1155TransferManager<TState> {
         amount: u128,
         data: Span<felt252>,
     );
-    fn update_marketplace(ref self: TState, address: ContractAddress);
+    fn update_marketplace(ref self: TState, new_address: ContractAddress);
     fn get_marketplace(self: @TState) -> ContractAddress;
-    fn upgrade(ref self: TState, impl_hash: ClassHash);
 }
 
 #[starknet::contract]
@@ -32,19 +31,12 @@ mod ERC1155TransferManager {
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
 
-    component!(path: UpgradeableComponent, storage: upgradable, event: UpgradeableEvent);
-    use openzeppelin::upgrades::upgradeable::UpgradeableComponent::InternalTrait;
-    use openzeppelin::upgrades::UpgradeableComponent;
-
-
     #[storage]
     struct Storage {
         initialized: bool,
         marketplace: ContractAddress,
         #[substorage(v0)]
         ownable: OwnableComponent::Storage,
-        #[substorage(v0)]
-        upgradable: UpgradeableComponent::Storage,
     }
 
     #[event]
@@ -52,8 +44,6 @@ mod ERC1155TransferManager {
     enum Event {
         #[flat]
         OwnableEvent: OwnableComponent::Event,
-        #[flat]
-        UpgradeableEvent: UpgradeableComponent::Event,
     }
 
     #[constructor]
@@ -97,18 +87,13 @@ mod ERC1155TransferManager {
                 .safe_transfer_from(from, to, token_id, amount, data);
         }
 
-        fn update_marketplace(ref self: ContractState, address: ContractAddress) {
+        fn update_marketplace(ref self: ContractState, new_address: ContractAddress) {
             self.ownable.assert_only_owner();
-            self.marketplace.write(address);
+            self.marketplace.write(new_address);
         }
 
         fn get_marketplace(self: @ContractState) -> ContractAddress {
             self.marketplace.read()
-        }
-
-        fn upgrade(ref self: ContractState, impl_hash: ClassHash) {
-            self.ownable.assert_only_owner();
-            self.upgradable._upgrade(impl_hash);
         }
     }
 }
