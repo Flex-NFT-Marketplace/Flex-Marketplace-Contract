@@ -2,9 +2,15 @@
 version = 1
 
 [[package]]
+name = "alexandria_storage"
+version = "0.2.0"
+source = "git+https://github.com/keep-starknet-strange/alexandria.git?tag=cairo-v2.3.0-rc0#ae1d5149ff601a7ac5b39edc867d33ebd83d7f4f"
+
+[[package]]
 name = "flex"
 version = "0.1.0"
 dependencies = [
+ "alexandria_storage",
  "openzeppelin",
  "snforge_std",
 ]
