@@ -194,6 +194,7 @@ use core::option::OptionTrait;
         }
 
         fn update_public_drop(ref self: ContractState, public_drop: PublicDrop) {
+            self.pausable.assert_not_paused();
             self.assert_only_non_fungible_flex_drop_token();
 
             self.public_drops.write(get_caller_address(), public_drop);
@@ -203,6 +204,7 @@ use core::option::OptionTrait;
         fn update_creator_payout_address(
             ref self: ContractState, new_payout_address: ContractAddress
         ) {
+            self.pausable.assert_not_paused();
             self.assert_only_non_fungible_flex_drop_token();
 
             assert(!new_payout_address.is_zero(), 'Only non zero payout address');
@@ -217,6 +219,7 @@ use core::option::OptionTrait;
         fn update_allowed_fee_recipient(
             ref self: ContractState, fee_recipient: ContractAddress, allowed: bool
         ) {
+            self.pausable.assert_not_paused();
             self.assert_only_non_fungible_flex_drop_token();
             assert(!fee_recipient.is_zero(), 'Only non zero fee recipient');
 
@@ -247,6 +250,7 @@ use core::option::OptionTrait;
         }
 
         fn update_payer(ref self: ContractState, payer: ContractAddress, allowed: bool) {
+            self.pausable.assert_not_paused();
             self.assert_only_non_fungible_flex_drop_token();
             assert(!payer.is_zero(), 'Only non zero payer');
 
