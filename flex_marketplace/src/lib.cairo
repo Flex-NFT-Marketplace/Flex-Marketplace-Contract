@@ -39,6 +39,10 @@ mod marketplace {
         mod openedition;
     }
 
+    mod interfaces {
+        mod nft_transfer_manager;
+    }
+
     mod openedition;
     mod contract_deployer;
     mod currency_manager;
