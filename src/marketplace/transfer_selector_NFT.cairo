@@ -1,6 +1,5 @@
 use starknet::ContractAddress;
 
-
 #[starknet::interface]
 trait ITransferSelectorNFT<TState> {
     fn initializer(
@@ -33,10 +32,8 @@ mod TransferSelectorNFT {
 
     use flex::{DebugContractAddress, DisplayContractAddress};
     use flex::marketplace::utils::order_types::{MakerOrder, TakerOrder};
-    use flex::marketplace::transfer_manager_ERC721::{
-        ITransferManagerNFTDispatcher, ITransferManagerNFTDispatcherTrait
-    };
-
+    use flex::mocks::erc1155::IERC1155_ID;
+    use openzeppelin::token::erc721::interface::IERC721_ID;
     use openzeppelin::introspection::interface::{ISRC5CamelDispatcher, ISRC5CamelDispatcherTrait};
     use openzeppelin::access::ownable::OwnableComponent;
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
@@ -80,15 +77,6 @@ mod TransferSelectorNFT {
         timestamp: u64
     }
 
-    #[constructor]
-    fn constructor(
-        ref self: ContractState,
-        transfer_manager_ERC721: ContractAddress,
-        transfer_manager_ERC1155: ContractAddress,
-        owner: ContractAddress
-    ) {
-        self.initializer(transfer_manager_ERC721, transfer_manager_ERC1155, owner);
-    }
 
     #[external(v0)]
     impl TransferSelectorNFTImpl of super::ITransferSelectorNFT<ContractState> {
@@ -100,8 +88,8 @@ mod TransferSelectorNFT {
         ) {
             assert!(!self.initialized.read(), "TransferSelectorNFT: already initialized");
             self.initialized.write(true);
-            self.INTERFACE_ID_ERC721.write(0x80ac58cd);
-            self.INTERFACE_ID_ERC1155.write(0xd9b67a26);
+            self.INTERFACE_ID_ERC721.write(IERC721_ID);
+            self.INTERFACE_ID_ERC1155.write(IERC1155_ID);
             self.TRANSFER_MANAGER_ERC721.write(transfer_manager_ERC721);
             self.TRANSFER_MANAGER_ERC1155.write(transfer_manager_ERC1155);
             self.ownable.initializer(owner);

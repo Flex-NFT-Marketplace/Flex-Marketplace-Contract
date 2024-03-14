@@ -103,10 +103,11 @@ mod MarketPlace {
         transfer_selector_NFT::{
             ITransferSelectorNFTDispatcher, ITransferSelectorNFTDispatcherTrait
         },
-        transfer_manager_ERC721::{ITransferManagerNFTDispatcher, ITransferManagerNFTDispatcherTrait}
+        interfaces::nft_transfer_manager::{ITransferManagerNFTDispatcher, ITransferManagerNFTDispatcherTrait}
     };
     use flex::marketplace::utils::order_types::{MakerOrder, TakerOrder};
 
+    use array::{Array, ArrayTrait};
     use openzeppelin::token::erc20::interface::{IERC20CamelDispatcher, IERC20CamelDispatcherTrait};
     use openzeppelin::access::ownable::OwnableComponent;
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
@@ -307,24 +308,24 @@ mod MarketPlace {
             checker: ContractAddress,
             owner: ContractAddress
         ) {
-            assert!(!self.initialized.read(), "RoyaltyFeeRegistry: already initialized");
-            self.initialized.write(true);
-            self.ownable.initializer(owner);
-            let domain = StarknetDomain {
-                name: domain_name, version: domain_ver, chain_id: get_tx_info().unbox().chain_id
-            };
-            self.hash_domain.write(domain.hash_struct());
-            self.protocol_fee_recipient.write(recipient);
-            self.currency_manager.write(ICurrencyManagerDispatcher { contract_address: currency });
-            self
-                .execution_manager
-                .write(IExecutionManagerDispatcher { contract_address: execution });
-            self
-                .royalty_fee_manager
-                .write(IRoyaltyFeeManagerDispatcher { contract_address: royalty_manager });
-            self
-                .signature_checker
-                .write(ISignatureChecker2Dispatcher { contract_address: checker });
+            // assert!(!self.initialized.read(), "RoyaltyFeeRegistry: already initialized");
+            // self.initialized.write(true);
+            // self.ownable.initializer(owner);
+            // let domain = StarknetDomain {
+            //     name: domain_name, version: domain_ver, chain_id: get_tx_info().unbox().chain_id
+            // };
+            // self.hash_domain.write(domain.hash_struct());
+            // self.protocol_fee_recipient.write(recipient);
+            // self.currency_manager.write(ICurrencyManagerDispatcher { contract_address: currency });
+            // self
+            //     .execution_manager
+            //     .write(IExecutionManagerDispatcher { contract_address: execution });
+            // self
+            //     .royalty_fee_manager
+            //     .write(IRoyaltyFeeManagerDispatcher { contract_address: royalty_manager });
+            // self
+            //     .signature_checker
+            //     .write(ISignatureChecker2Dispatcher { contract_address: checker });
         }
 
         fn cancel_all_orders_for_sender(ref self: ContractState, min_nonce: u128) {
@@ -737,7 +738,7 @@ mod MarketPlace {
                 .check_transfer_manager_for_token(collection);
             assert!(!manager.is_zero(), "MarketPlace: invalid tranfer manager {}", manager);
             ITransferManagerNFTDispatcher { contract_address: manager }
-                .transfer_non_fungible_token(collection, from, to, token_id, amount);
+                .transfer_non_fungible_token(collection, from, to, token_id, amount, ArrayTrait::<felt252>::new().span());
         }
 
         fn calculate_protocol_fee(
