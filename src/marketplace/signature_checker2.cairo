@@ -9,7 +9,7 @@ const HASH_MESSAGE_SELECTOR: felt252 =
 
 const STARKNET_MAKER_ORDER_TYPE_HASH: felt252 =
     selector!(
-        "MakerOrder(isOrderAsk:u8,signer:felt,collection:felt,price:u128,tokenId:u256,amount:u128,strategy:felt,currency:felt,nonce:u128,startTime:u64,endTime:u64,minPercentageToAsk:u128,params:felt)u256(low:felt,high:felt)"
+        "MakerOrder(is_order_ask:u8,signer:felt,collection:felt,price:u128,token_id:u256,amount:u128,strategy:felt,currency:felt,salt_nonce:u128,start_time:u64,end_time:u64,min_percentage_to_ask:u128,params:felt)u256(low:felt,high:felt)"
     );
 
 const U256_TYPE_HASH: felt252 = selector!("u256(low:felt,high:felt)");
@@ -40,6 +40,7 @@ mod SignatureChecker2 {
     use hash::{HashStateTrait, HashStateExTrait};
     use openzeppelin::account::AccountABIDispatcher;
     use openzeppelin::account::interface::{ISRC6CamelOnlyDispatcher, ISRC6CamelOnlyDispatcherTrait};
+    use openzeppelin::account::interface::{ISRC6Dispatcher, ISRC6DispatcherTrait};
 
     use flex::marketplace::utils::order_types::MakerOrder;
 
@@ -83,7 +84,7 @@ mod SignatureChecker2 {
                 order.amount.into(),
                 order.strategy.into(),
                 order.currency.into(),
-                order.nonce.into(),
+                order.salt_nonce.into(),
                 order.start_time.into(),
                 order.end_time.into(),
                 order.min_percentage_to_ask.into(),
@@ -105,8 +106,8 @@ mod SignatureChecker2 {
             order_signature: Array<felt252>
         ) {
             let hash = self.compute_maker_order_hash(hash_domain, order);
-            let result = ISRC6CamelOnlyDispatcher { contract_address: order.signer }
-                .isValidSignature(hash, order_signature);
+            let result = ISRC6Dispatcher { contract_address: order.signer }
+                .is_valid_signature(hash, order_signature);
 
             assert!(result == starknet::VALIDATED, "SignatureChecker: Invalid signature");
         }
@@ -147,7 +148,7 @@ mod SignatureChecker2 {
             state = state.update_with(*self.amount);
             state = state.update_with(contract_address_to_felt252(*self.strategy));
             state = state.update_with(contract_address_to_felt252(*self.currency));
-            state = state.update_with(*self.nonce);
+            state = state.update_with(*self.salt_nonce);
             state = state.update_with(*self.start_time);
             state = state.update_with(*self.end_time);
             state = state.update_with(*self.min_percentage_to_ask);

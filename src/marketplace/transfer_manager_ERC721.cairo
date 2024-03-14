@@ -1,29 +1,9 @@
 use starknet::ContractAddress;
 
-#[starknet::interface]
-trait ITransferManagerNFT<TState> {
-    fn initializer(
-        ref self: TState,
-        marketplace: ContractAddress,
-        owner: ContractAddress,
-        proxy_admin: ContractAddress
-    );
-    fn transfer_non_fungible_token(
-        ref self: TState,
-        collection: ContractAddress,
-        from: ContractAddress,
-        to: ContractAddress,
-        token_id: u256,
-        amount: u128
-    );
-    fn update_marketplace(ref self: TState, new_address: ContractAddress);
-    fn get_marketplace(self: @TState) -> ContractAddress;
-}
-
 #[starknet::contract]
 mod TransferManagerNFT {
     use starknet::{ContractAddress, get_caller_address};
-
+    use flex::marketplace::interfaces::nft_transfer_manager::ITransferManagerNFT;
     use flex::{DebugContractAddress, DisplayContractAddress};
     use flex::marketplace::utils::order_types::{MakerOrder, TakerOrder};
 
@@ -52,23 +32,12 @@ mod TransferManagerNFT {
         OwnableEvent: OwnableComponent::Event
     }
 
-    #[constructor]
-    fn constructor(
-        ref self: ContractState,
-        marketplace: ContractAddress,
-        owner: ContractAddress,
-        proxy_admin: ContractAddress
-    ) {
-        self.initializer(marketplace, owner, proxy_admin);
-    }
-
     #[external(v0)]
-    impl TransferManagerNFTImpl of super::ITransferManagerNFT<ContractState> {
+    impl TransferManagerNFTImpl of ITransferManagerNFT<ContractState> {
         fn initializer(
             ref self: ContractState,
             marketplace: ContractAddress,
             owner: ContractAddress,
-            proxy_admin: ContractAddress
         ) {
             // TODO: verify the role of Proxy here.
             self.marketplace.write(marketplace);
@@ -81,7 +50,8 @@ mod TransferManagerNFT {
             from: ContractAddress,
             to: ContractAddress,
             token_id: u256,
-            amount: u128
+            amount: u128,
+            data: Span<felt252>,
         ) {
             let caller = get_caller_address();
             assert!(
@@ -90,7 +60,7 @@ mod TransferManagerNFT {
                 caller
             );
             IERC721CamelOnlyDispatcher { contract_address: collection }
-                .transferFrom(from, to, token_id);
+                .safeTransferFrom(from, to, token_id, data);
         }
 
         fn update_marketplace(ref self: ContractState, new_address: ContractAddress) {

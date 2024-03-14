@@ -56,7 +56,7 @@ struct Dispatchers {
     marketplace: IMarketPlaceDispatcher,
     currency_manager: ICurrencyManagerDispatcher,
     execution_manager: IExecutionManagerDispatcher,
-    fee_manager: IRoyaltyFeeManagerDispatcher,
+    royalty_manager: IRoyaltyFeeManagerDispatcher,
     fee_registry: IRoyaltyFeeRegistryDispatcher,
     signature_checker: ISignatureChecker2Dispatcher,
     transfer_selector: ITransferSelectorNFTDispatcher,
@@ -124,7 +124,7 @@ fn setup() -> Dispatchers {
         marketplace: IMarketPlaceDispatcher { contract_address: market },
         currency_manager: ICurrencyManagerDispatcher { contract_address: currency },
         execution_manager: IExecutionManagerDispatcher { contract_address: execution },
-        fee_manager: IRoyaltyFeeManagerDispatcher { contract_address: royalty },
+        royalty_manager: IRoyaltyFeeManagerDispatcher { contract_address: royalty },
         fee_registry: IRoyaltyFeeRegistryDispatcher { contract_address: registry },
         signature_checker: ISignatureChecker2Dispatcher { contract_address: signature },
         transfer_selector: ITransferSelectorNFTDispatcher { contract_address: selector },
@@ -158,7 +158,7 @@ fn initialize_test(dsp: Dispatchers) -> Mocks {
             RECIPIENT(),
             dsp.currency_manager.contract_address,
             dsp.execution_manager.contract_address,
-            dsp.fee_manager.contract_address,
+            dsp.royalty_manager.contract_address,
             dsp.signature_checker.contract_address,
             OWNER(),
             PROXY_ADMIN()
@@ -168,7 +168,7 @@ fn initialize_test(dsp: Dispatchers) -> Mocks {
     // Initialise ExecutionManager
     dsp.execution_manager.initializer(OWNER());
     // Initialise RoyaltyFeeManager
-    dsp.fee_manager.initializer(dsp.fee_registry.contract_address, OWNER());
+    dsp.royalty_manager.initializer(dsp.fee_registry.contract_address, OWNER());
     // Initialise RoyaltyFeeRegistry
     dsp.fee_registry.initializer(FEE_LIMIT, OWNER());
     // Initialise TransferSelectorNFT

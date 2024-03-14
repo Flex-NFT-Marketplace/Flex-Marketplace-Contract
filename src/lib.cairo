@@ -38,12 +38,15 @@ mod marketplace {
         mod reentrancy_guard;
     }
 
+    mod interfaces {
+        mod nft_transfer_manager;
+    }
+
     mod contract_deployer;
     mod currency_manager;
     mod ERC721_flex;
     mod execution_manager;
     mod marketplace;
-    mod proxy;
     mod royalty_fee_manager;
     mod royalty_fee_registry;
     mod signature_checker;

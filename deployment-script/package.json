@@ -2,13 +2,18 @@
 	"dependencies": {
 		"dotenv": "^16.4.5",
 		"fs": "^0.0.1-security",
-		"starknet": "^5.24.3"
+		"starknet": "^6.4.0",
+		"ts-node": "^10.9.2",
+		"typescript": "^5.3.3"
 	},
 	"devDependencies": {
 		"@types/node": "^20.11.19"
 	},
 	"scripts": {
-		"start": "tsc && node dist/deployment.js"
+		"deploy": "scarb build && ts-node ./deployment.ts",
+		"marketplace-deploy": "scarb build && ts-node ./deploymentMarketplace.ts",
+		"transfermanager1155-deploy": "scarb build && ts-node ./deploymentTransferManager1155.ts",
+		"signaturechecker-deploy": "scarb build && ts-node ./deploymentSignatureChecker.ts"
 	},
 	"license": "MIT"
 }

@@ -25,7 +25,7 @@ fn test_compute_maker_order_hash_success(hash_domain: felt252) {
         maker_order.amount.into(),
         maker_order.strategy.into(),
         maker_order.currency.into(),
-        maker_order.nonce.into(),
+        maker_order.salt_nonce.into(),
         maker_order.start_time.into(),
         maker_order.end_time.into(),
         maker_order.min_percentage_to_ask.into(),
