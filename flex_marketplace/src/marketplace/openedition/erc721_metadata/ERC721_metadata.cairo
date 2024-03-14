@@ -24,7 +24,7 @@ mod ERC721MetadataComponent {
     > of IFlexDropContractMetadata<ComponentState<TContractState>> {
         fn set_base_uri(ref self: ComponentState<TContractState>, new_token_uri: felt252) {
             self.assert_only_owner();
-            self._set_base_uri(new_token_uri);
+            self._set_token_base_uri(new_token_uri);
         }
 
         fn set_contract_uri(ref self: ComponentState<TContractState>, new_contract_uri: felt252) {
@@ -57,11 +57,16 @@ mod ERC721MetadataComponent {
         /// Sets the contract's initial owner.
         ///
         /// This function should be called at construction time.
-        fn initializer(ref self: ComponentState<TContractState>, owner: ContractAddress,) {
+        fn initializer(
+            ref self: ComponentState<TContractState>,
+            owner: ContractAddress,
+            token_base_uri: felt252
+        ) {
             self.owner.write(owner);
+            self._set_token_base_uri(token_base_uri);
         }
 
-        fn _set_base_uri(ref self: ComponentState<TContractState>, new_token_uri: felt252) {
+        fn _set_token_base_uri(ref self: ComponentState<TContractState>, new_token_uri: felt252) {
             self.token_base_uri.write(new_token_uri);
         }
 

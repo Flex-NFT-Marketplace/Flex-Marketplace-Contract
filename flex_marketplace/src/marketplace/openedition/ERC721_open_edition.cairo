@@ -81,9 +81,11 @@ mod ERC721 {
         owner: ContractAddress,
         name: felt252,
         symbol: felt252,
+        token_base_uri: felt252,
         allowed_flex_drop: Array::<ContractAddress>,
     ) {
-        self.erc721_metadata.initializer(owner);
+        self.ownable.initializer(owner);
+        self.erc721_metadata.initializer(owner, token_base_uri);
         self.erc721.initializer(name, symbol);
         self.current_token_id.write(1);
 
@@ -240,13 +242,17 @@ mod ERC721 {
             self.ownable.assert_only_owner();
 
             let mut max_supply = config.max_supply;
-            if max_supply == 0 {
-                max_supply = BoundedU64::max();
+            if max_supply != 0 {
+                self.set_max_supply(max_supply);
             }
 
-            self.set_max_supply(max_supply);
-            self.set_base_uri(config.base_uri);
-            self.set_contract_uri(config.contract_uri);
+            if config.base_uri.into() > 0_u256 {
+                self.set_base_uri(config.base_uri);
+            }
+
+            if config.contract_uri.into() > 0_u256 {
+                self.set_contract_uri(config.contract_uri);
+            }
 
             let public_drop = config.public_drop;
             if public_drop.start_time != 0 && public_drop.end_time != 0 {

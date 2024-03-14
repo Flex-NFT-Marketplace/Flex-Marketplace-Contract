@@ -97,7 +97,9 @@ mod MarketPlace {
         transfer_selector_NFT::{
             ITransferSelectorNFTDispatcher, ITransferSelectorNFTDispatcherTrait
         },
-        interfaces::nft_transfer_manager::{ITransferManagerNFTDispatcher, ITransferManagerNFTDispatcherTrait}
+        interfaces::nft_transfer_manager::{
+            ITransferManagerNFTDispatcher, ITransferManagerNFTDispatcherTrait
+        }
     };
     use flex::marketplace::utils::order_types::{MakerOrder, TakerOrder};
 
@@ -698,7 +700,9 @@ mod MarketPlace {
                 .check_transfer_manager_for_token(collection);
             assert!(!manager.is_zero(), "MarketPlace: invalid tranfer manager {}", manager);
             ITransferManagerNFTDispatcher { contract_address: manager }
-                .transfer_non_fungible_token(collection, from, to, token_id, amount, ArrayTrait::<felt252>::new().span());
+                .transfer_non_fungible_token(
+                    collection, from, to, token_id, amount, ArrayTrait::<felt252>::new().span()
+                );
         }
 
         fn calculate_protocol_fee(
