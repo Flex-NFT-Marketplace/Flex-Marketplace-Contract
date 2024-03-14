@@ -1,3 +1,5 @@
+const IERC1155_ID: felt252 = 0x6114a8f75559e1b39fcba08ce02961a1aa082d9256a158dd3e64964e4b1b52;
+
 #[starknet::interface]
 trait IERC1155<TContractState> {
     fn safe_transfer_from(

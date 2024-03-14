@@ -97,10 +97,11 @@ mod MarketPlace {
         transfer_selector_NFT::{
             ITransferSelectorNFTDispatcher, ITransferSelectorNFTDispatcherTrait
         },
-        transfer_manager_ERC721::{ITransferManagerNFTDispatcher, ITransferManagerNFTDispatcherTrait}
+        interfaces::nft_transfer_manager::{ITransferManagerNFTDispatcher, ITransferManagerNFTDispatcherTrait}
     };
     use flex::marketplace::utils::order_types::{MakerOrder, TakerOrder};
 
+    use array::{Array, ArrayTrait};
     use openzeppelin::token::erc20::interface::{IERC20CamelDispatcher, IERC20CamelDispatcherTrait};
     use openzeppelin::access::ownable::OwnableComponent;
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
@@ -697,7 +698,7 @@ mod MarketPlace {
                 .check_transfer_manager_for_token(collection);
             assert!(!manager.is_zero(), "MarketPlace: invalid tranfer manager {}", manager);
             ITransferManagerNFTDispatcher { contract_address: manager }
-                .transfer_non_fungible_token(collection, from, to, token_id, amount);
+                .transfer_non_fungible_token(collection, from, to, token_id, amount, ArrayTrait::<felt252>::new().span());
         }
 
         fn calculate_protocol_fee(
