@@ -339,6 +339,7 @@ mod ERC721 {
 
             self.current_token_id.write(current_token_id + quantity.into());
             self.total_minted.write(self.get_total_minted() + quantity);
+            self.total_minted_per_wallet.write(to, self.total_minted_per_wallet.read(to) + quantity);
 
             let mut index: u64 = 0;
             loop {
