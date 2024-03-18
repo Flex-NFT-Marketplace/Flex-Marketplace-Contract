@@ -308,24 +308,24 @@ mod MarketPlace {
             checker: ContractAddress,
             owner: ContractAddress
         ) {
-            // assert!(!self.initialized.read(), "RoyaltyFeeRegistry: already initialized");
-            // self.initialized.write(true);
-            // self.ownable.initializer(owner);
-            // let domain = StarknetDomain {
-            //     name: domain_name, version: domain_ver, chain_id: get_tx_info().unbox().chain_id
-            // };
-            // self.hash_domain.write(domain.hash_struct());
-            // self.protocol_fee_recipient.write(recipient);
-            // self.currency_manager.write(ICurrencyManagerDispatcher { contract_address: currency });
-            // self
-            //     .execution_manager
-            //     .write(IExecutionManagerDispatcher { contract_address: execution });
-            // self
-            //     .royalty_fee_manager
-            //     .write(IRoyaltyFeeManagerDispatcher { contract_address: royalty_manager });
-            // self
-            //     .signature_checker
-            //     .write(ISignatureChecker2Dispatcher { contract_address: checker });
+            assert!(!self.initialized.read(), "RoyaltyFeeRegistry: already initialized");
+            self.initialized.write(true);
+            self.ownable.initializer(owner);
+            let domain = StarknetDomain {
+                name: domain_name, version: domain_ver, chain_id: get_tx_info().unbox().chain_id
+            };
+            self.hash_domain.write(domain.hash_struct());
+            self.protocol_fee_recipient.write(recipient);
+            self.currency_manager.write(ICurrencyManagerDispatcher { contract_address: currency });
+            self
+                .execution_manager
+                .write(IExecutionManagerDispatcher { contract_address: execution });
+            self
+                .royalty_fee_manager
+                .write(IRoyaltyFeeManagerDispatcher { contract_address: royalty_manager });
+            self
+                .signature_checker
+                .write(ISignatureChecker2Dispatcher { contract_address: checker });
         }
 
         fn cancel_all_orders_for_sender(ref self: ContractState, min_nonce: u128) {
