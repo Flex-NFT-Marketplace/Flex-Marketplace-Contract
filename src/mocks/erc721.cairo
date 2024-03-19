@@ -15,6 +15,8 @@ trait IERC2981<TContractState> {
     ) -> (starknet::ContractAddress, u128);
 }
 
+const OLD_IERC721_ID: felt252 = 0x80ac58cd;
+
 #[starknet::contract]
 mod ERC721 {
     use starknet::{ContractAddress, get_caller_address};

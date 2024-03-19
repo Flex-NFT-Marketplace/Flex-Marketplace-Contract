@@ -1,5 +1,6 @@
 #[starknet::contract]
 mod ERC1155TransferManager {
+    use core::traits::Into;
     use starknet::{ContractAddress, ClassHash, contract_address_const, get_caller_address};
 
     use flex::marketplace::interfaces::nft_transfer_manager::ITransferManagerNFT;
@@ -19,6 +20,7 @@ mod ERC1155TransferManager {
 
     #[storage]
     struct Storage {
+        initialized: bool,
         marketplace: ContractAddress,
         #[substorage(v0)]
         ownable: OwnableComponent::Storage,
@@ -40,6 +42,8 @@ mod ERC1155TransferManager {
         fn initializer(
             ref self: ContractState, marketplace: ContractAddress, owner: ContractAddress,
         ) {
+            assert!(!self.initialized.read(), "Contract already initialized");
+            self.initialized.write(true);
             self.ownable.initializer(owner);
             self.marketplace.write(marketplace);
         }
@@ -61,7 +65,7 @@ mod ERC1155TransferManager {
                 caller
             );
             IERC1155Dispatcher { contract_address: collection }
-                .safe_transfer_from(from, to, token_id, amount, data);
+                .safe_transfer_from(from, to, token_id, amount.into(), data);
         }
 
         fn update_marketplace(ref self: ContractState, new_address: ContractAddress) {
