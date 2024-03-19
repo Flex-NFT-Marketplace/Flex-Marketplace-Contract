@@ -5,8 +5,8 @@ trait IERC1155<TContractState> {
         from: starknet::ContractAddress,
         to: starknet::ContractAddress,
         id: u256,
-        amount: u128,
-        data: Span<felt252>
+        amount: u256,
+        data: Array<u8>
     );
 }
 
@@ -22,8 +22,8 @@ mod ERC1155 {
             from: starknet::ContractAddress,
             to: starknet::ContractAddress,
             id: u256,
-            amount: u128,
-            data: Span<felt252>
+            amount: u256,
+            data: Array<u8>
         ) {}
     }
 }

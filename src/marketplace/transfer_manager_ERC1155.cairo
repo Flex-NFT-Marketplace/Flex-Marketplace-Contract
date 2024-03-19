@@ -9,8 +9,7 @@ trait IERC1155TransferManager<TState> {
         from: ContractAddress,
         to: ContractAddress,
         token_id: u256,
-        amount: u128,
-        data: Span<felt252>,
+        amount: u128
     );
     fn update_marketplace(ref self: TState, new_address: ContractAddress);
     fn get_marketplace(self: @TState) -> ContractAddress;
@@ -74,8 +73,7 @@ mod ERC1155TransferManager {
             from: ContractAddress,
             to: ContractAddress,
             token_id: u256,
-            amount: u128,
-            data: Span<felt252>,
+            amount: u128
         ) {
             let caller = get_caller_address();
             assert!(
@@ -83,8 +81,16 @@ mod ERC1155TransferManager {
                 "ERC1155TransferManager: caller {} is not marketplace",
                 caller
             );
+            let data: Array<u8> = array![];
+            let current_low_u128: u128 = amount.try_into().unwrap();
+            let current_high = 0;
+            let current_high_u128: u128 = current_high.try_into().unwrap();
+            let amount_u256 = u256 {
+                low: current_low_u128,
+                high: current_high_u128
+            };
             IERC1155Dispatcher { contract_address: collection }
-                .safe_transfer_from(from, to, token_id, amount, data);
+                .safe_transfer_from(from, to, token_id, amount_u256, data);
         }
 
         fn update_marketplace(ref self: ContractState, new_address: ContractAddress) {

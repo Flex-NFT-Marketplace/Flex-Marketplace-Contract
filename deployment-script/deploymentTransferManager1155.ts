@@ -37,6 +37,11 @@ async function deploy() {
         constructorCalldata: ERC1155TransferManagerConstructor
     })
     console.log("✅ ERC1155TransferManager Deployed: ", deployERC1155TransferManagerResponse.deploy.contract_address)
+    // const deployERC1155TransferManagerResponse = await account0.estimateDeclareFee({
+    //     contract: compiledERC1155TransferManagerSierra,
+    //     casm: compiledERC1155TransferManagerCasm
+    // })
+    // console.log("✅ ERC1155TransferManager Deployed: ", deployERC1155TransferManagerResponse)
 
     const compiledTransferSelectorNFTSierra = json.parse(fs.readFileSync("../target/dev/flex_TransferSelectorNFT.contract_class.json").toString("ascii"))
     const transferSelectorNFTContract = new Contract(compiledTransferSelectorNFTSierra.abi, transferSelectorAddress, provider)
