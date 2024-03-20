@@ -24,6 +24,7 @@ struct TakerOrder {
     taker: ContractAddress, // caller
     price: u128, // final price for the purchase
     token_id: u256,
+    amount: u128,
     min_percentage_to_ask: u128, // slippage protection (9000 = 90% of the final price must return to ask)
     params: felt252,
 }

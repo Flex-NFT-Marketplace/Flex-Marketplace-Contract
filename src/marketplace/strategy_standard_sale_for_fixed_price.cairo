@@ -46,11 +46,7 @@ mod StrategyStandardSaleForFixedPrice {
     }
 
     #[constructor]
-    fn constructor(
-        ref self: ContractState,
-        fee: u128,
-        owner: ContractAddress
-    ) {
+    fn constructor(ref self: ContractState, fee: u128, owner: ContractAddress) {
         self.initializer(fee, owner);
     }
 
@@ -59,7 +55,9 @@ mod StrategyStandardSaleForFixedPrice {
         ContractState
     > {
         fn initializer(ref self: ContractState, fee: u128, owner: ContractAddress) {
-            assert!(!self.initialized.read(), "StrategyStandardSaleForFixedPrice: already initialized");
+            assert!(
+                !self.initialized.read(), "StrategyStandardSaleForFixedPrice: already initialized"
+            );
             self.initialized.write(true);
             self.ownable.initializer(owner);
             self.protocol_fee.write(fee);
@@ -75,34 +73,32 @@ mod StrategyStandardSaleForFixedPrice {
         }
 
         fn can_execute_taker_ask(
-            self: @ContractState,
-            taker_ask: TakerOrder,
-            maker_bid: MakerOrder,
+            self: @ContractState, taker_ask: TakerOrder, maker_bid: MakerOrder,
         ) -> (bool, u256, u128) {
-            let price_match: bool = maker_bid.price == taker_ask.price;
+            let price_match: bool = (maker_bid.price * taker_ask.amount)
+                / maker_bid.amount >= taker_ask.price;
             let token_id_match: bool = maker_bid.token_id == taker_ask.token_id;
             let start_time_valid: bool = maker_bid.start_time < get_block_timestamp();
             let end_time_valid: bool = maker_bid.end_time > get_block_timestamp();
             if (price_match && token_id_match && start_time_valid && end_time_valid) {
-                return (true, maker_bid.token_id, maker_bid.amount);
+                return (true, maker_bid.token_id, taker_ask.amount);
             } else {
-                return (false, maker_bid.token_id, maker_bid.amount);
+                return (false, maker_bid.token_id, taker_ask.amount);
             }
         }
 
         fn can_execute_taker_bid(
-            self: @ContractState,
-            taker_bid: TakerOrder,
-            maker_ask: MakerOrder
+            self: @ContractState, taker_bid: TakerOrder, maker_ask: MakerOrder
         ) -> (bool, u256, u128) {
-            let price_match: bool = maker_ask.price == taker_bid.price;
+            let price_match: bool = (maker_ask.price * taker_bid.amount)
+                / maker_ask.amount <= taker_bid.price;
             let token_id_match: bool = maker_ask.token_id == taker_bid.token_id;
             let start_time_valid: bool = maker_ask.start_time < get_block_timestamp();
             let end_time_valid: bool = maker_ask.end_time > get_block_timestamp();
             if (price_match && token_id_match && start_time_valid && end_time_valid) {
-                return (true, maker_ask.token_id, maker_ask.amount);
+                return (true, maker_ask.token_id, taker_bid.amount);
             } else {
-                return (false, maker_ask.token_id, maker_ask.amount);
+                return (false, maker_ask.token_id, taker_bid.amount);
             }
         }
     }

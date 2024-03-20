@@ -21,6 +21,7 @@ mod TransferManagerNFT {
     #[storage]
     struct Storage {
         marketplace: ContractAddress,
+        initialized: bool,
         #[substorage(v0)]
         ownable: OwnableComponent::Storage
     }
@@ -35,10 +36,10 @@ mod TransferManagerNFT {
     #[external(v0)]
     impl TransferManagerNFTImpl of ITransferManagerNFT<ContractState> {
         fn initializer(
-            ref self: ContractState,
-            marketplace: ContractAddress,
-            owner: ContractAddress,
+            ref self: ContractState, marketplace: ContractAddress, owner: ContractAddress,
         ) {
+            assert!(!self.initialized.read(), "Contract already initialized");
+            self.initialized.write(true);
             // TODO: verify the role of Proxy here.
             self.marketplace.write(marketplace);
             self.ownable.initializer(owner);
@@ -64,6 +65,7 @@ mod TransferManagerNFT {
         }
 
         fn update_marketplace(ref self: ContractState, new_address: ContractAddress) {
+            self.ownable.assert_only_owner();
             self.marketplace.write(new_address);
         }
 

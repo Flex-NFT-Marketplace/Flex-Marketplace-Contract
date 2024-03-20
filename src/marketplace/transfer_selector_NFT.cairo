@@ -32,7 +32,8 @@ mod TransferSelectorNFT {
 
     use flex::{DebugContractAddress, DisplayContractAddress};
     use flex::marketplace::utils::order_types::{MakerOrder, TakerOrder};
-    use flex::mocks::erc1155::IERC1155_ID;
+    use flex::mocks::erc1155::{IERC1155_ID, OLD_IERC1155_ID};
+    use flex::mocks::erc721::{OLD_IERC721_ID};
     use openzeppelin::token::erc721::interface::IERC721_ID;
     use openzeppelin::introspection::interface::{ISRC5CamelDispatcher, ISRC5CamelDispatcherTrait};
     use openzeppelin::access::ownable::OwnableComponent;
@@ -47,8 +48,6 @@ mod TransferSelectorNFT {
     #[storage]
     struct Storage {
         initialized: bool,
-        INTERFACE_ID_ERC721: felt252,
-        INTERFACE_ID_ERC1155: felt252,
         TRANSFER_MANAGER_ERC721: ContractAddress,
         TRANSFER_MANAGER_ERC1155: ContractAddress,
         transfer_manager_selector_for_collection: LegacyMap::<ContractAddress, ContractAddress>,
@@ -88,8 +87,6 @@ mod TransferSelectorNFT {
         ) {
             assert!(!self.initialized.read(), "TransferSelectorNFT: already initialized");
             self.initialized.write(true);
-            self.INTERFACE_ID_ERC721.write(IERC721_ID);
-            self.INTERFACE_ID_ERC1155.write(IERC1155_ID);
             self.TRANSFER_MANAGER_ERC721.write(transfer_manager_ERC721);
             self.TRANSFER_MANAGER_ERC1155.write(transfer_manager_ERC1155);
             self.ownable.initializer(owner);
@@ -148,11 +145,11 @@ mod TransferSelectorNFT {
         }
 
         fn get_INTERFACE_ID_ERC721(self: @ContractState) -> felt252 {
-            self.INTERFACE_ID_ERC721.read()
+            IERC721_ID
         }
 
         fn get_INTERFACE_ID_ERC1155(self: @ContractState) -> felt252 {
-            self.INTERFACE_ID_ERC1155.read()
+            IERC1155_ID
         }
 
         fn get_TRANSFER_MANAGER_ERC721(self: @ContractState) -> ContractAddress {
@@ -179,15 +176,20 @@ mod TransferSelectorNFT {
 
             let transfer_manager_ERC721 = self.get_TRANSFER_MANAGER_ERC721();
             let supports_ERC721 = ISRC5CamelDispatcher { contract_address: collection }
-                .supportsInterface(self.INTERFACE_ID_ERC721.read());
-            if supports_ERC721 {
+                .supportsInterface(IERC721_ID);
+
+            let supports_old_ERC721 = ISRC5CamelDispatcher { contract_address: collection }
+                .supportsInterface(OLD_IERC721_ID);
+            if supports_ERC721 || supports_old_ERC721 {
                 return transfer_manager_ERC721;
             }
 
             let transfer_manager_ERC1155 = self.get_TRANSFER_MANAGER_ERC1155();
             let supports_ERC1155 = ISRC5CamelDispatcher { contract_address: collection }
-                .supportsInterface(self.INTERFACE_ID_ERC1155.read());
-            if supports_ERC1155 {
+                .supportsInterface(IERC1155_ID);
+            let supports_old_ERC1155 = ISRC5CamelDispatcher { contract_address: collection }
+                .supportsInterface(OLD_IERC1155_ID);
+            if supports_ERC1155 || supports_old_ERC1155 {
                 return transfer_manager_ERC1155;
             }
             return contract_address_const::<0>();

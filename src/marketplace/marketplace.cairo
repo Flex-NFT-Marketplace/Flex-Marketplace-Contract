@@ -56,6 +56,7 @@ trait IMarketPlace<TState> {
     fn get_is_user_order_nonce_executed_or_cancelled(
         self: @TState, user: ContractAddress, nonce: u128
     ) -> bool;
+    fn get_counter_usage_signature(self: @TState, user: ContractAddress, nonce: u128) -> u128;
 }
 
 const STARKNET_DOMAIN_TYPE_HASH: felt252 =
@@ -103,7 +104,9 @@ mod MarketPlace {
         transfer_selector_NFT::{
             ITransferSelectorNFTDispatcher, ITransferSelectorNFTDispatcherTrait
         },
-        interfaces::nft_transfer_manager::{ITransferManagerNFTDispatcher, ITransferManagerNFTDispatcherTrait}
+        interfaces::nft_transfer_manager::{
+            ITransferManagerNFTDispatcher, ITransferManagerNFTDispatcherTrait
+        }
     };
     use flex::marketplace::utils::order_types::{MakerOrder, TakerOrder};
 
@@ -139,6 +142,7 @@ mod MarketPlace {
         signature_checker: ISignatureChecker2Dispatcher,
         user_min_order_nonce: LegacyMap::<ContractAddress, u128>,
         is_user_order_nonce_executed_or_cancelled: LegacyMap::<(ContractAddress, u128), bool>,
+        counter_usage_signature: LegacyMap::<(ContractAddress, u128), u128>,
         #[substorage(v0)]
         ownable: OwnableComponent::Storage,
         #[substorage(v0)]
@@ -373,7 +377,7 @@ mod MarketPlace {
             assert!(maker_ask.is_order_ask, "MarketPlace: maker ask is not an ask order");
             assert!(!taker_bid.is_order_ask, "MarketPlace: taker bid is an ask order");
 
-            self.validate_order(@maker_ask, maker_ask_signature);
+            self.validate_order(@maker_ask, maker_ask_signature, taker_bid.amount);
 
             let (can_execute, token_id, amount) = IExecutionStrategyDispatcher {
                 contract_address: maker_ask.strategy
@@ -382,9 +386,19 @@ mod MarketPlace {
 
             assert!(can_execute, "Marketplace: order cannot be executed");
 
+            let new_counter_usage_signature = self
+                .get_counter_usage_signature(maker_ask.signer, maker_ask.salt_nonce)
+                + amount;
+
             self
-                .is_user_order_nonce_executed_or_cancelled
-                .write((maker_ask.signer, maker_ask.salt_nonce), true);
+                .counter_usage_signature
+                .write((maker_ask.signer, maker_ask.salt_nonce), new_counter_usage_signature);
+
+            if new_counter_usage_signature == maker_ask.amount {
+                self
+                    .is_user_order_nonce_executed_or_cancelled
+                    .write((maker_ask.signer, maker_ask.salt_nonce), true);
+            }
 
             self
                 .transfer_fees_and_funds(
@@ -457,7 +471,7 @@ mod MarketPlace {
                 taker_ask.taker
             );
 
-            self.validate_order(@maker_bid, maker_bid_signature);
+            self.validate_order(@maker_bid, maker_bid_signature, taker_ask.amount);
 
             let (can_execute, token_id, amount) = IExecutionStrategyDispatcher {
                 contract_address: maker_bid.strategy
@@ -466,9 +480,20 @@ mod MarketPlace {
 
             assert!(can_execute, "Marketplace: taker ask cannot be executed");
 
+            let new_counter_usage_signature = self
+                .get_counter_usage_signature(maker_bid.signer, maker_bid.salt_nonce)
+                + amount;
+
             self
-                .is_user_order_nonce_executed_or_cancelled
-                .write((maker_bid.signer, maker_bid.salt_nonce), true);
+                .counter_usage_signature
+                .write((maker_bid.signer, maker_bid.salt_nonce), new_counter_usage_signature);
+
+            if new_counter_usage_signature == maker_bid.amount {
+                self
+                    .is_user_order_nonce_executed_or_cancelled
+                    .write((maker_bid.signer, maker_bid.salt_nonce), true);
+            }
+
             self
                 .transfer_non_fungible_token(
                     maker_bid.collection, taker_ask.taker, maker_bid.signer, token_id, amount
@@ -529,19 +554,32 @@ mod MarketPlace {
             let relayer = auction_strategy.auction_relayer();
             assert!(caller == relayer, "MarketPlace: caller is not relayer");
 
-            self.validate_order(@maker_ask, maker_ask_signature);
-            self.validate_order(@maker_bid, maker_bid_signature);
+            self.validate_order(@maker_ask, maker_ask_signature, maker_bid.amount);
+            self.validate_order(@maker_bid, maker_bid_signature, maker_ask.amount);
 
             let (can_execute, token_id, amount) = auction_strategy
                 .can_execute_auction_sale(maker_ask, maker_bid);
             assert!(can_execute, "MakerOrder: auction strategy can not be executed");
 
-            self
-                .is_user_order_nonce_executed_or_cancelled
-                .write((maker_ask.signer, maker_ask.salt_nonce), true);
-            self
-                .is_user_order_nonce_executed_or_cancelled
-                .write((maker_bid.signer, maker_bid.salt_nonce), true);
+            let new_counter_maker_ask_usage = self
+                .get_counter_usage_signature(maker_ask.signer, maker_ask.salt_nonce)
+                + amount;
+
+            let new_counter_maker_bid_usage = self
+                .get_counter_usage_signature(maker_bid.signer, maker_bid.salt_nonce)
+                + amount;
+
+            if new_counter_maker_ask_usage == maker_ask.amount {
+                self
+                    .is_user_order_nonce_executed_or_cancelled
+                    .write((maker_ask.signer, maker_ask.salt_nonce), true);
+            }
+
+            if new_counter_maker_bid_usage == maker_bid.amount {
+                self
+                    .is_user_order_nonce_executed_or_cancelled
+                    .write((maker_bid.signer, maker_bid.salt_nonce), true);
+            }
 
             self
                 .transfer_fees_and_funds(
@@ -674,6 +712,12 @@ mod MarketPlace {
         ) -> bool {
             self.is_user_order_nonce_executed_or_cancelled.read((user, nonce))
         }
+
+        fn get_counter_usage_signature(
+            self: @ContractState, user: ContractAddress, nonce: u128
+        ) -> u128 {
+            self.counter_usage_signature.read((user, nonce))
+        }
     }
 
     #[generate_trait]
@@ -695,7 +739,8 @@ mod MarketPlace {
             let protocol_fee_recipient = self.get_protocol_fee_recipient();
             let currency_erc20 = IERC20CamelDispatcher { contract_address: currency };
             if !protocol_fee_amount.is_zero() && !protocol_fee_recipient.is_zero() {
-                currency_erc20.transferFrom(from, protocol_fee_recipient, protocol_fee_amount.into());
+                currency_erc20
+                    .transferFrom(from, protocol_fee_recipient, protocol_fee_amount.into());
             }
             let (royalty_fee_recipient, royalty_amount) = self
                 .royalty_fee_manager
@@ -717,9 +762,7 @@ mod MarketPlace {
             }
 
             currency_erc20
-                .transferFrom(
-                    from, to, (amount - protocol_fee_amount - royalty_amount).into()
-                );
+                .transferFrom(from, to, (amount - protocol_fee_amount - royalty_amount).into());
         }
 
         fn transfer_non_fungible_token(
@@ -738,7 +781,9 @@ mod MarketPlace {
                 .check_transfer_manager_for_token(collection);
             assert!(!manager.is_zero(), "MarketPlace: invalid tranfer manager {}", manager);
             ITransferManagerNFTDispatcher { contract_address: manager }
-                .transfer_non_fungible_token(collection, from, to, token_id, amount, ArrayTrait::<felt252>::new().span());
+                .transfer_non_fungible_token(
+                    collection, from, to, token_id, amount, ArrayTrait::<felt252>::new().span()
+                );
         }
 
         fn calculate_protocol_fee(
@@ -750,11 +795,20 @@ mod MarketPlace {
         }
 
         fn validate_order(
-            self: @ContractState, order: @MakerOrder, order_signature: Array<felt252>
+            self: @ContractState,
+            order: @MakerOrder,
+            order_signature: Array<felt252>,
+            taker_amount: u128,
         ) {
             let executed_order_cancelled = self
                 .get_is_user_order_nonce_executed_or_cancelled(*order.signer, *order.salt_nonce);
+            let counter_signature_usage = self
+                .get_counter_usage_signature(*order.signer, *order.salt_nonce);
             let min_nonce = self.get_user_min_order_nonce(*order.signer);
+            assert!(
+                counter_signature_usage + taker_amount <= *order.amount,
+                "MarketPlace: Insufficient order amount"
+            );
             assert!(!executed_order_cancelled, "MarketPlace: executed order is cancelled");
             assert!(
                 min_nonce <= *order.salt_nonce,
