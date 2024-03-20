@@ -2,11 +2,7 @@ use starknet::ContractAddress;
 
 #[starknet::interface]
 trait ITransferManagerNFT<TState> {
-    fn initializer(
-        ref self: TState,
-        marketplace: ContractAddress,
-        owner: ContractAddress,
-    );
+    fn initializer(ref self: TState, marketplace: ContractAddress, owner: ContractAddress,);
     fn transfer_non_fungible_token(
         ref self: TState,
         collection: ContractAddress,

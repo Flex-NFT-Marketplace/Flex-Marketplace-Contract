@@ -35,9 +35,7 @@ mod TransferManagerNFT {
     #[external(v0)]
     impl TransferManagerNFTImpl of ITransferManagerNFT<ContractState> {
         fn initializer(
-            ref self: ContractState,
-            marketplace: ContractAddress,
-            owner: ContractAddress,
+            ref self: ContractState, marketplace: ContractAddress, owner: ContractAddress,
         ) {
             // TODO: verify the role of Proxy here.
             self.marketplace.write(marketplace);

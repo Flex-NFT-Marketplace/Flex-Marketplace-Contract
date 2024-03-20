@@ -1,7 +1,5 @@
 #[starknet::contract]
 mod FlexDrop {
-    use core::box::BoxTrait;
-use core::option::OptionTrait;
     use flex::marketplace::utils::openedition::PublicDrop;
     use flex::marketplace::openedition::interfaces::IFlexDrop::IFlexDrop;
     use flex::marketplace::openedition::interfaces::INonFungibleFlexDropToken::{
@@ -226,7 +224,7 @@ use core::option::OptionTrait;
             let nft_address = get_caller_address();
             if allowed {
                 assert(
-                    self.allowed_fee_recipients.read((nft_address, fee_recipient)),
+                    !self.allowed_fee_recipients.read((nft_address, fee_recipient)),
                     'Duplicate Fee Recipient'
                 );
                 self.allowed_fee_recipients.write((nft_address, fee_recipient), true);
@@ -239,14 +237,14 @@ use core::option::OptionTrait;
                     .write(nft_address, enumerated_allowed_fee_recipients);
             } else {
                 assert(
-                    !self.allowed_fee_recipients.read((nft_address, fee_recipient)),
+                    self.allowed_fee_recipients.read((nft_address, fee_recipient)),
                     'Fee Recipient not present'
                 );
                 self.allowed_fee_recipients.write((nft_address, fee_recipient), false);
                 self.remove_enumerated_allowed_fee_recipient(nft_address, fee_recipient);
             }
 
-            self.emit(FeeRecipientUpdated {nft_address, fee_recipient, allowed});
+            self.emit(FeeRecipientUpdated { nft_address, fee_recipient, allowed });
         }
 
         fn update_payer(ref self: ContractState, payer: ContractAddress, allowed: bool) {
@@ -256,19 +254,19 @@ use core::option::OptionTrait;
 
             let nft_address = get_caller_address();
             if allowed {
-                assert(self.allowed_payer.read((nft_address, payer)), 'Duplicate payer');
+                assert(!self.allowed_payer.read((nft_address, payer)), 'Duplicate payer');
                 self.allowed_payer.write((nft_address, payer), true);
 
                 let mut enumerated_allowed_payer = self.enumerated_allowed_payer.read(nft_address);
                 enumerated_allowed_payer.append(payer);
                 self.enumerated_allowed_payer.write(nft_address, enumerated_allowed_payer);
             } else {
-                assert(!self.allowed_payer.read((nft_address, payer)), 'Payer not present');
+                assert(self.allowed_payer.read((nft_address, payer)), 'Payer not present');
                 self.allowed_payer.write((nft_address, payer), false);
                 self.remove_enumerated_allowed_payer(nft_address, payer);
             }
 
-            self.emit(PayerUpdated {nft_address, payer, allowed});
+            self.emit(PayerUpdated { nft_address, payer, allowed });
         }
     }
 
@@ -309,6 +307,37 @@ use core::option::OptionTrait;
         #[external(v0)]
         fn get_fee_bps(self: @ContractState) -> u128 {
             self.fee_bps.read()
+        }
+
+        #[external(v0)]
+        fn get_public_drop(self: @ContractState, nft_address: ContractAddress) -> PublicDrop {
+            self.public_drops.read(nft_address)
+        }
+
+        #[external(v0)]
+        fn get_currency_manager(self: @ContractState) -> ContractAddress {
+            self.currency_manager.read().contract_address
+        }
+
+        #[external(v0)]
+        fn get_creator_payout_address(
+            self: @ContractState, nft_address: ContractAddress
+        ) -> ContractAddress {
+            self.creator_payout_address.read(nft_address)
+        }
+
+        #[external(v0)]
+        fn get_enumerated_allowed_fee_recipients(
+            self: @ContractState, nft_address: ContractAddress
+        ) -> Span::<ContractAddress> {
+            self.enumerated_allowed_fee_recipients.read(nft_address).array().span()
+        }
+
+        #[external(v0)]
+        fn get_enumerated_allowed_payer(
+            self: @ContractState, nft_address: ContractAddress
+        ) -> Span::<ContractAddress> {
+            self.enumerated_allowed_payer.read(nft_address).array().span()
         }
 
         fn assert_only_non_fungible_flex_drop_token(self: @ContractState) {
@@ -464,20 +493,21 @@ use core::option::OptionTrait;
                 }
 
                 if *cp_enumerated.get(index).unwrap().unbox() != to_remove {
-                    new_enumerated_allowed_fee_recipients.append(*cp_enumerated.get(index).unwrap().unbox());
+                    new_enumerated_allowed_fee_recipients
+                        .append(*cp_enumerated.get(index).unwrap().unbox());
                 }
                 index += 1;
             };
             enumerated_allowed_fee_recipients.from_array(@new_enumerated_allowed_fee_recipients);
-            self.enumerated_allowed_fee_recipients.write(nft_address, enumerated_allowed_fee_recipients);
+            self
+                .enumerated_allowed_fee_recipients
+                .write(nft_address, enumerated_allowed_fee_recipients);
         }
 
         fn remove_enumerated_allowed_payer(
             ref self: ContractState, nft_address: ContractAddress, to_remove: ContractAddress
         ) {
-            let mut enumerated_allowed_payer = self
-                .enumerated_allowed_payer
-                .read(nft_address);
+            let mut enumerated_allowed_payer = self.enumerated_allowed_payer.read(nft_address);
 
             let mut index = 0;
             let enumerated_allowed_payer_length = enumerated_allowed_payer.len();
