@@ -24,6 +24,13 @@ trait IMarketPlace<TState> {
         maker_ask_signature: Array<felt252>,
         custom_non_fungible_token_recipient: ContractAddress
     );
+    fn multiple_match_ask_with_taker_bid(
+        ref self: TState,
+        taker_bids: Span::<TakerOrder>,
+        maker_askes: Span::<MakerOrder>,
+        maker_ask_signatures: Span::<Array<felt252>>,
+        custom_non_fungible_token_recipient: Span::<ContractAddress>
+    );
     fn match_bid_with_taker_ask(
         ref self: TState,
         taker_ask: TakerOrder,
@@ -83,6 +90,7 @@ trait IAuctionStrategy<TState> {
 
 #[starknet::contract]
 mod MarketPlace {
+    use core::array::SpanTrait;
     use flex::marketplace::marketplace::IMarketPlace;
     use super::{
         IExecutionStrategyDispatcher, IExecutionStrategyDispatcherTrait, IAuctionStrategyDispatcher,
@@ -449,6 +457,37 @@ mod MarketPlace {
                 );
 
             self.reentrancyguard.end();
+        }
+
+        fn multiple_match_ask_with_taker_bid(
+            ref self: ContractState,
+            taker_bids: Span::<TakerOrder>,
+            maker_askes: Span::<MakerOrder>,
+            maker_ask_signatures: Span::<Array<felt252>>,
+            custom_non_fungible_token_recipient: Span::<ContractAddress>
+        ) {
+            assert(taker_bids.len() == maker_askes.len(), 'Miss match param');
+            assert(maker_askes.len() == maker_ask_signatures.len(), 'Miss match param');
+            assert(
+                taker_bids.len() == custom_non_fungible_token_recipient.len(), 'Miss match param'
+            );
+
+            let maker_ask_length = maker_askes.len();
+            let mut index: u32 = 0;
+            loop {
+                if index == maker_ask_length {
+                    break;
+                }
+                self
+                    .match_ask_with_taker_bid(
+                        *taker_bids.at(index),
+                        *maker_askes.at(index),
+                        (maker_ask_signatures.at(index)).clone(),
+                        *custom_non_fungible_token_recipient.at(index),
+                    );
+
+                index += 1;
+            }
         }
 
         fn match_bid_with_taker_ask(
