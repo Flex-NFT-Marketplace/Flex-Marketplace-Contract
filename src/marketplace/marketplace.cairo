@@ -24,19 +24,11 @@ trait IMarketPlace<TState> {
         maker_ask_signature: Array<felt252>,
         custom_non_fungible_token_recipient: ContractAddress
     );
-    fn multiple_match_ask_with_taker_bid(
-        ref self: TState,
-        taker_bids: Span::<TakerOrder>,
-        maker_askes: Span::<MakerOrder>,
-        maker_ask_signatures: Span::<Array<felt252>>,
-        custom_non_fungible_token_recipient: Span::<ContractAddress>
-    );
     fn match_bid_with_taker_ask(
         ref self: TState,
         taker_ask: TakerOrder,
         maker_bid: MakerOrder,
-        maker_bid_signature: Array<felt252>,
-        extra_params: Array<felt252>
+        maker_bid_signature: Array<felt252>
     );
     fn execute_auction_sale(
         ref self: TState,
@@ -73,7 +65,7 @@ const STARKNET_DOMAIN_TYPE_HASH: felt252 =
 trait IExecutionStrategy<TState> {
     fn protocol_fee(self: @TState) -> u128;
     fn can_execute_taker_ask(
-        self: @TState, taker_ask: TakerOrder, maker_bid: MakerOrder, extra_params: Array<felt252>
+        self: @TState, taker_ask: TakerOrder, maker_bid: MakerOrder
     ) -> (bool, u256, u128);
     fn can_execute_taker_bid(
         self: @TState, taker_bid: TakerOrder, maker_ask: MakerOrder
@@ -459,43 +451,11 @@ mod MarketPlace {
             self.reentrancyguard.end();
         }
 
-        fn multiple_match_ask_with_taker_bid(
-            ref self: ContractState,
-            taker_bids: Span::<TakerOrder>,
-            maker_askes: Span::<MakerOrder>,
-            maker_ask_signatures: Span::<Array<felt252>>,
-            custom_non_fungible_token_recipient: Span::<ContractAddress>
-        ) {
-            assert(taker_bids.len() == maker_askes.len(), 'Miss match param');
-            assert(maker_askes.len() == maker_ask_signatures.len(), 'Miss match param');
-            assert(
-                taker_bids.len() == custom_non_fungible_token_recipient.len(), 'Miss match param'
-            );
-
-            let maker_ask_length = maker_askes.len();
-            let mut index: u32 = 0;
-            loop {
-                if index == maker_ask_length {
-                    break;
-                }
-                self
-                    .match_ask_with_taker_bid(
-                        *taker_bids.at(index),
-                        *maker_askes.at(index),
-                        (maker_ask_signatures.at(index)).clone(),
-                        *custom_non_fungible_token_recipient.at(index),
-                    );
-
-                index += 1;
-            }
-        }
-
         fn match_bid_with_taker_ask(
             ref self: ContractState,
             taker_ask: TakerOrder,
             maker_bid: MakerOrder,
             maker_bid_signature: Array<felt252>,
-            extra_params: Array<felt252>
         ) {
             self.reentrancyguard.start();
 
@@ -515,7 +475,7 @@ mod MarketPlace {
             let (can_execute, token_id, amount) = IExecutionStrategyDispatcher {
                 contract_address: maker_bid.strategy
             }
-                .can_execute_taker_ask(taker_ask, maker_bid, extra_params);
+                .can_execute_taker_ask(taker_ask, maker_bid);
 
             assert!(can_execute, "Marketplace: taker ask cannot be executed");
 
