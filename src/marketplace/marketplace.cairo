@@ -375,6 +375,7 @@ mod MarketPlace {
             assert!(!caller.is_zero(), "MarketPlace: invalid caller address {:?}", caller);
             assert!(maker_ask.is_order_ask, "MarketPlace: maker ask is not an ask order");
             assert!(!taker_bid.is_order_ask, "MarketPlace: taker bid is an ask order");
+            assert!(maker_ask.signer == maker_ask.seller, "MarketPlace: Invalid maker order");
 
             self.validate_order(@maker_ask, maker_ask_signature, taker_bid.amount);
 
@@ -468,6 +469,7 @@ mod MarketPlace {
                 caller,
                 taker_ask.taker
             );
+            assert!(caller == maker_bid.seller, "MaketPlace: caller is not the seller");
 
             self.validate_order(@maker_bid, maker_bid_signature, taker_ask.amount);
 

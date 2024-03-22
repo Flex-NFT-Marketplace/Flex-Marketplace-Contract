@@ -7,6 +7,7 @@ struct MakerOrder {
     signer: ContractAddress, // signer of the maker order
     collection: ContractAddress, // collection address
     price: u128,
+    seller: ContractAddress,
     token_id: u256,
     amount: u128, // amount of tokens to sell/purchase (must be 1 for ERC721, 1+ for ERC1155)
     strategy: ContractAddress, // strategy address for trade execution (e.g. StandardSaleForFixedPrice)
