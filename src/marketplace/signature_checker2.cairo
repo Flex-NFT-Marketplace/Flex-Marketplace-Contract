@@ -9,7 +9,7 @@ const HASH_MESSAGE_SELECTOR: felt252 =
 
 const STARKNET_MAKER_ORDER_TYPE_HASH: felt252 =
     selector!(
-        "MakerOrder(is_order_ask:u8,signer:felt,collection:felt,price:u128,token_id:u256,amount:u128,strategy:felt,currency:felt,salt_nonce:u128,start_time:u64,end_time:u64,min_percentage_to_ask:u128,params:felt)u256(low:felt,high:felt)"
+        "MakerOrder(is_order_ask:u8,signer:felt,collection:felt,price:u128,seller:felt,token_id:u256,amount:u128,strategy:felt,currency:felt,salt_nonce:u128,start_time:u64,end_time:u64,min_percentage_to_ask:u128,params:felt)u256(low:felt,high:felt)"
     );
 
 const U256_TYPE_HASH: felt252 = selector!("u256(low:felt,high:felt)");
@@ -144,6 +144,7 @@ mod SignatureChecker2 {
             state = state.update_with(contract_address_to_felt252(*self.signer));
             state = state.update_with(contract_address_to_felt252(*self.collection));
             state = state.update_with(*self.price);
+            state = state.update_with(contract_address_to_felt252(*self.seller));
             state = state.update_with(self.token_id.hash_struct());
             state = state.update_with(*self.amount);
             state = state.update_with(contract_address_to_felt252(*self.strategy));
@@ -153,7 +154,7 @@ mod SignatureChecker2 {
             state = state.update_with(*self.end_time);
             state = state.update_with(*self.min_percentage_to_ask);
             state = state.update_with(*self.params);
-            state = state.update_with(14);
+            state = state.update_with(15);
             state.finalize()
         }
     }

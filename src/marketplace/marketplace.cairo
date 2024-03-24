@@ -28,8 +28,7 @@ trait IMarketPlace<TState> {
         ref self: TState,
         taker_ask: TakerOrder,
         maker_bid: MakerOrder,
-        maker_bid_signature: Array<felt252>,
-        extra_params: Array<felt252>
+        maker_bid_signature: Array<felt252>
     );
     fn execute_auction_sale(
         ref self: TState,
@@ -66,7 +65,7 @@ const STARKNET_DOMAIN_TYPE_HASH: felt252 =
 trait IExecutionStrategy<TState> {
     fn protocol_fee(self: @TState) -> u128;
     fn can_execute_taker_ask(
-        self: @TState, taker_ask: TakerOrder, maker_bid: MakerOrder, extra_params: Array<felt252>
+        self: @TState, taker_ask: TakerOrder, maker_bid: MakerOrder
     ) -> (bool, u256, u128);
     fn can_execute_taker_bid(
         self: @TState, taker_bid: TakerOrder, maker_ask: MakerOrder
@@ -376,6 +375,7 @@ mod MarketPlace {
             assert!(!caller.is_zero(), "MarketPlace: invalid caller address {:?}", caller);
             assert!(maker_ask.is_order_ask, "MarketPlace: maker ask is not an ask order");
             assert!(!taker_bid.is_order_ask, "MarketPlace: taker bid is an ask order");
+            assert!(maker_ask.signer == maker_ask.seller, "MarketPlace: Invalid maker order");
 
             self.validate_order(@maker_ask, maker_ask_signature, taker_bid.amount);
 
@@ -456,7 +456,6 @@ mod MarketPlace {
             taker_ask: TakerOrder,
             maker_bid: MakerOrder,
             maker_bid_signature: Array<felt252>,
-            extra_params: Array<felt252>
         ) {
             self.reentrancyguard.start();
 
@@ -470,13 +469,14 @@ mod MarketPlace {
                 caller,
                 taker_ask.taker
             );
+            assert!(caller == maker_bid.seller, "MaketPlace: caller is not the seller");
 
             self.validate_order(@maker_bid, maker_bid_signature, taker_ask.amount);
 
             let (can_execute, token_id, amount) = IExecutionStrategyDispatcher {
                 contract_address: maker_bid.strategy
             }
-                .can_execute_taker_ask(taker_ask, maker_bid, extra_params);
+                .can_execute_taker_ask(taker_ask, maker_bid);
 
             assert!(can_execute, "Marketplace: taker ask cannot be executed");
 
