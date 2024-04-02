@@ -13,7 +13,7 @@ mod ERC721 {
     use flex::marketplace::openedition::interfaces::INonFungibleFlexDropToken::{
         INonFungibleFlexDropToken, I_NON_FUNGIBLE_FLEX_DROP_TOKEN_ID
     };
-    use flex::marketplace::utils::openedition::{PublicDrop, MultiConfigureStruct};
+    use flex::marketplace::utils::openedition::{PhaseDrop, MultiConfigureStruct};
     use alexandria_storage::list::List;
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
     use integer::BoundedU64;
@@ -63,6 +63,7 @@ mod ERC721 {
         total_minted_per_wallet: LegacyMap::<ContractAddress, u64>,
         // Track the enumerated allowed FlexDrop address
         enumerated_allowed_flex_drop: List<ContractAddress>,
+        current_phase_id: u64,
         #[substorage(v0)]
         erc721_metadata: ERC721MetadataComponent::Storage,
         #[substorage(v0)]
@@ -88,6 +89,7 @@ mod ERC721 {
         self.erc721_metadata.initializer(owner, token_base_uri);
         self.erc721.initializer(name, symbol);
         self.current_token_id.write(1);
+        self.current_phase_id.write(1);
 
         self.src5.register_interface(I_NON_FUNGIBLE_FLEX_DROP_TOKEN_ID);
 
@@ -184,19 +186,32 @@ mod ERC721 {
             self.reentrancy_guard.end();
         }
 
-        fn update_public_drop(
-            ref self: ContractState, flex_drop: ContractAddress, public_drop: PublicDrop
+        fn create_new_phase_drop(
+            ref self: ContractState,
+            flex_drop: ContractAddress,
+            phase_detail: PhaseDrop,
+            fee_recipient: ContractAddress,
+        ) {
+            self.ownable.assert_only_owner();
+            self.assert_allowed_flex_drop(flex_drop);
+            let current_phase_id = self.current_phase_id.read();
+
+            IFlexDropDispatcher { contract_address: flex_drop }
+                .start_new_phase_drop(current_phase_id, phase_detail, fee_recipient)
+        }
+
+
+        fn update_phase_drop(
+            ref self: ContractState,
+            flex_drop: ContractAddress,
+            phase_id: u64,
+            phase_detail: PhaseDrop
         ) {
             self.assert_owner_or_self();
 
             self.assert_allowed_flex_drop(flex_drop);
-
-            assert(
-                public_drop.start_time > 0 && public_drop.start_time + 3600 <= public_drop.end_time,
-                'Wrong start and end time'
-            );
-
-            IFlexDropDispatcher { contract_address: flex_drop }.update_public_drop(public_drop);
+            IFlexDropDispatcher { contract_address: flex_drop }
+                .update_phase_drop(phase_id, phase_detail);
         }
 
         fn update_creator_payout(
@@ -208,20 +223,6 @@ mod ERC721 {
 
             IFlexDropDispatcher { contract_address: flex_drop }
                 .update_creator_payout_address(payout_address);
-        }
-
-        fn update_fee_recipient(
-            ref self: ContractState,
-            flex_drop: ContractAddress,
-            fee_recipient: ContractAddress,
-            allowed: bool
-        ) {
-            self.assert_owner_or_self();
-
-            self.assert_allowed_flex_drop(flex_drop);
-
-            IFlexDropDispatcher { contract_address: flex_drop }
-                .update_allowed_fee_recipient(fee_recipient, allowed)
         }
 
         // update payer address for paying gas fee of minting NFT
@@ -254,43 +255,20 @@ mod ERC721 {
                 self.set_contract_uri(config.contract_uri);
             }
 
-            let public_drop = config.public_drop;
-            if public_drop.start_time != 0 && public_drop.end_time != 0 {
-                self.update_public_drop(config.flex_drop, public_drop);
+            let phase_drop = config.phase_drop;
+            if phase_drop.phase_type != 0
+                && phase_drop.start_time != 0
+                && phase_drop.end_time != 0 {
+                if config.new_phase {
+                    self.create_new_phase_drop(config.flex_drop, phase_drop, config.fee_recipient);
+                } else {
+                    let current_id = self.current_phase_id.read();
+                    self.update_phase_drop(config.flex_drop, current_id, phase_drop);
+                }
             }
 
             if !config.creator_payout_address.is_zero() {
                 self.update_creator_payout(config.flex_drop, config.creator_payout_address);
-            }
-
-            if config.allowed_fee_recipients.len() > 0 {
-                let cp_allowed_fee_recipients = config.allowed_fee_recipients.clone();
-                let mut index: u32 = 0;
-                loop {
-                    if index == cp_allowed_fee_recipients.len() {
-                        break;
-                    }
-                    self
-                        .update_fee_recipient(
-                            config.flex_drop, *cp_allowed_fee_recipients.at(index), true
-                        );
-                    index += 1;
-                };
-            }
-
-            if config.disallowed_fee_recipients.len() > 0 {
-                let cp_disallowed_fee_recipients = config.disallowed_fee_recipients.clone();
-                let mut index: u32 = 0;
-                loop {
-                    if index == cp_disallowed_fee_recipients.len() {
-                        break;
-                    }
-                    self
-                        .update_fee_recipient(
-                            config.flex_drop, *cp_disallowed_fee_recipients.at(index), false
-                        );
-                    index += 1;
-                };
             }
 
             if config.allowed_payers.len() > 0 {
@@ -337,9 +315,11 @@ mod ERC721 {
             let mut current_token_id = self.get_current_token_id();
             let base_uri = self.get_base_uri();
 
+            self
+                .total_minted_per_wallet
+                .write(to, self.total_minted_per_wallet.read(to) + quantity);
             self.current_token_id.write(current_token_id + quantity.into());
             self.total_minted.write(self.get_total_minted() + quantity);
-            self.total_minted_per_wallet.write(to, self.total_minted_per_wallet.read(to) + quantity);
 
             let mut index: u64 = 0;
             loop {
