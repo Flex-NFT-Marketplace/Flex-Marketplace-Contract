@@ -8,4 +8,4 @@ tool-versions
 .vscode/
 target
 
-deployment
+deployment-script

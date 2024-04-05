@@ -1,9 +1,9 @@
 use array::Array;
 use starknet::ContractAddress;
-use flex::marketplace::utils::openedition::{PublicDrop, MultiConfigureStruct};
+use flex::marketplace::utils::openedition::{PhaseDrop, MultiConfigureStruct};
 
 const I_NON_FUNGIBLE_FLEX_DROP_TOKEN_ID: felt252 =
-    0x7345179e748058b5caaabedd83ec1cce0034f037610dbd70846917635ea85a;
+    0x3e8437a5f69da6b8bd474c863221741d75466a9500cfe343ac93d0e38135c16;
 
 #[starknet::interface]
 trait INonFungibleFlexDropToken<TContractState> {
@@ -13,17 +13,17 @@ trait INonFungibleFlexDropToken<TContractState> {
     );
     // mint tokens, restricted to the FlexDrop contract
     fn mint_flex_drop(ref self: TContractState, minter: ContractAddress, quantity: u64);
-    fn update_public_drop(
-        ref self: TContractState, flex_drop: ContractAddress, public_drop: PublicDrop
+    fn create_new_phase_drop(
+        ref self: TContractState,
+        flex_drop: ContractAddress,
+        phase_detail: PhaseDrop,
+        fee_recipient: ContractAddress,
+    );
+    fn update_phase_drop(
+        ref self: TContractState, flex_drop: ContractAddress, phase_id: u64, phase_detail: PhaseDrop
     );
     fn update_creator_payout(
         ref self: TContractState, flex_drop: ContractAddress, payout_address: ContractAddress
-    );
-    fn update_fee_recipient(
-        ref self: TContractState,
-        flex_drop: ContractAddress,
-        fee_recipient: ContractAddress,
-        allowed: bool
     );
     // update payer address for paying gas fee of minting NFT
     fn update_payer(
