@@ -61,7 +61,7 @@ mod RoyaltyFeeManager {
         UpgradeableEvent: UpgradeableComponent::Event,
     }
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl RoyaltyFeeManagerImpl of super::IRoyaltyFeeManager<ContractState> {
         fn initializer(
             ref self: ContractState, fee_registry: ContractAddress, owner: ContractAddress,

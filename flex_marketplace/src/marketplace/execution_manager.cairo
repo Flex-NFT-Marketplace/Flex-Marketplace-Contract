@@ -54,7 +54,7 @@ mod ExecutionManager {
         timestamp: u64
     }
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl ExecutionManagerImpl of super::IExecutionManager<ContractState> {
         fn initializer(ref self: ContractState, owner: ContractAddress) {
             assert!(!self.initialized.read(), "ExecutionManager: already initialized");

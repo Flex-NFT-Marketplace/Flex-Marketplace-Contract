@@ -26,7 +26,7 @@ mod Proxy {
     ) { // TODO
     }
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl ProxyImpl of super::IProxy<ContractState> {
         fn upgrade(ref self: ContractState, new_implementation: ClassHash) { // TODO
         }

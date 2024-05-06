@@ -17,7 +17,7 @@ mod ERC1155 {
     #[storage]
     struct Storage {}
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl ERC1155Impl of super::IERC1155<ContractState> {
         fn safe_transfer_from(
             ref self: ContractState,

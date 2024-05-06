@@ -28,7 +28,7 @@ mod SignatureChecker2 {
     #[storage]
     struct Storage {}
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl SignatureChecker2Impl of super::ISignatureChecker2<ContractState> {
         fn compute_maker_order_hash(
             self: @ContractState, hash_domain: felt252, order: MakerOrder

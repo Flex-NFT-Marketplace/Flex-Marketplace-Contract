@@ -19,10 +19,6 @@ mod ERC721 {
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
 
-    const NAME: felt252 = 'FLEX TOKEN';
-    const SYMBOL: felt252 = 'FLX';
-    const TOKEN_URI: felt252 = '';
-
     #[storage]
     struct Storage {
         id: u256,
@@ -51,7 +47,10 @@ mod ERC721 {
 
     #[constructor]
     fn constructor(ref self: ContractState) {
-        self.erc721.initializer(NAME, SYMBOL);
+        let name: ByteArray = "FLEX TOKEN";
+        let symbol: ByteArray = "FLX";
+        let base_uri: ByteArray = "";
+        self.erc721.initializer(name, symbol, base_uri);
     }
 
     #[abi(embed_v0)]
@@ -76,7 +75,6 @@ mod ERC721 {
             self.id.write(token_id);
 
             self.erc721._mint(recipient, token_id);
-            self.erc721._set_token_uri(token_id, TOKEN_URI);
         }
     }
 }

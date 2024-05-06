@@ -119,7 +119,7 @@ mod ERC20 {
     // External
     //
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl ERC20Impl of super::IERC20<ContractState> {
         /// Returns the name of the token.
         fn name(self: @ContractState) -> felt252 {
@@ -206,7 +206,7 @@ mod ERC20 {
         self._decrease_allowance(spender, subtracted_value)
     }
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl ERC20CamelOnlyImpl of super::IERC20CamelOnly<ContractState> {
         /// Camel case support.
         /// See [total_supply](total-supply).

@@ -32,7 +32,7 @@ mod TransferManagerNFT {
         OwnableEvent: OwnableComponent::Event
     }
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl TransferManagerNFTImpl of ITransferManagerNFT<ContractState> {
         fn initializer(
             ref self: ContractState, marketplace: ContractAddress, owner: ContractAddress,
