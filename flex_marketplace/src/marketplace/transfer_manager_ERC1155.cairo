@@ -35,7 +35,7 @@ mod ERC1155TransferManager {
         UpgradeableEvent: UpgradeableComponent::Event,
     }
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl ERC1155TransferManagerImpl of ITransferManagerNFT<ContractState> {
         fn initializer(
             ref self: ContractState, marketplace: ContractAddress, owner: ContractAddress,

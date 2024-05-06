@@ -61,7 +61,6 @@ mod marketplace {
     mod transfer_manager_ERC1155;
     mod transfer_selector_NFT;
 }
-
 mod mocks {
     mod account;
     mod erc20;
@@ -69,3 +68,4 @@ mod mocks {
     mod erc721;
     mod strategy;
 }
+

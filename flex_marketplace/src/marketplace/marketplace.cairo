@@ -82,13 +82,11 @@ trait IAuctionStrategy<TState> {
 mod MarketPlace {
     use super::{
         IExecutionStrategyDispatcher, IExecutionStrategyDispatcherTrait, IAuctionStrategyDispatcher,
-        IAuctionStrategyDispatcherTrait
+        IAuctionStrategyDispatcherTrait, ContractAddress, ClassHash
     };
-    use starknet::{
-        ContractAddress, ClassHash, contract_address_const, get_block_timestamp, get_caller_address
-    };
+    use starknet::{contract_address_const, get_block_timestamp, get_caller_address};
 
-    use flex::{DebugContractAddress, DisplayContractAddress};
+    use flex::{DisplayContractAddress};
     use flex::marketplace::{
         currency_manager::{ICurrencyManagerDispatcher, ICurrencyManagerDispatcherTrait},
         execution_manager::{IExecutionManagerDispatcher, IExecutionManagerDispatcherTrait},
@@ -266,7 +264,7 @@ mod MarketPlace {
         timestamp: u64,
     }
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl MarketPlaceImpl of super::IMarketPlace<ContractState> {
         fn initializer(
             ref self: ContractState,

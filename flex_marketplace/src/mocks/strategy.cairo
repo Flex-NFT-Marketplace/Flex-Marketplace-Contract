@@ -30,7 +30,7 @@ mod Strategy {
     #[storage]
     struct Storage {}
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl MockExecutionStrategyImpl of super::IExecutionStrategy<ContractState> {
         fn protocolFee(self: @ContractState) -> u128 {
             1000
@@ -50,7 +50,7 @@ mod Strategy {
         }
     }
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl MockAuctionStrategyImpl of super::IAuctionStrategy<ContractState> {
         fn auctionRelayer(self: @ContractState) -> ContractAddress {
             starknet::contract_address_const::<'RELAYER'>()

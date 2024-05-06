@@ -78,7 +78,7 @@ mod TransferSelectorNFT {
     }
 
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl TransferSelectorNFTImpl of super::ITransferSelectorNFT<ContractState> {
         fn initializer(
             ref self: ContractState,

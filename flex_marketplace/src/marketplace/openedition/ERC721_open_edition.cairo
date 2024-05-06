@@ -1,12 +1,10 @@
 #[starknet::contract]
-mod ERC721 {
+mod ERC721OpenEdition {
     use alexandria_storage::list::ListTrait;
-    use openzeppelin::token::erc721::erc721::ERC721Component;
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::introspection::src5::SRC5Component;
     use openzeppelin::security::reentrancyguard::ReentrancyGuardComponent;
-    use flex::marketplace::openedition::interfaces::IFlexDropContractMetadata::IFlexDropContractMetadata;
-    use flex::marketplace::openedition::erc721_metadata::ERC721_metadata::ERC721MetadataComponent;
+    use flex::marketplace::openedition::ERC721::ERC721Component;
     use flex::marketplace::openedition::interfaces::IFlexDrop::{
         IFlexDropDispatcher, IFlexDropDispatcherTrait
     };
@@ -18,7 +16,6 @@ mod ERC721 {
     use starknet::{ContractAddress, get_caller_address, get_contract_address};
     use integer::BoundedU64;
 
-    component!(path: ERC721MetadataComponent, storage: erc721_metadata, event: ERC721MetadataEvent);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
@@ -33,15 +30,15 @@ mod ERC721 {
     impl ERC721CamelImpl = ERC721Component::ERC721CamelOnlyImpl<ContractState>;
 
     #[abi(embed_v0)]
-    impl ERC721Metadata = ERC721Component::ERC721MetadataImpl<ContractState>;
+    impl ERC721MetadataImpl = ERC721Component::ERC721MetadataImpl<ContractState>;
 
     #[abi(embed_v0)]
-    impl ERC721MetadataCamel =
+    impl ERC721MetadataCamelImpl =
         ERC721Component::ERC721MetadataCamelOnlyImpl<ContractState>;
 
     #[abi(embed_v0)]
-    impl ERC721FlexMetadataImpl =
-        ERC721MetadataComponent::FlexDropContractMetadataImpl<ContractState>;
+    impl FlexDropContractMetadataImpl =
+        ERC721Component::FlexDropContractMetadataImpl<ContractState>;
 
     #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
@@ -51,8 +48,6 @@ mod ERC721 {
 
     #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
-
-    impl ERC721MetadataInternalImpl = ERC721MetadataComponent::InternalImpl<ContractState>;
 
     impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
 
@@ -75,8 +70,6 @@ mod ERC721 {
         enumerated_allowed_flex_drop: List<ContractAddress>,
         current_phase_id: u64,
         #[substorage(v0)]
-        erc721_metadata: ERC721MetadataComponent::Storage,
-        #[substorage(v0)]
         erc721: ERC721Component::Storage,
         #[substorage(v0)]
         src5: SRC5Component::Storage,
@@ -89,15 +82,14 @@ mod ERC721 {
     #[constructor]
     fn constructor(
         ref self: ContractState,
-        owner: ContractAddress,
-        name: felt252,
-        symbol: felt252,
-        token_base_uri: felt252,
+        creator: ContractAddress,
+        name: ByteArray,
+        symbol: ByteArray,
+        token_base_uri: ByteArray,
         allowed_flex_drop: Array::<ContractAddress>,
     ) {
-        self.ownable.initializer(owner);
-        self.erc721_metadata.initializer(owner, token_base_uri);
-        self.erc721.initializer(name, symbol);
+        self.ownable.initializer(creator);
+        self.erc721.initializer(name, symbol, creator, token_base_uri);
         self.current_token_id.write(1);
         self.current_phase_id.write(1);
 
@@ -124,8 +116,6 @@ mod ERC721 {
     #[derive(Drop, starknet::Event)]
     enum Event {
         UpdateAllowedFlexDrop: UpdateAllowedFlexDrop,
-        #[flat]
-        ERC721MetadataEvent: ERC721MetadataComponent::Event,
         #[flat]
         ERC721Event: ERC721Component::Event,
         #[flat]
@@ -257,11 +247,11 @@ mod ERC721 {
                 self.set_max_supply(max_supply);
             }
 
-            if config.base_uri.into() > 0_u256 {
+            if config.base_uri.len() > 0 {
                 self.set_base_uri(config.base_uri);
             }
 
-            if config.contract_uri.into() > 0_u256 {
+            if config.contract_uri.len() > 0 {
                 self.set_contract_uri(config.contract_uri);
             }
 
@@ -323,7 +313,6 @@ mod ERC721 {
     impl InternalFlexDropToken of InternalFlexDropTokenTrait {
         fn safe_mint_flex_drop(ref self: ContractState, to: ContractAddress, quantity: u64) {
             let mut current_token_id = self.get_current_token_id();
-            let base_uri = self.get_base_uri();
 
             self
                 .total_minted_per_wallet
@@ -337,7 +326,6 @@ mod ERC721 {
                     break;
                 }
                 self.erc721._safe_mint(to, current_token_id, ArrayTrait::<felt252>::new().span());
-                self.erc721._set_token_uri(current_token_id, base_uri);
                 current_token_id += 1;
                 index += 1;
             }

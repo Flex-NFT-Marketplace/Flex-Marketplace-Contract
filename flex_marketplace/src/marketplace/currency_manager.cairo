@@ -54,7 +54,7 @@ mod CurrencyManager {
         timestamp: u64,
     }
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl CurrencyManagerImpl of super::ICurrencyManager<ContractState> {
         fn initializer(
             ref self: ContractState, owner: ContractAddress, proxy_admin: ContractAddress

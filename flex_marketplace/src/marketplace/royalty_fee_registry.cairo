@@ -71,7 +71,7 @@ mod RoyaltyFeeRegistry {
         timestamp: u64,
     }
 
-    #[external(v0)]
+    #[abi(embed_v0)]
     impl RoyaltyFeeRegistryImpl of super::IRoyaltyFeeRegistry<ContractState> {
         fn initializer(ref self: ContractState, fee_limit: u128, owner: ContractAddress,) {
             assert!(!self.initialized.read(), "RoyaltyFeeRegistry: already initialized");

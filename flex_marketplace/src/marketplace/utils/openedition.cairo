@@ -14,8 +14,8 @@ struct PhaseDrop {
 #[derive(Drop, Serde)]
 struct MultiConfigureStruct {
     max_supply: u64,
-    base_uri: felt252,
-    contract_uri: felt252,
+    base_uri: ByteArray,
+    contract_uri: ByteArray,
     flex_drop: ContractAddress,
     phase_drop: PhaseDrop,
     new_phase: bool,

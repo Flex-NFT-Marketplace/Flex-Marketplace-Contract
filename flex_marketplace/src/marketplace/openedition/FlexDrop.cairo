@@ -2,7 +2,7 @@
 mod FlexDrop {
     use core::box::BoxTrait;
     use flex::marketplace::utils::openedition::PhaseDrop;
-    use flex::marketplace::openedition::interfaces::IFlexDrop::IFlexDrop;
+    use flex::marketplace::openedition::IFlexDrop;
     use flex::marketplace::openedition::interfaces::INonFungibleFlexDropToken::{
         INonFungibleFlexDropTokenDispatcher, INonFungibleFlexDropTokenDispatcherTrait,
         I_NON_FUNGIBLE_FLEX_DROP_TOKEN_ID
@@ -405,6 +405,7 @@ mod FlexDrop {
             let nft_address = get_caller_address();
             let is_supported_interface = ISRC5Dispatcher { contract_address: nft_address }
                 .supports_interface(I_NON_FUNGIBLE_FLEX_DROP_TOKEN_ID);
+            assert(is_supported_interface, 'FlexDrop: Unsupport Interface');
         }
 
         fn validate_new_phase_drop(self: @ContractState, phase_drop: @PhaseDrop) {

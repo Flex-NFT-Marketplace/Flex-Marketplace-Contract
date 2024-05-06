@@ -34,6 +34,7 @@ mod Account {
     impl SRC5InternalImpl = SRC5Component::InternalImpl<ContractState>;
 
     component!(path: AccountComponent, storage: account, event: AccountEvent);
+
     #[abi(embed_v0)]
     impl SRC6Impl = AccountComponent::SRC6Impl<ContractState>;
     #[abi(embed_v0)]
