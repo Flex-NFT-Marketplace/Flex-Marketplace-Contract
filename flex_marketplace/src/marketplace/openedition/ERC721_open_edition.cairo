@@ -195,6 +195,7 @@ mod ERC721OpenEdition {
             self.ownable.assert_only_owner();
             self.assert_allowed_flex_drop(flex_drop);
             let current_phase_id = self.current_phase_id.read();
+            self.current_phase_id.write(current_phase_id + 1);
 
             IFlexDropDispatcher { contract_address: flex_drop }
                 .start_new_phase_drop(current_phase_id, phase_detail, fee_recipient)
