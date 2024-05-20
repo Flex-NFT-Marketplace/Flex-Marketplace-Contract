@@ -171,8 +171,10 @@ mod FlexDrop {
                 minter = minter_if_not_payer.clone();
             }
 
+            let mut is_payer: bool = false;
             if minter != get_caller_address() {
                 self.assert_allowed_payer(nft_address, get_caller_address());
+                is_payer = true;
             }
 
             self
@@ -188,6 +190,7 @@ mod FlexDrop {
                     nft_address,
                     get_caller_address(),
                     minter,
+                    is_payer,
                     quantity,
                     phase_drop.currency,
                     total_mint_price,
@@ -208,7 +211,7 @@ mod FlexDrop {
             let nft_address = get_caller_address();
 
             let phase_detail = self.phase_drops.read((nft_address, phase_drop_id));
-            assert!(phase_detail.phase_type == 0, "FlexDrop: Phase have not started");
+            assert!(phase_detail.phase_type == 0, "FlexDrop: Phase have been started");
             self.validate_new_phase_drop(@phase_drop);
 
             let new_phase_fee = self.new_phase_fee.read();
@@ -412,7 +415,7 @@ mod FlexDrop {
             assert!(*phase_drop.phase_type == 1, "FlexDrop: Currently supported public phase");
             assert!(
                 *phase_drop.start_time >= get_block_timestamp()
-                    + 86400 && *phase_drop.start_time
+                    + 1800 && *phase_drop.start_time
                     + 3600 <= *phase_drop.end_time,
                 "FlexDrop: Wrong start and end time"
             );
@@ -475,6 +478,7 @@ mod FlexDrop {
             nft_address: ContractAddress,
             payer: ContractAddress,
             minter: ContractAddress,
+            is_payer: bool,
             quantity: u64,
             currency_address: ContractAddress,
             total_mint_price: u256,
@@ -482,7 +486,7 @@ mod FlexDrop {
         ) {
             self
                 .split_payout(
-                    payer, nft_address, fee_recipient, currency_address, total_mint_price
+                    payer, is_payer, nft_address, fee_recipient, currency_address, total_mint_price
                 );
 
             INonFungibleFlexDropTokenDispatcher { contract_address: nft_address }
@@ -505,6 +509,7 @@ mod FlexDrop {
         fn split_payout(
             ref self: ContractState,
             from: ContractAddress,
+            is_payer: bool,
             nft_address: ContractAddress,
             fee_recipient: ContractAddress,
             currency_address: ContractAddress,
@@ -518,7 +523,7 @@ mod FlexDrop {
                 fee_currency_contract.transfer_from(from, fee_recipient, fee_mint);
             }
 
-            if total_mint_price > 0 {
+            if total_mint_price > 0 && !is_payer {
                 let currency_contract = IERC20Dispatcher { contract_address: currency_address };
                 let creator_payout_address = self.creator_payout_address.read(nft_address);
                 assert!(
