@@ -28,7 +28,6 @@ mod ERC721Component {
         ERC721_token_approvals: LegacyMap<u256, ContractAddress>,
         ERC721_operator_approvals: LegacyMap<(ContractAddress, ContractAddress), bool>,
         ERC721_base_uri: ByteArray,
-        ERC721_max_supply: u64,
         ERC721_contract_uri: ByteArray,
         ERC721_creator: ContractAddress
     }
@@ -331,21 +330,12 @@ mod ERC721Component {
             self._set_contract_uri(new_contract_uri);
         }
 
-        fn set_max_supply(ref self: ComponentState<TContractState>, new_max_supply: u64) {
-            self._assert_only_creator();
-            self._set_max_supply(new_max_supply);
-        }
-
         fn get_base_uri(self: @ComponentState<TContractState>) -> ByteArray {
             self._base_uri()
         }
 
         fn get_contract_uri(self: @ComponentState<TContractState>) -> ByteArray {
             self._contract_uri()
-        }
-
-        fn get_max_supply(self: @ComponentState<TContractState>) -> u64 {
-            self._get_max_supply()
         }
     }
 
@@ -588,18 +578,6 @@ mod ERC721Component {
 
         fn _contract_uri(self: @ComponentState<TContractState>) -> ByteArray {
             self.ERC721_contract_uri.read()
-        }
-
-        fn _set_max_supply(ref self: ComponentState<TContractState>, new_max_supply: u64) {
-            assert(
-                U64PartialOrd::lt(new_max_supply, BoundedU64::max()),
-                'Cannot Exceed MaxSupply Of U64'
-            );
-            self.ERC721_max_supply.write(new_max_supply);
-        }
-
-        fn _get_max_supply(self: @ComponentState<TContractState>) -> u64 {
-            self.ERC721_max_supply.read()
         }
 
         fn _assert_only_creator(self: @ComponentState<TContractState>) {

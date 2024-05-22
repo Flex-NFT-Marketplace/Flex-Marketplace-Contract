@@ -179,11 +179,6 @@ mod ERC721OpenEditionMultiMetadata {
             let flex_drop = get_caller_address();
             self.assert_allowed_flex_drop(flex_drop);
 
-            assert(
-                self.get_total_minted() + quantity <= self.get_max_supply(),
-                'Exceeds maximum total supply'
-            );
-
             self.safe_mint_flex_drop(minter, quantity);
             self.reentrancy_guard.end();
         }
@@ -245,11 +240,6 @@ mod ERC721OpenEditionMultiMetadata {
         fn multi_configure(ref self: ContractState, config: MultiConfigureStruct) {
             self.ownable.assert_only_owner();
 
-            let mut max_supply = config.max_supply;
-            if max_supply != 0 {
-                self.set_max_supply(max_supply);
-            }
-
             if config.base_uri.len() > 0 {
                 self.set_base_uri(config.base_uri);
             }
@@ -299,16 +289,19 @@ mod ERC721OpenEditionMultiMetadata {
             }
         }
 
-        // return (number minted, current total supply, max supply)
-        fn get_mint_state(self: @ContractState, minter: ContractAddress) -> (u64, u64, u64) {
+        // return (number minted, current total supply)
+        fn get_mint_state(self: @ContractState, minter: ContractAddress) -> (u64, u64) {
             let total_minted = self.total_minted_per_wallet.read(minter);
             let current_total_supply = self.get_total_minted();
-            let max_supply = self.get_max_supply();
-            (total_minted, current_total_supply, max_supply)
+            (total_minted, current_total_supply)
         }
 
         fn get_current_token_id(self: @ContractState) -> u256 {
             self.current_token_id.read()
+        }
+
+        fn get_allowed_flex_drops(self: @ContractState) -> Span::<ContractAddress> {
+            self.enumerated_allowed_flex_drop.read().array().span()
         }
     }
 
