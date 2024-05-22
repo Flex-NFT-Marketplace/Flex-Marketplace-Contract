@@ -350,7 +350,7 @@ mod MarketPlace {
 
             self
                 .is_user_order_nonce_executed_or_cancelled
-                .write((maker_ask.signer, maker_ask.nonce), true);
+                .write((maker_ask.signer, maker_ask.salt_nonce), true);
 
             self
                 .transfer_fees_and_funds(
@@ -386,7 +386,7 @@ mod MarketPlace {
                 .emit(
                     TakerBid {
                         order_hash,
-                        order_nonce: maker_ask.nonce,
+                        order_nonce: maker_ask.salt_nonce,
                         taker: non_fungible_token_recipient,
                         maker: maker_ask.signer,
                         strategy: maker_ask.strategy,
@@ -434,7 +434,7 @@ mod MarketPlace {
 
             self
                 .is_user_order_nonce_executed_or_cancelled
-                .write((maker_bid.signer, maker_bid.nonce), true);
+                .write((maker_bid.signer, maker_bid.salt_nonce), true);
             self
                 .transfer_non_fungible_token(
                     maker_bid.collection, taker_ask.taker, maker_bid.signer, token_id, amount
@@ -459,7 +459,7 @@ mod MarketPlace {
                 .emit(
                     TakerAsk {
                         order_hash,
-                        order_nonce: maker_bid.nonce,
+                        order_nonce: maker_bid.salt_nonce,
                         taker: taker_ask.taker,
                         maker: maker_bid.signer,
                         strategy: maker_bid.strategy,
@@ -504,10 +504,10 @@ mod MarketPlace {
 
             self
                 .is_user_order_nonce_executed_or_cancelled
-                .write((maker_ask.signer, maker_ask.nonce), true);
+                .write((maker_ask.signer, maker_ask.salt_nonce), true);
             self
                 .is_user_order_nonce_executed_or_cancelled
-                .write((maker_bid.signer, maker_bid.nonce), true);
+                .write((maker_bid.signer, maker_bid.salt_nonce), true);
 
             self
                 .transfer_fees_and_funds(
@@ -534,7 +534,7 @@ mod MarketPlace {
                 .emit(
                     TakerBid {
                         order_hash,
-                        order_nonce: maker_ask.nonce,
+                        order_nonce: maker_ask.salt_nonce,
                         taker: maker_bid.signer,
                         maker: maker_ask.signer,
                         strategy: maker_ask.strategy,
@@ -715,14 +715,14 @@ mod MarketPlace {
             self: @ContractState, order: @MakerOrder, order_signature: Array<felt252>
         ) {
             let executed_order_cancelled = self
-                .get_is_user_order_nonce_executed_or_cancelled(*order.signer, *order.nonce);
+                .get_is_user_order_nonce_executed_or_cancelled(*order.signer, *order.salt_nonce);
             let min_nonce = self.get_user_min_order_nonce(*order.signer);
             assert!(!executed_order_cancelled, "MarketPlace: executed order is cancelled");
             assert!(
-                min_nonce <= *order.nonce,
+                min_nonce <= *order.salt_nonce,
                 "MarketPlace: min_nonce {} is higher than order nonce {}",
                 min_nonce,
-                *order.nonce
+                *order.salt_nonce
             );
             assert!(
                 !(*order.signer).is_zero(), "MarketPlace: invalid order signer {}", *order.signer

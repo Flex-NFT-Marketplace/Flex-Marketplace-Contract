@@ -1,5 +1,5 @@
 use starknet::ContractAddress;
-use flex::marketplace::utils::openedition::PhaseDrop;
+use flex::marketplace::utils::openedition::{PhaseDrop, WhiteListParam};
 
 #[starknet::interface]
 trait IFlexDrop<TContractState> {
@@ -10,6 +10,12 @@ trait IFlexDrop<TContractState> {
         fee_recipient: ContractAddress,
         minter_if_not_payer: ContractAddress,
         quantity: u64,
+    );
+    fn whitelist_mint(
+        ref self: TContractState,
+        whitelist_data: WhiteListParam,
+        fee_recipient: ContractAddress,
+        proof: Array<felt252>
     );
     fn start_new_phase_drop(
         ref self: TContractState,

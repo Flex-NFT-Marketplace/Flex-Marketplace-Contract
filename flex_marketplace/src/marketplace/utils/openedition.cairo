@@ -11,6 +11,13 @@ struct PhaseDrop {
     phase_type: u8 // 1 for public sale, 2 for private sale...
 }
 
+#[derive(Drop, Copy, Serde)]
+struct WhiteListParam {
+    phase_id: u64,
+    nft_address: ContractAddress,
+    minter: ContractAddress,
+}
+
 #[derive(Drop, Serde)]
 struct MultiConfigureStruct {
     base_uri: ByteArray,
