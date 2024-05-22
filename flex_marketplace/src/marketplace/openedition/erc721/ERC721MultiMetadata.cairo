@@ -3,7 +3,7 @@
 /// The ERC721 component provides implementations for the IERC721 interface,
 /// the IERC721Metadata interface and IFlexDropContractMetadata interface.
 #[starknet::component]
-mod ERC721Component {
+mod ERC721MultiMetadataComponent {
     use core::byte_array::ByteArrayTrait;
     use openzeppelin::account;
     use openzeppelin::introspection::dual_src5::{DualCaseSRC5, DualCaseSRC5Trait};
@@ -243,7 +243,7 @@ mod ERC721Component {
             if base_uri.len() == 0 {
                 return "";
             } else {
-                return base_uri;
+                return format!("{}{}", base_uri, token_id);
             }
         }
     }

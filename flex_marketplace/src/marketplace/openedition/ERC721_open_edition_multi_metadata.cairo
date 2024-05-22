@@ -1,11 +1,10 @@
 #[starknet::contract]
-mod ERC721OpenEdition {
-    use core::array::ArrayTrait;
+mod ERC721OpenEditionMultiMetadata {
     use alexandria_storage::list::ListTrait;
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::introspection::src5::SRC5Component;
     use openzeppelin::security::reentrancyguard::ReentrancyGuardComponent;
-    use flex::marketplace::openedition::ERC721::ERC721Component;
+    use flex::marketplace::openedition::ERC721MultiMetadata::ERC721MultiMetadataComponent;
     use flex::marketplace::openedition::interfaces::IFlexDrop::{
         IFlexDropDispatcher, IFlexDropDispatcherTrait
     };
@@ -18,28 +17,30 @@ mod ERC721OpenEdition {
     use integer::BoundedU64;
 
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
-    component!(path: ERC721Component, storage: erc721, event: ERC721Event);
+    component!(path: ERC721MultiMetadataComponent, storage: erc721, event: ERC721Event);
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
     component!(
         path: ReentrancyGuardComponent, storage: reentrancy_guard, event: ReentrancyGuardEvent
     );
 
     #[abi(embed_v0)]
-    impl ERC721Impl = ERC721Component::ERC721Impl<ContractState>;
+    impl ERC721Impl = ERC721MultiMetadataComponent::ERC721Impl<ContractState>;
 
     #[abi(embed_v0)]
-    impl ERC721CamelImpl = ERC721Component::ERC721CamelOnlyImpl<ContractState>;
+    impl ERC721CamelImpl =
+        ERC721MultiMetadataComponent::ERC721CamelOnlyImpl<ContractState>;
 
     #[abi(embed_v0)]
-    impl ERC721MetadataImpl = ERC721Component::ERC721MetadataImpl<ContractState>;
+    impl ERC721MetadataImpl =
+        ERC721MultiMetadataComponent::ERC721MetadataImpl<ContractState>;
 
     #[abi(embed_v0)]
     impl ERC721MetadataCamelImpl =
-        ERC721Component::ERC721MetadataCamelOnlyImpl<ContractState>;
+        ERC721MultiMetadataComponent::ERC721MetadataCamelOnlyImpl<ContractState>;
 
     #[abi(embed_v0)]
     impl FlexDropContractMetadataImpl =
-        ERC721Component::FlexDropContractMetadataImpl<ContractState>;
+        ERC721MultiMetadataComponent::FlexDropContractMetadataImpl<ContractState>;
 
     #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
@@ -50,7 +51,7 @@ mod ERC721OpenEdition {
     #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
 
-    impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
+    impl ERC721InternalImpl = ERC721MultiMetadataComponent::InternalImpl<ContractState>;
 
     impl OwnableInternalImpl = OwnableComponent::InternalImpl<ContractState>;
 
@@ -71,7 +72,7 @@ mod ERC721OpenEdition {
         enumerated_allowed_flex_drop: List<ContractAddress>,
         current_phase_id: u64,
         #[substorage(v0)]
-        erc721: ERC721Component::Storage,
+        erc721: ERC721MultiMetadataComponent::Storage,
         #[substorage(v0)]
         src5: SRC5Component::Storage,
         #[substorage(v0)]
@@ -118,7 +119,7 @@ mod ERC721OpenEdition {
     enum Event {
         UpdateAllowedFlexDrop: UpdateAllowedFlexDrop,
         #[flat]
-        ERC721Event: ERC721Component::Event,
+        ERC721Event: ERC721MultiMetadataComponent::Event,
         #[flat]
         SRC5Event: SRC5Component::Event,
         #[flat]

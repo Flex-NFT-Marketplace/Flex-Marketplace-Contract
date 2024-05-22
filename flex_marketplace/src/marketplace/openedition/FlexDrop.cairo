@@ -1,14 +1,15 @@
 #[starknet::contract]
 mod FlexDrop {
     use core::box::BoxTrait;
-    use flex::marketplace::utils::openedition::PhaseDrop;
+    use flex::marketplace::utils::openedition::{PhaseDrop, WhiteListParam};
     use flex::marketplace::openedition::IFlexDrop;
     use flex::marketplace::openedition::interfaces::INonFungibleFlexDropToken::{
         INonFungibleFlexDropTokenDispatcher, INonFungibleFlexDropTokenDispatcherTrait,
         I_NON_FUNGIBLE_FLEX_DROP_TOKEN_ID
     };
     use flex::marketplace::{
-        currency_manager::{ICurrencyManagerDispatcher, ICurrencyManagerDispatcherTrait}
+        currency_manager::{ICurrencyManagerDispatcher, ICurrencyManagerDispatcherTrait},
+        signature_checker2::{ISignatureChecker2Dispatcher, ISignatureChecker2DispatcherTrait},
     };
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin::access::ownable::OwnableComponent;
@@ -16,7 +17,7 @@ mod FlexDrop {
     use openzeppelin::security::reentrancyguard::ReentrancyGuardComponent;
     use openzeppelin::introspection::interface::{ISRC5Dispatcher, ISRC5DispatcherTrait};
     use alexandria_storage::list::{List, ListTrait};
-    use starknet::{ContractAddress, get_block_timestamp, get_caller_address, get_tx_info};
+    use starknet::{ContractAddress, get_block_timestamp, get_caller_address, get_tx_info, Zeroable};
     use array::{Array, ArrayTrait};
 
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
@@ -51,6 +52,14 @@ mod FlexDrop {
         fee_currency: ContractAddress,
         // start new phase fee
         new_phase_fee: u256,
+        // validator validating the proof of whitelist
+        validator: ContractAddress,
+        // domain hash
+        domain_hash: felt252,
+        // contract to verify proof
+        signature_checker: ContractAddress,
+        // mapping proof => is used
+        is_used_proof: LegacyMap::<felt252, bool>,
         // mapping nft address => enumerated allowed payer
         enumerated_allowed_payer: LegacyMap::<ContractAddress, List<ContractAddress>>,
         currency_manager: ICurrencyManagerDispatcher,
@@ -129,12 +138,18 @@ mod FlexDrop {
         fee_currency: ContractAddress,
         fee_mint: u256,
         new_phase_fee: u256,
+        domain_hash: felt252,
+        validator: ContractAddress,
+        signature_checker: ContractAddress,
         fee_recipients: Span::<ContractAddress>
     ) {
         self.ownable.initializer(owner);
         self.fee_currency.write(fee_currency);
         self.fee_mint.write(fee_mint);
         self.new_phase_fee.write(new_phase_fee);
+        self.validator.write(validator);
+        self.domain_hash.write(domain_hash);
+        self.signature_checker.write(signature_checker);
         self
             .currency_manager
             .write(ICurrencyManagerDispatcher { contract_address: currency_manager });
@@ -171,8 +186,10 @@ mod FlexDrop {
                 minter = minter_if_not_payer.clone();
             }
 
+            let mut is_payer: bool = false;
             if minter != get_caller_address() {
                 self.assert_allowed_payer(nft_address, get_caller_address());
+                is_payer = true;
             }
 
             self
@@ -188,9 +205,55 @@ mod FlexDrop {
                     nft_address,
                     get_caller_address(),
                     minter,
+                    is_payer,
                     quantity,
                     phase_drop.currency,
                     total_mint_price,
+                    fee_recipient
+                );
+            self.reentrancy.end();
+        }
+
+        fn whitelist_mint(
+            ref self: ContractState,
+            whitelist_data: WhiteListParam,
+            fee_recipient: ContractAddress,
+            proof: Array<felt252>
+        ) {
+            self.pausable.assert_not_paused();
+            self.reentrancy.start();
+            let phase_drop = self
+                .phase_drops
+                .read((whitelist_data.nft_address, whitelist_data.phase_id));
+            self.assert_active_phase_drop(@phase_drop);
+
+            let sig_checker_dis = ISignatureChecker2Dispatcher {
+                contract_address: self.get_signature_checker()
+            };
+
+            self.assert_allowed_fee_recipient(@fee_recipient);
+
+            sig_checker_dis
+                .verify_whitelist_mint_proof(
+                    self.get_domain_hash(), self.get_validator(), whitelist_data, proof
+                );
+            let mint_hash = sig_checker_dis
+                .compute_whitelist_mint_message_hash(
+                    self.get_domain_hash(), self.get_validator(), whitelist_data
+                );
+            assert(!self.is_used_proof.read(mint_hash), 'FlexDrop: Proof is used');
+
+            self.is_used_proof.write(mint_hash, true);
+
+            self
+                .mint_and_pay(
+                    whitelist_data.nft_address,
+                    whitelist_data.minter,
+                    whitelist_data.minter,
+                    false,
+                    1,
+                    phase_drop.currency,
+                    0,
                     fee_recipient
                 );
             self.reentrancy.end();
@@ -208,7 +271,7 @@ mod FlexDrop {
             let nft_address = get_caller_address();
 
             let phase_detail = self.phase_drops.read((nft_address, phase_drop_id));
-            assert!(phase_detail.phase_type == 0, "FlexDrop: Phase have not started");
+            assert!(phase_detail.phase_type == 0, "FlexDrop: Phase have been started");
             self.validate_new_phase_drop(@phase_drop);
 
             let new_phase_fee = self.new_phase_fee.read();
@@ -369,6 +432,41 @@ mod FlexDrop {
         }
 
         #[external(v0)]
+        fn update_validator(ref self: ContractState, new_validator: ContractAddress) {
+            self.ownable.assert_only_owner();
+            self.validator.write(new_validator);
+        }
+
+        #[external(v0)]
+        fn get_validator(self: @ContractState) -> ContractAddress {
+            self.validator.read()
+        }
+
+        #[external(v0)]
+        fn update_domain_hash(ref self: ContractState, new_domain_hash: felt252) {
+            self.ownable.assert_only_owner();
+            self.domain_hash.write(new_domain_hash);
+        }
+
+        #[external(v0)]
+        fn get_domain_hash(self: @ContractState) -> felt252 {
+            self.domain_hash.read()
+        }
+
+        #[external(v0)]
+        fn update_signature_checker(
+            ref self: ContractState, new_signature_checker: ContractAddress
+        ) {
+            self.ownable.assert_only_owner();
+            self.signature_checker.write(new_signature_checker);
+        }
+
+        #[external(v0)]
+        fn get_signature_checker(self: @ContractState) -> ContractAddress {
+            self.signature_checker.read()
+        }
+
+        #[external(v0)]
         fn get_phase_drop(
             self: @ContractState, nft_address: ContractAddress, phase_id: u64
         ) -> PhaseDrop {
@@ -412,7 +510,7 @@ mod FlexDrop {
             assert!(*phase_drop.phase_type == 1, "FlexDrop: Currently supported public phase");
             assert!(
                 *phase_drop.start_time >= get_block_timestamp()
-                    + 86400 && *phase_drop.start_time
+                    + 1800 && *phase_drop.start_time
                     + 3600 <= *phase_drop.end_time,
                 "FlexDrop: Wrong start and end time"
             );
@@ -451,8 +549,7 @@ mod FlexDrop {
         ) {
             assert(quantity > 0, 'Only non zero quantity');
 
-            let (total_minted, current_total_supply, max_supply) =
-                INonFungibleFlexDropTokenDispatcher {
+            let (total_minted, _) = INonFungibleFlexDropTokenDispatcher {
                 contract_address: *nft_address
             }
                 .get_mint_state(*minter);
@@ -460,7 +557,6 @@ mod FlexDrop {
             assert(
                 total_minted + quantity <= max_total_mint_per_wallet, 'Exceeds maximum total minted'
             );
-            assert(quantity + current_total_supply <= max_supply, 'Exceeds maximum total supply');
         }
 
         fn assert_allowed_fee_recipient(self: @ContractState, fee_recipient: @ContractAddress,) {
@@ -475,6 +571,7 @@ mod FlexDrop {
             nft_address: ContractAddress,
             payer: ContractAddress,
             minter: ContractAddress,
+            is_payer: bool,
             quantity: u64,
             currency_address: ContractAddress,
             total_mint_price: u256,
@@ -482,7 +579,7 @@ mod FlexDrop {
         ) {
             self
                 .split_payout(
-                    payer, nft_address, fee_recipient, currency_address, total_mint_price
+                    payer, is_payer, nft_address, fee_recipient, currency_address, total_mint_price
                 );
 
             INonFungibleFlexDropTokenDispatcher { contract_address: nft_address }
@@ -505,6 +602,7 @@ mod FlexDrop {
         fn split_payout(
             ref self: ContractState,
             from: ContractAddress,
+            is_payer: bool,
             nft_address: ContractAddress,
             fee_recipient: ContractAddress,
             currency_address: ContractAddress,
@@ -518,7 +616,7 @@ mod FlexDrop {
                 fee_currency_contract.transfer_from(from, fee_recipient, fee_mint);
             }
 
-            if total_mint_price > 0 {
+            if total_mint_price > 0 && !is_payer {
                 let currency_contract = IERC20Dispatcher { contract_address: currency_address };
                 let creator_payout_address = self.creator_payout_address.read(nft_address);
                 assert!(
