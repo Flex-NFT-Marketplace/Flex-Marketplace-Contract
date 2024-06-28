@@ -19,6 +19,10 @@ impl DefaultContractAddress of Default<ContractAddress> {
     }
 }
 
+mod airdrop {
+    mod NFTHolderAirdrop;
+}
+
 mod marketplace {
     mod launchpad {
         mod ERC721_launchpad_migrated;
