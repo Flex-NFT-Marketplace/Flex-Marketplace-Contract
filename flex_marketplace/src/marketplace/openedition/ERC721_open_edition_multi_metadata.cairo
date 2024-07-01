@@ -88,10 +88,11 @@ mod ERC721OpenEditionMultiMetadata {
         name: ByteArray,
         symbol: ByteArray,
         token_base_uri: ByteArray,
+        total_supply: u64,
         allowed_flex_drop: Array::<ContractAddress>,
     ) {
         self.ownable.initializer(creator);
-        self.erc721.initializer(name, symbol, creator, token_base_uri);
+        self.erc721.initializer(name, symbol, creator, total_supply, token_base_uri);
         self.current_token_id.write(1);
         self.current_phase_id.write(1);
 
@@ -290,10 +291,10 @@ mod ERC721OpenEditionMultiMetadata {
         }
 
         // return (number minted, current total supply)
-        fn get_mint_state(self: @ContractState, minter: ContractAddress) -> (u64, u64) {
+        fn get_mint_state(self: @ContractState, minter: ContractAddress) -> (u64, u64, u64) {
             let total_minted = self.total_minted_per_wallet.read(minter);
             let current_total_supply = self.get_total_minted();
-            (total_minted, current_total_supply)
+            (total_minted, current_total_supply, self.erc721.total_supply())
         }
 
         fn get_current_token_id(self: @ContractState) -> u256 {

@@ -30,6 +30,7 @@ trait IERC721<TState> {
 trait IERC721Metadata<TState> {
     fn name(self: @TState) -> ByteArray;
     fn symbol(self: @TState) -> ByteArray;
+    fn total_supply(self: @TState) -> u64;
     fn token_uri(self: @TState, token_id: u256) -> ByteArray;
 }
 
@@ -52,6 +53,7 @@ trait IERC721CamelOnly<TState> {
 
 #[starknet::interface]
 trait IERC721MetadataCamelOnly<TState> {
+    fn totalSupply(self: @TState) -> u64;
     fn tokenURI(self: @TState, tokenId: u256) -> ByteArray;
 }
 
