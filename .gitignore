@@ -7,3 +7,5 @@ tool-versions
 
 .vscode/
 node_modules/
+
+deployment-script
