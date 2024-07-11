@@ -41,9 +41,11 @@ mod marketplace {
 
     mod interfaces {
         mod nft_transfer_manager;
+        mod IFlexStakingPool;
     }
 
     mod openedition;
+    mod stakingpool;
     mod contract_deployer;
     mod currency_manager;
     mod execution_manager;
