@@ -288,11 +288,10 @@ mod ERC721OpenEdition {
             }
         }
 
-        // return (number minted, current total supply)
-        fn get_mint_state(self: @ContractState, minter: ContractAddress) -> (u64, u64) {
+        fn get_mint_state(self: @ContractState, minter: ContractAddress) -> (u64, u64, u64) {
             let total_minted = self.total_minted_per_wallet.read(minter);
             let current_total_supply = self.get_total_minted();
-            (total_minted, current_total_supply)
+            (total_minted, current_total_supply, BoundedU64::max() - 1)
         }
 
         fn get_current_token_id(self: @ContractState) -> u256 {

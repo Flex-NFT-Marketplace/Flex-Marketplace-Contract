@@ -4,7 +4,6 @@
 /// the IERC721Metadata interface and IFlexDropContractMetadata interface.
 #[starknet::component]
 mod ERC721MultiMetadataComponent {
-    use core::byte_array::ByteArrayTrait;
     use openzeppelin::account;
     use openzeppelin::introspection::dual_src5::{DualCaseSRC5, DualCaseSRC5Trait};
     use openzeppelin::introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
@@ -23,6 +22,7 @@ mod ERC721MultiMetadataComponent {
     struct Storage {
         ERC721_name: ByteArray,
         ERC721_symbol: ByteArray,
+        ERC721_total_supply: u64,
         ERC721_owners: LegacyMap<u256, ContractAddress>,
         ERC721_balances: LegacyMap<ContractAddress, u256>,
         ERC721_token_approvals: LegacyMap<u256, ContractAddress>,
@@ -81,6 +81,7 @@ mod ERC721MultiMetadataComponent {
         const SELF_APPROVAL: felt252 = 'ERC721: self approval';
         const INVALID_RECEIVER: felt252 = 'ERC721: invalid receiver';
         const ALREADY_MINTED: felt252 = 'ERC721: token already minted';
+        const REACH_MAXIMUM_SUPPLY: felt252 = 'ERC721: reach maximum supply';
         const WRONG_SENDER: felt252 = 'ERC721: wrong sender';
         const SAFE_MINT_FAILED: felt252 = 'ERC721: safe mint failed';
         const SAFE_TRANSFER_FAILED: felt252 = 'ERC721: safe transfer failed';
@@ -231,6 +232,11 @@ mod ERC721MultiMetadataComponent {
             self.ERC721_symbol.read()
         }
 
+        /// Returns the NFT total supply
+        fn total_supply(self: @ComponentState<TContractState>) -> u64 {
+            self.ERC721_total_supply.read()
+        }
+
         /// Returns the Uniform Resource Identifier (URI) for the `token_id` token.
         /// If the URI is not set for the `token_id`, the return value will be `0`.
         ///
@@ -308,6 +314,10 @@ mod ERC721MultiMetadataComponent {
         +SRC5Component::HasComponent<TContractState>,
         +Drop<TContractState>
     > of IERC721::IERC721MetadataCamelOnly<ComponentState<TContractState>> {
+        fn totalSupply(self: @ComponentState<TContractState>) -> u64 {
+            self.total_supply()
+        }
+
         fn tokenURI(self: @ComponentState<TContractState>, tokenId: u256) -> ByteArray {
             self.token_uri(tokenId)
         }
@@ -357,11 +367,13 @@ mod ERC721MultiMetadataComponent {
             name: ByteArray,
             symbol: ByteArray,
             creator: ContractAddress,
+            total_supply: u64,
             token_base_uri: ByteArray
         ) {
             self.ERC721_creator.write(creator);
             self.ERC721_name.write(name);
             self.ERC721_symbol.write(symbol);
+            self.ERC721_total_supply.write(total_supply);
             self.ERC721_base_uri.write(token_base_uri);
 
             let mut src5_component = get_dep_component_mut!(ref self, SRC5);
@@ -385,6 +397,11 @@ mod ERC721MultiMetadataComponent {
         /// Returns whether `token_id` exists.
         fn _exists(self: @ComponentState<TContractState>, token_id: u256) -> bool {
             !self.ERC721_owners.read(token_id).is_zero()
+        }
+
+        /// Returns whether `token_id` greater than the total supply.
+        fn _reach_maximum_supply(self: @ComponentState<TContractState>, token_id: u256) -> bool {
+            token_id > self.ERC721_total_supply.read().into()
         }
 
         /// Returns whether `spender` is allowed to manage `token_id`.
@@ -449,6 +466,7 @@ mod ERC721MultiMetadataComponent {
         fn _mint(ref self: ComponentState<TContractState>, to: ContractAddress, token_id: u256) {
             assert(!to.is_zero(), Errors::INVALID_RECEIVER);
             assert(!self._exists(token_id), Errors::ALREADY_MINTED);
+            assert(!self._reach_maximum_supply(token_id), Errors::REACH_MAXIMUM_SUPPLY);
 
             self.ERC721_balances.write(to, self.ERC721_balances.read(to) + 1);
             self.ERC721_owners.write(token_id, to);

@@ -231,6 +231,11 @@ mod ERC721Component {
             self.ERC721_symbol.read()
         }
 
+        /// Returns the NFT total supply
+        fn total_supply(self: @ComponentState<TContractState>) -> u64 {
+            BoundedU64::max() - 1
+        }
+
         /// Returns the Uniform Resource Identifier (URI) for the `token_id` token.
         /// If the URI is not set for the `token_id`, the return value will be `0`.
         ///
@@ -308,6 +313,10 @@ mod ERC721Component {
         +SRC5Component::HasComponent<TContractState>,
         +Drop<TContractState>
     > of IERC721::IERC721MetadataCamelOnly<ComponentState<TContractState>> {
+        fn totalSupply(self: @ComponentState<TContractState>) -> u64 {
+            self.total_supply()
+        }
+
         fn tokenURI(self: @ComponentState<TContractState>, tokenId: u256) -> ByteArray {
             self.token_uri(tokenId)
         }

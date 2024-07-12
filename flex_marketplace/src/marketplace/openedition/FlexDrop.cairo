@@ -549,7 +549,7 @@ mod FlexDrop {
         ) {
             assert(quantity > 0, 'Only non zero quantity');
 
-            let (total_minted, _) = INonFungibleFlexDropTokenDispatcher {
+            let (total_minted, current_supply, total_supply) = INonFungibleFlexDropTokenDispatcher {
                 contract_address: *nft_address
             }
                 .get_mint_state(*minter);
@@ -557,6 +557,8 @@ mod FlexDrop {
             assert(
                 total_minted + quantity <= max_total_mint_per_wallet, 'Exceeds maximum total minted'
             );
+
+            assert(current_supply + quantity <= total_supply, 'Exceeds maximum total supply');
         }
 
         fn assert_allowed_fee_recipient(self: @ContractState, fee_recipient: @ContractAddress,) {
