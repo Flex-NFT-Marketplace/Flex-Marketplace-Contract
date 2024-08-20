@@ -1,6 +1,5 @@
 #[starknet::contract]
 mod FlexStakingPool {
-    use core::array::ArrayTrait;
     use flex::marketplace::interfaces::IFlexStakingPool::IFlexStakingPool;
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::token::erc721::interface::{ERC721ABIDispatcher, ERC721ABIDispatcherTrait};
@@ -168,13 +167,29 @@ mod FlexStakingPool {
             self.reentrancy.end();
         }
 
-        fn getUserPoint(
+        fn getUserPointByItem(
             self: @ContractState,
             user: ContractAddress,
             nftCollection: ContractAddress,
             tokenId: u256
         ) -> u256 {
             self._calculateTotalReward(user, nftCollection, tokenId)
+        }
+
+        fn getUserTotalPoint(self: @ContractState, user: ContractAddress,) -> u256 {
+            let items = self.getItemStaked(user);
+            let mut totalPoints: u256 = 0;
+
+            let mut index = 0;
+            loop {
+                if (index == items.len()) {
+                    break totalPoints;
+                }
+
+                let item = items.at(index);
+                totalPoints += self._calculateTotalReward(user, *item.collection, *item.tokenId);
+                index += 1;
+            }
         }
     }
 
@@ -287,7 +302,7 @@ mod FlexStakingPool {
 
                     if (timeUnit > 0 && rewardPerUnitTime > 0) {
                         let stakedPeriod = blockTime - stakedDetail.stakedAt;
-                        point += (stakedPeriod.into() * rewardPerUnitTime) / timeUnit.into();
+                        point += (stakedPeriod / timeUnit.into()).into() * rewardPerUnitTime.into();
                     }
 
                     break point;

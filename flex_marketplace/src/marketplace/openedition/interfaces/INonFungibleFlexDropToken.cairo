@@ -12,7 +12,9 @@ trait INonFungibleFlexDropToken<TContractState> {
         ref self: TContractState, allowed_flex_drop: Array::<ContractAddress>
     );
     // mint tokens, restricted to the FlexDrop contract
-    fn mint_flex_drop(ref self: TContractState, minter: ContractAddress, quantity: u64);
+    fn mint_flex_drop(
+        ref self: TContractState, minter: ContractAddress, phase_id: u64, quantity: u64
+    );
     fn create_new_phase_drop(
         ref self: TContractState,
         flex_drop: ContractAddress,
@@ -31,7 +33,9 @@ trait INonFungibleFlexDropToken<TContractState> {
     );
     fn multi_configure(ref self: TContractState, config: MultiConfigureStruct);
     // return (number minted, current total supply, max supply)
-    fn get_mint_state(self: @TContractState, minter: ContractAddress) -> (u64, u64, u64);
+    fn get_mint_state(
+        self: @TContractState, minter: ContractAddress, phase_id: u64
+    ) -> (u64, u64, u64);
     fn get_current_token_id(self: @TContractState) -> u256;
     fn get_allowed_flex_drops(self: @TContractState) -> Span::<ContractAddress>;
 }

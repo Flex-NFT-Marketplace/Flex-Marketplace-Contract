@@ -48,6 +48,8 @@ mod FlexDrop {
         allowed_payer: LegacyMap::<(ContractAddress, ContractAddress), bool>,
         // protocol fee mint
         fee_mint: u256,
+        // protocol fee mint when creator set mint price is 0
+        fee_mint_when_zero_price: u256,
         // protocal fee currency
         fee_currency: ContractAddress,
         // start new phase fee
@@ -91,12 +93,14 @@ mod FlexDrop {
     struct FlexDropMinted {
         #[key]
         nft_address: ContractAddress,
+        phase_id: u64,
         minter: ContractAddress,
         fee_recipient: ContractAddress,
         payer: ContractAddress,
         quantity_minted: u64,
         total_mint_price: u256,
         fee_mint: u256,
+        is_warpcast: bool
     }
 
     #[derive(Drop, starknet::Event)]
@@ -137,6 +141,7 @@ mod FlexDrop {
         currency_manager: ContractAddress,
         fee_currency: ContractAddress,
         fee_mint: u256,
+        fee_mint_when_zero_price: u256,
         new_phase_fee: u256,
         domain_hash: felt252,
         validator: ContractAddress,
@@ -146,6 +151,7 @@ mod FlexDrop {
         self.ownable.initializer(owner);
         self.fee_currency.write(fee_currency);
         self.fee_mint.write(fee_mint);
+        self.fee_mint_when_zero_price.write(fee_mint_when_zero_price);
         self.new_phase_fee.write(new_phase_fee);
         self.validator.write(validator);
         self.domain_hash.write(domain_hash);
@@ -175,6 +181,7 @@ mod FlexDrop {
             fee_recipient: ContractAddress,
             minter_if_not_payer: ContractAddress,
             quantity: u64,
+            is_warpcast: bool,
         ) {
             self.pausable.assert_not_paused();
             self.reentrancy.start();
@@ -186,15 +193,15 @@ mod FlexDrop {
                 minter = minter_if_not_payer.clone();
             }
 
-            let mut is_payer: bool = false;
             if minter != get_caller_address() {
                 self.assert_allowed_payer(nft_address, get_caller_address());
-                is_payer = true;
+            } else {
+                assert(!is_warpcast, 'FlexDrop: Method Not Allowed');
             }
 
             self
                 .assert_valid_mint_quantity(
-                    @nft_address, @minter, quantity, phase_drop.max_mint_per_wallet
+                    @nft_address, @minter, phase_id, quantity, phase_drop.max_mint_per_wallet
                 );
 
             self.assert_allowed_fee_recipient(@fee_recipient);
@@ -205,11 +212,13 @@ mod FlexDrop {
                     nft_address,
                     get_caller_address(),
                     minter,
-                    is_payer,
+                    is_warpcast,
+                    phase_id,
                     quantity,
                     phase_drop.currency,
                     total_mint_price,
-                    fee_recipient
+                    fee_recipient,
+                    false
                 );
             self.reentrancy.end();
         }
@@ -251,10 +260,12 @@ mod FlexDrop {
                     whitelist_data.minter,
                     whitelist_data.minter,
                     false,
+                    whitelist_data.phase_id,
                     1,
                     phase_drop.currency,
                     0,
-                    fee_recipient
+                    fee_recipient,
+                    true
                 );
             self.reentrancy.end();
         }
@@ -394,6 +405,25 @@ mod FlexDrop {
         }
 
         #[external(v0)]
+        fn change_protocol_fee_mint_when_zero_price(
+            ref self: ContractState,
+            new_fee_currency: ContractAddress,
+            new_fee_mint_when_zero_price: u256
+        ) {
+            self.ownable.assert_only_owner();
+
+            let old_fee_mint = self.fee_mint_when_zero_price.read();
+            if old_fee_mint != new_fee_mint_when_zero_price {
+                self.fee_mint_when_zero_price.write(new_fee_mint_when_zero_price);
+            }
+
+            let old_fee_currency = self.fee_currency.read();
+            if old_fee_currency != new_fee_currency {
+                self.fee_currency.write(new_fee_currency);
+            }
+        }
+
+        #[external(v0)]
         fn update_protocol_fee_recipients(
             ref self: ContractState, fee_recipient: ContractAddress, allowed: bool
         ) {
@@ -418,6 +448,11 @@ mod FlexDrop {
         #[external(v0)]
         fn get_fee_mint(self: @ContractState) -> u256 {
             self.fee_mint.read()
+        }
+
+        #[external(v0)]
+        fn get_fee_mint_when_zero_price(self: @ContractState) -> u256 {
+            self.fee_mint_when_zero_price.read()
         }
 
         #[external(v0)]
@@ -544,6 +579,7 @@ mod FlexDrop {
             self: @ContractState,
             nft_address: @ContractAddress,
             minter: @ContractAddress,
+            phase_id: u64,
             quantity: u64,
             max_total_mint_per_wallet: u64,
         ) {
@@ -552,7 +588,7 @@ mod FlexDrop {
             let (total_minted, current_supply, total_supply) = INonFungibleFlexDropTokenDispatcher {
                 contract_address: *nft_address
             }
-                .get_mint_state(*minter);
+                .get_mint_state(*minter, phase_id);
 
             assert(
                 total_minted + quantity <= max_total_mint_per_wallet, 'Exceeds maximum total minted'
@@ -573,30 +609,44 @@ mod FlexDrop {
             nft_address: ContractAddress,
             payer: ContractAddress,
             minter: ContractAddress,
-            is_payer: bool,
+            is_warpcast: bool,
+            phase_id: u64,
             quantity: u64,
             currency_address: ContractAddress,
             total_mint_price: u256,
-            fee_recipient: ContractAddress
+            fee_recipient: ContractAddress,
+            is_whitelist_mint: bool
         ) {
             self
                 .split_payout(
-                    payer, is_payer, nft_address, fee_recipient, currency_address, total_mint_price
+                    payer,
+                    is_warpcast,
+                    nft_address,
+                    fee_recipient,
+                    currency_address,
+                    total_mint_price,
+                    is_whitelist_mint
                 );
 
             INonFungibleFlexDropTokenDispatcher { contract_address: nft_address }
-                .mint_flex_drop(minter, quantity);
+                .mint_flex_drop(minter, phase_id, quantity);
 
+            let mut fee_mint = self.fee_mint.read();
+            if total_mint_price == 0 && !is_whitelist_mint && !is_warpcast {
+                fee_mint = self.fee_mint_when_zero_price.read();
+            }
             self
                 .emit(
                     FlexDropMinted {
                         nft_address,
+                        phase_id,
                         minter,
                         fee_recipient,
                         payer,
                         quantity_minted: quantity,
                         total_mint_price,
-                        fee_mint: self.fee_mint.read(),
+                        fee_mint,
+                        is_warpcast
                     }
                 )
         }
@@ -604,21 +654,28 @@ mod FlexDrop {
         fn split_payout(
             ref self: ContractState,
             from: ContractAddress,
-            is_payer: bool,
+            is_warpcast: bool,
             nft_address: ContractAddress,
             fee_recipient: ContractAddress,
             currency_address: ContractAddress,
-            total_mint_price: u256
+            total_mint_price: u256,
+            is_whitelist_mint: bool,
         ) {
             let fee_mint = self.fee_mint.read();
-            if fee_mint > 0 {
-                let fee_currency_contract = IERC20Dispatcher {
-                    contract_address: self.fee_currency.read()
-                };
+            let fee_mint_when_zero_price = self.fee_mint_when_zero_price.read();
+            let fee_currency_contract = IERC20Dispatcher {
+                contract_address: self.fee_currency.read()
+            };
+            if total_mint_price == 0
+                && fee_mint_when_zero_price > 0
+                && !is_whitelist_mint
+                && !is_warpcast {
+                fee_currency_contract.transfer_from(from, fee_recipient, fee_mint_when_zero_price);
+            } else if fee_mint > 0 {
                 fee_currency_contract.transfer_from(from, fee_recipient, fee_mint);
             }
 
-            if total_mint_price > 0 && !is_payer {
+            if total_mint_price > 0 && !is_warpcast {
                 let currency_contract = IERC20Dispatcher { contract_address: currency_address };
                 let creator_payout_address = self.creator_payout_address.read(nft_address);
                 assert!(
