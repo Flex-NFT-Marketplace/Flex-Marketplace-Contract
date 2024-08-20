@@ -10,6 +10,7 @@ trait IFlexDrop<TContractState> {
         fee_recipient: ContractAddress,
         minter_if_not_payer: ContractAddress,
         quantity: u64,
+        is_warpcast: bool,
     );
     fn whitelist_mint(
         ref self: TContractState,

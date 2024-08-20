@@ -66,8 +66,8 @@ mod ERC721OpenEditionMultiMetadata {
         // mapping allowed FlexDrop contract
         allowed_flex_drop: LegacyMap::<ContractAddress, bool>,
         total_minted: u64,
-        // mapping total minted per minter
-        total_minted_per_wallet: LegacyMap::<ContractAddress, u64>,
+        // (address, phase id) => mapping total minted per minter
+        total_minted_per_wallet: LegacyMap::<(ContractAddress, u64), u64>,
         // Track the enumerated allowed FlexDrop address
         enumerated_allowed_flex_drop: List<ContractAddress>,
         current_phase_id: u64,
@@ -175,12 +175,14 @@ mod ERC721OpenEditionMultiMetadata {
         }
 
         // mint tokens, restricted to the FlexDrop contract
-        fn mint_flex_drop(ref self: ContractState, minter: ContractAddress, quantity: u64) {
+        fn mint_flex_drop(
+            ref self: ContractState, minter: ContractAddress, phase_id: u64, quantity: u64
+        ) {
             self.reentrancy_guard.start();
             let flex_drop = get_caller_address();
             self.assert_allowed_flex_drop(flex_drop);
 
-            self.safe_mint_flex_drop(minter, quantity);
+            self.safe_mint_flex_drop(minter, phase_id, quantity);
             self.reentrancy_guard.end();
         }
 
@@ -291,8 +293,10 @@ mod ERC721OpenEditionMultiMetadata {
         }
 
         // return (number minted, current total supply)
-        fn get_mint_state(self: @ContractState, minter: ContractAddress) -> (u64, u64, u64) {
-            let total_minted = self.total_minted_per_wallet.read(minter);
+        fn get_mint_state(
+            self: @ContractState, minter: ContractAddress, phase_id: u64
+        ) -> (u64, u64, u64) {
+            let total_minted = self.total_minted_per_wallet.read((minter, phase_id));
             let current_total_supply = self.get_total_minted();
             (total_minted, current_total_supply, self.erc721.total_supply())
         }
@@ -308,12 +312,16 @@ mod ERC721OpenEditionMultiMetadata {
 
     #[generate_trait]
     impl InternalFlexDropToken of InternalFlexDropTokenTrait {
-        fn safe_mint_flex_drop(ref self: ContractState, to: ContractAddress, quantity: u64) {
+        fn safe_mint_flex_drop(
+            ref self: ContractState, to: ContractAddress, phase_id: u64, quantity: u64
+        ) {
             let mut current_token_id = self.get_current_token_id();
 
             self
                 .total_minted_per_wallet
-                .write(to, self.total_minted_per_wallet.read(to) + quantity);
+                .write(
+                    (to, phase_id), self.total_minted_per_wallet.read((to, phase_id)) + quantity
+                );
             self.current_token_id.write(current_token_id + quantity.into());
             self.total_minted.write(self.get_total_minted() + quantity);
 
