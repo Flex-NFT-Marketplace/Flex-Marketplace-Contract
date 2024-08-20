@@ -19,5 +19,4 @@ jobs:
           starknet-foundry-version: ${{ env.SNFORGE_VERSION }}
       - name: Run cairo tests
         run: |
-          cd flex_marketplace
           snforge test
