@@ -1,11 +1,6 @@
-<!-- prettier-ignore-start -->
-<!-- markdownlint-disable -->
+![overview](./assets/logo.png)
 
-<p align="center">
-  <img src="assets/logo.png" height="256">
-</p>
-
-# Flex Contracts
+# Flex Contracts Monorepo
 
 ## Repository Structure
 
@@ -36,10 +31,7 @@ To build the contracts, run the command:
 scarb build
 ```
 
-Note:
-
--   The `stakingpool` and `openedition` directories use scarb version `2.6.3`.
--   The `marketplace` directory uses scarb version `2.4.3`.
+Note: Use scarb version `2.6.3`.
 
 ### Running Tests
 
@@ -49,11 +41,19 @@ To run the tests contained within the `tests` folder, run the command:
 scarb test
 ```
 
-### Marketplace Overview
+### Marketplace Contracts
 
-<p align="center">
-  <img src="assets/marketplace-overview.png" height="256">
-</p>
+#### Overview
+![overview](./assets/marketplace-overview.png)
 
-<!-- markdownlint-restore -->
-<!-- prettier-ignore-end -->
+#### Listing
+![listing](./assets/marketplace-listing.png)
+
+#### Buy
+![buy](./assets/marketplace-buy.png)
+
+#### Make Offer
+![make-offer](./assets/marketplace-make-offer.png)
+
+#### Accept Offer
+![accept-offer](./assets/marketplace-accept-offer.png)
