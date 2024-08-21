@@ -1,11 +1,3 @@
-.tool-versions
-flex_marketplace/target/
-
-flex_marketplace/.snfoundry_cache/
-
-tool-versions
-
+*/target/
 .vscode/
-target
-
-deployment-script
+*/scripts/node_modules/

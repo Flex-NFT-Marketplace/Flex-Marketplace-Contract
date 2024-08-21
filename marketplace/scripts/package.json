@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@types/node": "^22.4.2",
+    "dotenv": "^16.4.5",
+    "fs": "^0.0.1-security",
+    "starknet": "^6.11.0"
+  }
+}
