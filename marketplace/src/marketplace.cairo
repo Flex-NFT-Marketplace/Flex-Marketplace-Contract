@@ -46,6 +46,8 @@ trait IMarketPlace<TState> {
     fn update_royalty_fee_manager(ref self: TState, manager: ContractAddress);
     fn update_transfer_selector_NFT(ref self: TState, selector: ContractAddress);
     fn update_signature_checker(ref self: TState, checker: ContractAddress);
+    fn whitelist_collection(ref self: TState, collection: ContractAddress, is_whitelisted: bool);
+    fn whitelist_address(ref self: TState, address: ContractAddress, is_whitelisted: bool);
     fn get_hash_domain(self: @TState) -> felt252;
     fn get_protocol_fee_recipient(self: @TState) -> ContractAddress;
     fn get_currency_manager(self: @TState) -> ContractAddress;
@@ -57,6 +59,8 @@ trait IMarketPlace<TState> {
     fn get_is_user_order_nonce_executed_or_cancelled(
         self: @TState, user: ContractAddress, nonce: u128
     ) -> bool;
+    fn is_address_whitelisted(self: @TState, address: ContractAddress) -> bool;
+    fn is_collection_whitelisted(self: @TState, collection: ContractAddress) -> bool;
 }
 
 #[starknet::interface]
@@ -142,6 +146,10 @@ mod MarketPlace {
         upgradeable: UpgradeableComponent::Storage,
         #[substorage(v0)]
         reentrancyguard: ReentrancyGuardComponent::Storage,
+        // Mapping for whitelisted NFT collections
+        whitelisted_collections: LegacyMap::<ContractAddress, bool>,
+        // Mapping for whitelisted addresses
+        whitelisted_addresses: LegacyMap::<ContractAddress, bool>,
     }
 
     #[event]
@@ -165,6 +173,8 @@ mod MarketPlace {
         UpgradeableEvent: UpgradeableComponent::Event,
         #[flat]
         ReentrancyGuardEvent: ReentrancyGuardComponent::Event,
+        CollectionWhitelisted: CollectionWhitelisted,
+        AddressWhitelisted: AddressWhitelisted,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -263,6 +273,21 @@ mod MarketPlace {
         original_taker: ContractAddress,
         timestamp: u64,
     }
+
+    #[derive(Drop, starknet::Event)]
+    struct CollectionWhitelisted {
+        #[key]
+        collection: ContractAddress,
+        is_whitelisted: bool,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct AddressWhitelisted {
+        #[key]
+        address: ContractAddress,
+        is_whitelisted: bool,
+    }
+
 
     #[abi(embed_v0)]
     impl MarketPlaceImpl of super::IMarketPlace<ContractState> {
@@ -636,6 +661,34 @@ mod MarketPlace {
         ) -> bool {
             self.is_user_order_nonce_executed_or_cancelled.read((user, nonce))
         }
+
+        //util to whitelist collection
+        fn whitelist_collection(
+            ref self: ContractState, collection: ContractAddress, is_whitelisted: bool
+        ) {
+            self.ownable.assert_only_owner();
+            self.whitelisted_collections.write(collection, is_whitelisted);
+            self.emit(CollectionWhitelisted { collection, is_whitelisted });
+        }
+
+        //util to whitelist address
+        fn whitelist_address(
+            ref self: ContractState, address: ContractAddress, is_whitelisted: bool
+        ) {
+            self.ownable.assert_only_owner();
+            self.whitelisted_addresses.write(address, is_whitelisted);
+            self.emit(AddressWhitelisted { address, is_whitelisted });
+        }
+
+        //util to check whitelisted collection
+        fn is_collection_whitelisted(self: @ContractState, collection: ContractAddress) -> bool {
+            self.whitelisted_collections.read(collection)
+        }
+
+        //util to check whitelisted address
+        fn is_address_whitelisted(self: @ContractState, address: ContractAddress) -> bool {
+            self.whitelisted_addresses.read(address)
+        }
     }
 
     #[generate_trait]
@@ -653,7 +706,8 @@ mod MarketPlace {
         ) {
             assert!(!amount.is_zero(), "MarketPlace: amount is zero");
 
-            let protocol_fee_amount = self.calculate_protocol_fee(strategy, amount);
+            let protocol_fee_amount = self
+                .calculate_protocol_fee(strategy, amount, collection, from);
             let recipient = self.get_protocol_fee_recipient();
             let currency_erc20 = IERC20CamelDispatcher { contract_address: currency };
             if !protocol_fee_amount.is_zero() && !recipient.is_zero() {
@@ -704,8 +758,18 @@ mod MarketPlace {
         }
 
         fn calculate_protocol_fee(
-            self: @ContractState, execution_strategy: ContractAddress, amount: u128
+            self: @ContractState,
+            execution_strategy: ContractAddress,
+            amount: u128,
+            collection: ContractAddress,
+            user: ContractAddress
         ) -> u128 {
+            // Check if the collection or address is whitelisted
+            if self.whitelisted_collections.read(collection)
+                || self.whitelisted_addresses.read(user) {
+                return 0;
+            }
+
             let fee = IExecutionStrategyDispatcher { contract_address: execution_strategy }
                 .protocolFee();
             amount * fee / 10_000
