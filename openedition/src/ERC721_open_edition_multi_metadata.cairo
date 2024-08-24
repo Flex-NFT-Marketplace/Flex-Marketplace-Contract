@@ -5,9 +5,7 @@ mod ERC721OpenEditionMultiMetadata {
     use openzeppelin::introspection::src5::SRC5Component;
     use openzeppelin::security::reentrancyguard::ReentrancyGuardComponent;
     use openedition::ERC721MultiMetadata::ERC721MultiMetadataComponent;
-    use openedition::interfaces::IFlexDrop::{
-        IFlexDropDispatcher, IFlexDropDispatcherTrait
-    };
+    use openedition::interfaces::IFlexDrop::{IFlexDropDispatcher, IFlexDropDispatcherTrait};
     use openedition::interfaces::INonFungibleFlexDropToken::{
         INonFungibleFlexDropToken, I_NON_FUNGIBLE_FLEX_DROP_TOKEN_ID
     };

@@ -9,7 +9,9 @@ mod FlexDrop {
     };
     use openedition::{
         interfaces::ICurrencyManager::{ICurrencyManagerDispatcher, ICurrencyManagerDispatcherTrait},
-        interfaces::ISignatureChecker2::{ISignatureChecker2Dispatcher, ISignatureChecker2DispatcherTrait},
+        interfaces::ISignatureChecker2::{
+            ISignatureChecker2Dispatcher, ISignatureChecker2DispatcherTrait
+        },
     };
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin::access::ownable::OwnableComponent;
@@ -71,11 +73,6 @@ mod FlexDrop {
         pausable: PausableComponent::Storage,
         #[substorage(v0)]
         reentrancy: ReentrancyGuardComponent::Storage,
-        
-        // Mapping for whitelisted NFT collections
-        whitelisted_collections: LegacyMap::<ContractAddress, bool>,
-        // Mapping for whitelisted addresses
-        whitelisted_addresses: LegacyMap::<ContractAddress, bool>,
     }
 
     #[event]
@@ -92,9 +89,6 @@ mod FlexDrop {
         PausableEvent: PausableComponent::Event,
         #[flat]
         ReentrancyGuardEvent: ReentrancyGuardComponent::Event,
-
-        CollectionWhitelisted: CollectionWhitelisted,
-        AddressWhitelisted: AddressWhitelisted,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -140,20 +134,6 @@ mod FlexDrop {
         nft_address: ContractAddress,
         payer: ContractAddress,
         allowed: bool
-    }
-
-    #[derive(Drop, starknet::Event)]
-    struct CollectionWhitelisted {
-        #[key]
-        collection: ContractAddress,
-        is_whitelisted: bool,
-    }
-
-    #[derive(Drop, starknet::Event)]
-    struct AddressWhitelisted {
-        #[key]
-        address: ContractAddress,
-        is_whitelisted: bool,
     }
 
     #[constructor]
@@ -488,34 +468,6 @@ mod FlexDrop {
             self.new_phase_fee.write(new_fee)
         }
 
-        //util to check whitelisted collection
-        #[external(v0)]
-        fn is_collection_whitelisted(self: @ContractState, collection: ContractAddress) -> bool {
-            self.whitelisted_collections.read(collection)
-        }
-
-        //util to check whitelisted address
-        #[external(v0)]
-        fn is_address_whitelisted(self: @ContractState, address: ContractAddress) -> bool {
-            self.whitelisted_addresses.read(address)
-        }
-
-        //util to whitelist collection
-        #[external(v0)]
-        fn whitelist_collection(ref self: ContractState, collection: ContractAddress, is_whitelisted: bool) {
-            self.ownable.assert_only_owner();
-            self.whitelisted_collections.write(collection, is_whitelisted);
-            self.emit(CollectionWhitelisted { collection, is_whitelisted });
-        }
-        
-        //util to whitelist address
-        #[external(v0)]
-        fn whitelist_address(ref self: ContractState, address: ContractAddress, is_whitelisted: bool) {
-            self.ownable.assert_only_owner();
-            self.whitelisted_addresses.write(address, is_whitelisted);
-            self.emit(AddressWhitelisted { address, is_whitelisted });
-        }
-        
         #[external(v0)]
         fn update_validator(ref self: ContractState, new_validator: ContractAddress) {
             self.ownable.assert_only_owner();
@@ -667,11 +619,6 @@ mod FlexDrop {
             fee_recipient: ContractAddress,
             is_whitelist_mint: bool
         ) {
-            
-            // Check if the collection or address is whitelisted
-            let is_collection_whitelisted = self.whitelisted_collections.read(nft_address);
-            let is_address_whitelisted = self.whitelisted_addresses.read(minter);
-
             self
                 .split_payout(
                     payer,
@@ -681,21 +628,14 @@ mod FlexDrop {
                     currency_address,
                     total_mint_price,
                     is_whitelist_mint,
-                    is_address_whitelisted,
-                    is_collection_whitelisted
                 );
 
             INonFungibleFlexDropTokenDispatcher { contract_address: nft_address }
                 .mint_flex_drop(minter, phase_id, quantity);
 
-            let mut fee_mint = 0;
-
-            if !is_collection_whitelisted && !is_address_whitelisted {
-                fee_mint = self.fee_mint.read();
-                if total_mint_price == 0 && !is_whitelist_mint && !is_warpcast {
-                    fee_mint = self.fee_mint_when_zero_price.read();
-                }
-            }
+            let mut fee_mint = self.fee_mint.read();
+            if total_mint_price == 0 && !is_whitelist_mint && !is_warpcast {
+                fee_mint = self.fee_mint_when_zero_price.read();
 
             self
                 .emit(
@@ -722,25 +662,20 @@ mod FlexDrop {
             currency_address: ContractAddress,
             total_mint_price: u256,
             is_whitelist_mint: bool,
-            is_address_whitelisted: bool,
-            is_collection_whitelisted: bool
         ) {
             let fee_mint = self.fee_mint.read();
             let fee_mint_when_zero_price = self.fee_mint_when_zero_price.read();
             let fee_currency_contract = IERC20Dispatcher {
                 contract_address: self.fee_currency.read()
             };
-            
-            //collect fee only when collection or address is not whitelist
-            if !is_collection_whitelisted && !is_address_whitelisted {
-                if total_mint_price == 0
-                    && fee_mint_when_zero_price > 0
-                    && !is_whitelist_mint
-                    && !is_warpcast {
-                    fee_currency_contract.transfer_from(from, fee_recipient, fee_mint_when_zero_price);
-                } else if fee_mint > 0 {
-                    fee_currency_contract.transfer_from(from, fee_recipient, fee_mint);
-                }
+
+            if total_mint_price == 0
+                && fee_mint_when_zero_price > 0
+                && !is_whitelist_mint
+                && !is_warpcast {
+                fee_currency_contract.transfer_from(from, fee_recipient, fee_mint_when_zero_price);
+            } else if fee_mint > 0 {
+                fee_currency_contract.transfer_from(from, fee_recipient, fee_mint);
             }
 
             if total_mint_price > 0 && !is_warpcast {
