@@ -1,7 +1,6 @@
 import { Account, hash, Contract, json, Calldata, CallData, RpcProvider, shortString } from "starknet"
 import fs from 'fs'
 import dotenv from 'dotenv'
-import { parse } from "path"
 
 dotenv.config()
 
@@ -28,7 +27,7 @@ const ethAddress = "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e
 const strkAddress = "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d"
 
 // connect provider
-const providerUrl = process.env.PROVIDER_URL 
+const providerUrl = process.env.PROVIDER_URL
 const provider = new RpcProvider({ nodeUrl: providerUrl! })
 
 // connect your account. To adapt to your own account :
@@ -37,17 +36,16 @@ const account0Address: string = process.env.ACCOUNT_PUBLIC as string
 const account0 = new Account(provider, account0Address!, privateKey0!)
 
 // Utility function to parse json file
-function parseJsonFile(fileName: string) {
-    const basePath = "../target/dev"
-    const filePath = `${basePath}/${fileName}.json`
-    const fileContent = fs.readFileSync(filePath).toString("ascii")
-    return json.parse(fileContent)
+function buildPath(fileName: string) {
+    const basePath = "../target/dev/"
+    const filePath = basePath + fileName + '.json'
+    return filePath
 }
 
 // Utility function to deploy contracts
-async function deployContract(contractFilePath: string, casmFilePath: string, constructorArgs = {}) {
-    const compiledContract = parseJsonFile(contractFilePath)
-    const compiledCasm = parseJsonFile(casmFilePath)
+async function deployContract(contractFilePath: any, casmFilePath: any, constructorArgs = {}) {
+    const compiledContract = json.parse(fs.readFileSync(contractFilePath).toString("ascii"))
+    const compiledCasm = json.parse(fs.readFileSync(casmFilePath).toString("ascii"))
     const callData: CallData = new CallData(compiledContract.abi)
     const constructorCalldata: Calldata = callData.compile("constructor", constructorArgs)
 
@@ -57,11 +55,11 @@ async function deployContract(contractFilePath: string, casmFilePath: string, co
         constructorCalldata: constructorCalldata
     })
 
-    const contractName = contractFilePath.split("/")[3].split(".")[0]
+    const contractName = compiledContract.contract_name
 
     console.log(`✅ ${contractName} Deployed: ${deployResponse.deploy.contract_address}`)
 
-    return deployResponse
+    return [deployResponse.deploy.contract_address, compiledContract.abi]
 }
 
 // Utility function to whitelist a contract
@@ -84,11 +82,15 @@ async function deploy() {
     console.log("🚀 Deploying with Account: " + account0Address)
 
     console.log("\n📦 Deploying CurrencyManager...")
-    const compiledCurrencyManagerCasm = parseJsonFile("marketplace_CurrencyManager.compiled_contract_class")
-    const compiledCurrencyManagerSierra = parseJsonFile("marketplace_CurrencyManager.contract_class")
-    const deployCurrencyManagerResponse = await deployContract(compiledCurrencyManagerSierra, compiledCurrencyManagerCasm, { owner: account0.address })
+    const compiledCurrencyManagerCasmPath = buildPath("marketplace_CurrencyManager.compiled_contract_class")
+    const compiledCurrencyManagerSierraPath = buildPath("marketplace_CurrencyManager.contract_class")
 
-    const currencyManagerContract = new Contract(compiledCurrencyManagerSierra.abi, deployCurrencyManagerResponse.deploy.contract_address, provider)
+
+    const [deployCurrencyManagerResponse, compiledCurrencyManagerSierraAbi] = await deployContract(compiledCurrencyManagerSierraPath, compiledCurrencyManagerCasmPath, { owner: account0.address })
+
+    console.log("I am working: ", deployCurrencyManagerResponse)
+
+    const currencyManagerContract = new Contract(compiledCurrencyManagerSierraAbi, deployCurrencyManagerResponse, provider)
     currencyManagerContract.connect(account0);
 
     console.log("\n📦 Whitelist ETH...")
@@ -100,72 +102,71 @@ async function deploy() {
     console.log("✅ STRK whitelisted.")
 
     console.log("\n📦 Deploying StrategyStandardSaleForFixedPrice...")
-    const compiledStrategyStandardSaleForFixedPriceCasm = parseJsonFile("marketplace_StrategyStandardSaleForFixedPrice.compiled_contract_class")
-    const compiledStrategyStandardSaleForFixedPriceSierra = parseJsonFile("marketplace_StrategyStandardSaleForFixedPrice.contract_class")
-    const deployStrategyStandardSaleForFixedPriceResponse = await deployContract(compiledStrategyStandardSaleForFixedPriceSierra, compiledStrategyStandardSaleForFixedPriceCasm, { fee: 0, owner: account0.address })
-    deployStrategyStandardSaleForFixedPriceResponse.deploy.contract_address
+    const compiledStrategyStandardSaleForFixedPriceCasmPath = buildPath("marketplace_StrategyStandardSaleForFixedPrice.compiled_contract_class")
+    const compiledStrategyStandardSaleForFixedPriceSierraPath = buildPath("marketplace_StrategyStandardSaleForFixedPrice.contract_class")
+    const [deployStrategyStandardSaleForFixedPriceResponse] = await deployContract(compiledStrategyStandardSaleForFixedPriceSierraPath, compiledStrategyStandardSaleForFixedPriceCasmPath, { fee: 0, owner: account0.address })
 
     console.log("\n📦 Deploying ExecutionManager...")
-    const compiledExecutionManagerCasm = parseJsonFile("marketplace_ExecutionManager.compiled_contract_class")
-    const compiledExecutionManagerSierra = parseJsonFile("marketplace_ExecutionManager.contract_class")
-    const deployExecutionManagerResponse = await deployContract(compiledExecutionManagerSierra, compiledExecutionManagerCasm, { owner: account0.address })
+    const compiledExecutionManagerCasmPath = buildPath("marketplace_ExecutionManager.compiled_contract_class")
+    const compiledExecutionManagerSierraPath = buildPath("marketplace_ExecutionManager.contract_class")
+    const [deployExecutionManagerResponse, compiledExecutionManagerSierraAbi] = await deployContract(compiledExecutionManagerSierraPath, compiledExecutionManagerCasmPath, { owner: account0.address })
 
-    const executionManagerContract = new Contract(compiledExecutionManagerSierra.abi, deployExecutionManagerResponse.deploy.contract_address, provider)
+    const executionManagerContract = new Contract(compiledExecutionManagerSierraAbi, deployExecutionManagerResponse, provider)
     executionManagerContract.connect(account0);
 
     console.log("\n📦 Whitelist StrategyStandardSaleForFixedPrice...")
-    await whitelistContract(executionManagerContract, "add_strategy", deployStrategyStandardSaleForFixedPriceResponse.deploy.contract_address)
+    await whitelistContract(executionManagerContract, "add_strategy", deployStrategyStandardSaleForFixedPriceResponse)
     console.log("✅ StrategyStandardSaleForFixedPrice whitelisted.")
 
     console.log("\n📦 Deploying RoyaltyFeeRegistry...")
-    const compiledRoyaltyFeeRegistryCasm = parseJsonFile("marketplace_RoyaltyFeeRegistry.compiled_contract_class")
-    const compiledRoyaltyFeeRegistrySierra = parseJsonFile("marketplace_RoyaltyFeeRegistry.contract_class")
-    const deployRoyaltyFeeRegistryResponse = await deployContract(compiledRoyaltyFeeRegistrySierra, compiledRoyaltyFeeRegistryCasm, { fee_limit: 9500, owner: account0.address })
+    const compiledRoyaltyFeeRegistryCasmPath = buildPath("marketplace_RoyaltyFeeRegistry.compiled_contract_class")
+    const compiledRoyaltyFeeRegistrySierraPath = buildPath("marketplace_RoyaltyFeeRegistry.contract_class")
+    const [deployRoyaltyFeeRegistryResponse] = await deployContract(compiledRoyaltyFeeRegistrySierraPath, compiledRoyaltyFeeRegistryCasmPath, { fee_limit: 9500, owner: account0.address })
 
     console.log("\n📦 Deploying RoyaltyFeeManager...")
-    const compiledRoyaltyFeeManagerCasm = parseJsonFile("marketplace_RoyaltyFeeManager.compiled_contract_class")
-    const compiledRoyaltyFeeManagerSierra = parseJsonFile("marketplace_RoyaltyFeeManager.contract_class")
-    const deployRoyaltyFeeManagerResponse = await deployContract(compiledRoyaltyFeeManagerSierra, compiledRoyaltyFeeManagerCasm, { fee_registry: deployRoyaltyFeeRegistryResponse.deploy.contract_address, owner: account0.address })
+    const compiledRoyaltyFeeManagerCasmPath = buildPath("marketplace_RoyaltyFeeManager.compiled_contract_class")
+    const compiledRoyaltyFeeManagerSierraPath = buildPath("marketplace_RoyaltyFeeManager.contract_class")
+    const [deployRoyaltyFeeManagerResponse] = await deployContract(compiledRoyaltyFeeManagerSierraPath, compiledRoyaltyFeeManagerCasmPath, { fee_registry: deployRoyaltyFeeRegistryResponse, owner: account0.address })
 
     console.log("\n📦 Deploying SignatureChecker2...")
-    const compiledSignatureChecker2Casm = parseJsonFile("marketplace_SignatureChecker2.compiled_contract_class")
-    const compiledSignatureChecker2Sierra = parseJsonFile("marketplace_SignatureChecker2.contract_class")
-    const deploySignatureChecker2Response = await deployContract(compiledSignatureChecker2Sierra, compiledSignatureChecker2Casm, { owner: account0.address })
+    const compiledSignatureChecker2CasmPath = buildPath("marketplace_SignatureChecker2.compiled_contract_class")
+    const compiledSignatureChecker2SierraPath = buildPath("marketplace_SignatureChecker2.contract_class")
+    const [deploySignatureChecker2Response] = await deployContract(compiledSignatureChecker2SierraPath, compiledSignatureChecker2CasmPath, { owner: account0.address })
 
     console.log("\n📦 Deploying MarketPlace...")
-    const compiledMarketplaceCasm = parseJsonFile("marketplace_MarketPlace.compiled_contract_class")
-    const compiledMarketplaceSierra = parseJsonFile("marketplace_MarketPlace.contract_class")
-    const deployMarketplaceResponse = await deployContract(compiledMarketplaceSierra, compiledMarketplaceCasm, {
+    const compiledMarketplaceCasmPath = buildPath("marketplace_MarketPlace.compiled_contract_class")
+    const compiledMarketplaceSierraPath = buildPath("marketplace_MarketPlace.contract_class")
+    const [deployMarketplaceResponse, compiledMarketplaceSierraAbi] = await deployContract(compiledMarketplaceSierraPath, compiledMarketplaceCasmPath, {
         domain_name: "Flex",
         domain_ver: "1",
         recipient: account0.address,
-        currency: deployCurrencyManagerResponse.deploy.contract_address,
-        execution: deployExecutionManagerResponse.deploy.contract_address,
-        royalty_manager: deployRoyaltyFeeManagerResponse.deploy.contract_address,
-        checker: deploySignatureChecker2Response.deploy.contract_address,
+        currency: deployCurrencyManagerResponse,
+        execution: deployExecutionManagerResponse,
+        royalty_manager: deployRoyaltyFeeManagerResponse,
+        checker: deploySignatureChecker2Response,
         owner: account0.address
     })
 
-    const marketplaceContract = new Contract(compiledMarketplaceSierra.abi, deployMarketplaceResponse.deploy.contract_address, provider)
+    const marketplaceContract = new Contract(compiledMarketplaceSierraAbi, deployMarketplaceResponse, provider)
     marketplaceContract.connect(account0);
 
     console.log("\n📦 Deploying TransferManagerERC721...")
-    const compiledTransferManagerNFTCasm = parseJsonFile("marketplace_TransferManagerNFT.compiled_contract_class")
-    const compiledTransferManagerNFTSierra = parseJsonFile("marketplace_TransferManagerNFT.contract_class")
-    const deployTransferManagerNFTResponse = await deployContract(compiledTransferManagerNFTSierra, compiledTransferManagerNFTCasm, { marketplace: deployMarketplaceResponse.deploy.contract_address, owner: account0.address })
+    const compiledTransferManagerNFTCasmPath = buildPath("marketplace_TransferManagerNFT.compiled_contract_class")
+    const compiledTransferManagerNFTSierraPath = buildPath("marketplace_TransferManagerNFT.contract_class")
+    const [deployTransferManagerNFTResponse] = await deployContract(compiledTransferManagerNFTSierraPath, compiledTransferManagerNFTCasmPath, { marketplace: deployMarketplaceResponse, owner: account0.address })
 
     console.log("\n📦 Deploying TransferManagerERC1155...")
-    const compiledERC1155TransferManagerCasm = parseJsonFile("marketplace_ERC1155TransferManager.compiled_contract_class")
-    const compiledERC1155TransferManagerSierra = parseJsonFile("marketplace_ERC1155TransferManager.contract_class")
-    const deployERC1155TransferManagerResponse = await deployContract(compiledERC1155TransferManagerSierra, compiledERC1155TransferManagerCasm, { marketplace: deployMarketplaceResponse.deploy.contract_address, owner: account0.address })
+    const compiledERC1155TransferManagerCasmPath = buildPath("marketplace_ERC1155TransferManager.compiled_contract_class")
+    const compiledERC1155TransferManagerSierraPath = buildPath("marketplace_ERC1155TransferManager.contract_class")
+    const [deployERC1155TransferManagerResponse] = await deployContract(compiledERC1155TransferManagerSierraPath, compiledERC1155TransferManagerCasmPath, { marketplace: deployMarketplaceResponse, owner: account0.address })
 
     console.log("\n📦 Deploying TransferSelectorNFT...")
-    const compiledTransferSelectorNFTCasm = parseJsonFile("marketplace_TransferSelectorNFT.compiled_contract_class")
-    const compiledTransferSelectorNFTSierra = parseJsonFile("marketplace_TransferSelectorNFT.contract_class")
-    const deployTransferSelectorNFTResponse = await deployContract(compiledTransferSelectorNFTSierra, compiledTransferSelectorNFTCasm, { transfer_manager_ERC721: deployTransferManagerNFTResponse.deploy.contract_address, transfer_manager_ERC1155: deployERC1155TransferManagerResponse.deploy.contract_address, owner: account0.address })
+    const compiledTransferSelectorNFTCasmPath = buildPath("marketplace_TransferSelectorNFT.compiled_contract_class")
+    const compiledTransferSelectorNFTSierraPath = buildPath("marketplace_TransferSelectorNFT.contract_class")
+    const [deployTransferSelectorNFTResponse] = await deployContract(compiledTransferSelectorNFTSierraPath, compiledTransferSelectorNFTCasmPath, { transfer_manager_ERC721: deployTransferManagerNFTResponse, transfer_manager_ERC1155: deployERC1155TransferManagerResponse, owner: account0.address })
 
     console.log("\n📦 Whitelist TransferSelectorNFT...")
-    await whitelistContract(marketplaceContract, "update_transfer_selector_NFT", deployTransferSelectorNFTResponse.deploy.contract_address)
+    await whitelistContract(marketplaceContract, "update_transfer_selector_NFT", deployTransferSelectorNFTResponse)
     console.log("✅ TransferSelectorNFT whitelisted.")
 
     console.log("\n📦 Set ProtocolFeeRecipient...")
