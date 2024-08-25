@@ -1,0 +1,4 @@
+{
+  "extends": "./node_modules/@tsconfig/node20/tsconfig.json",
+  "include": ["scripts/**/*"]
+}
