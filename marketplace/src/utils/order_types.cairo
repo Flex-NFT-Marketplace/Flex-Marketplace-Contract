@@ -29,3 +29,10 @@ struct TakerOrder {
     min_percentage_to_ask: u128, // slippage protection (9000 = 90% of the final price must return to ask)
     params: felt252,
 }
+
+#[derive(Copy, Drop, Serde, Default)]
+struct BuyerBidOrder {
+    token_id: u128,
+    buyer_adddress: ContractAddress,
+    price: u128
+}
