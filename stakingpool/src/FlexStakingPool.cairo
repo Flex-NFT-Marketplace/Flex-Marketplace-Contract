@@ -1,6 +1,6 @@
 #[starknet::contract]
 mod FlexStakingPool {
-    use stakingpool::interfaces::IFlexStakingPool::IFlexStakingPool;
+    use stakingpool::interfaces::IFlexStakingPool::{IFlexStakingPool, IAdditionalImpl, Item, Stake};
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::token::erc721::interface::{ERC721ABIDispatcher, ERC721ABIDispatcherTrait};
     use openzeppelin::security::ReentrancyGuardComponent;
@@ -46,18 +46,6 @@ mod FlexStakingPool {
         self.ownable.initializer(owner);
     }
 
-    #[derive(Copy, Drop, Serde, Hash, PartialEq, starknet::Store)]
-    struct Item {
-        collection: ContractAddress,
-        tokenId: u256
-    }
-
-    #[derive(Copy, Drop, Serde, Hash, starknet::Store)]
-    struct Stake {
-        owner: ContractAddress,
-        stakedAt: u64
-    }
-
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
@@ -99,6 +87,37 @@ mod FlexStakingPool {
 
     #[abi(embed_v0)]
     impl FlexStakingPoolImpl of IFlexStakingPool<ContractState> {
+        fn setAllowedCollection(
+            ref self: ContractState, collection: ContractAddress, allowed: bool
+        ) {
+            self.ownable.assert_only_owner();
+            self.isEligibleCollection.write(collection, allowed);
+        }
+
+        fn setTimeUnit(ref self: ContractState, collection: ContractAddress, timeUnit: u64) {
+            self.reentrancy.start();
+            self.ownable.assert_only_owner();
+
+            self.assertAllowedCollection(collection);
+
+            self.timeUnit.write(collection, timeUnit);
+
+            self.reentrancy.end();
+        }
+
+        fn setRewardPerUnitTime(
+            ref self: ContractState, collection: ContractAddress, reward: u256
+        ) {
+            self.reentrancy.start();
+            self.ownable.assert_only_owner();
+
+            self.assertAllowedCollection(collection);
+
+            self.rewardPerUnitTime.write(collection, reward);
+
+            self.reentrancy.end();
+        }
+
         fn stakeNFT(ref self: ContractState, collection: ContractAddress, tokenId: u256) {
             self.reentrancy.start();
             self.assertAllowedCollection(collection);
@@ -193,71 +212,30 @@ mod FlexStakingPool {
         }
     }
 
-    #[abi(per_item)]
-    #[generate_trait]
-    impl AdditionalImpl of IAdditionalImpl {
-        #[external(v0)]
+    #[abi(embed_v0)]
+    impl AdditionalImpl of IAdditionalImpl<ContractState> {
         fn getStakedStatus(
             self: @ContractState, collection: ContractAddress, tokenId: u256
         ) -> Stake {
             self.vault.read(Item { collection, tokenId })
         }
 
-        #[external(v0)]
         fn getItemStaked(self: @ContractState, user: ContractAddress) -> Array::<Item> {
             self.stakerIndexer.read(user).array()
         }
 
-        #[external(v0)]
-        fn setAllowedCollection(
-            ref self: ContractState, collection: ContractAddress, allowed: bool
-        ) {
-            self.ownable.assert_only_owner();
-            self.isEligibleCollection.write(collection, allowed);
-        }
-
-        #[external(v0)]
-        fn setTimeUnit(ref self: ContractState, collection: ContractAddress, timeUnit: u64) {
-            self.reentrancy.start();
-            self.ownable.assert_only_owner();
-
-            self.assertAllowedCollection(collection);
-
-            self.timeUnit.write(collection, timeUnit);
-
-            self.reentrancy.end();
-        }
-
-        #[external(v0)]
-        fn setRewardPerUnitTime(
-            ref self: ContractState, collection: ContractAddress, reward: u256
-        ) {
-            self.reentrancy.start();
-            self.ownable.assert_only_owner();
-
-            self.assertAllowedCollection(collection);
-
-            self.rewardPerUnitTime.write(collection, reward);
-
-            self.reentrancy.end();
-        }
-
-        #[external(v0)]
         fn isEligibleCollection(self: @ContractState, collection: ContractAddress) -> bool {
             self.isEligibleCollection.read(collection)
         }
 
-        #[external(v0)]
         fn totalStaked(self: @ContractState, collection: ContractAddress) -> u256 {
             self.totalStaked.read(collection)
         }
 
-        #[external(v0)]
         fn getTimeUnit(self: @ContractState, collection: ContractAddress) -> u64 {
             self.timeUnit.read(collection)
         }
 
-        #[external(v0)]
         fn getRewardPerUnitTime(self: @ContractState, collection: ContractAddress) -> u256 {
             self.rewardPerUnitTime.read(collection)
         }
