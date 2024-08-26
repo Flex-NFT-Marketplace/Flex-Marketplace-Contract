@@ -636,6 +636,7 @@ mod FlexDrop {
             let mut fee_mint = self.fee_mint.read();
             if total_mint_price == 0 && !is_whitelist_mint && !is_warpcast {
                 fee_mint = self.fee_mint_when_zero_price.read();
+            }
 
             self
                 .emit(
@@ -652,6 +653,7 @@ mod FlexDrop {
                     }
                 )
         }
+
 
         fn split_payout(
             ref self: ContractState,
