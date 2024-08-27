@@ -154,12 +154,14 @@ mod FlexStakingPool {
             self.reentrancy.start();
             let caller = get_caller_address();
             let stake = self.vault.read(Item { collection, tokenId });
+            println!("caller unstakeNFT: {:?}", caller);
             assert(stake.owner == caller, 'Not Item Owner');
 
             let thisContract = get_contract_address();
             self.assertOnlyOwnerOfItem(collection, tokenId, thisContract);
 
             let nftDispatcher = ERC721ABIDispatcher { contract_address: collection };
+            // nftDispatcher.approve(thisContract, tokenId);
             nftDispatcher.transferFrom(thisContract, caller, tokenId);
 
             self.totalStaked.write(collection, self.totalStaked.read(collection) - 1);

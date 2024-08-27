@@ -62,6 +62,17 @@ fn deploy_flex_staking_pool() ->(IFlexStakingPoolDispatcher, ContractAddress, Co
     (dispatcher, contract_address, creator_contract_address, collection)
 }
 
+fn call_stageNFT(stakingpoolDispatcher:IFlexStakingPoolDispatcher,stakingpoolAddress: ContractAddress, collection: ContractAddress, creator_contract_address: ContractAddress, id: u256){
+    start_prank(CheatTarget::Multiple(array![stakingpoolAddress, collection]), creator_contract_address);
+    stakingpoolDispatcher.setAllowedCollection(collection, true);
+
+    stakingpoolDispatcher.stakeNFT(collection, id);
+    println!("primer llamado");
+    // start_warp(CheatTarget::Multiple(multipleAddres2), timeStamp);
+
+    stop_prank(CheatTarget::Multiple(array![stakingpoolAddress, collection]));
+}
+
 // #[test]
 // fn test_contract() {
 //     let(stakingpoolAux, stakingpoolAddres, owner) = deploy_flex_staking_pool();
@@ -87,24 +98,29 @@ fn test_stake_nft() {
     multipleAddres.append(collection);
     multipleAddres2.append(stakingpoolAddress);
     multipleAddres2.append(collection);
+    call_stageNFT(stakingpoolDispatcher, stakingpoolAddress, collection, creator_contract_address, id);
 
-    start_prank(CheatTarget::Multiple(multipleAddres), creator_contract_address);
+    // start_prank(CheatTarget::Multiple(array![stakingpoolAddress, collection]), creator_contract_address);
+    // stakingpoolDispatcher.setAllowedCollection(collection, true);
+
+    // stakingpoolDispatcher.stakeNFT(collection, id);
+    // start_warp(CheatTarget::Multiple(multipleAddres2), timeStamp);
+
+    // stop_prank(CheatTarget::Multiple(array![stakingpoolAddress, collection]));
 
 
 
-    stakingpoolDispatcher.setAllowedCollection(collection, true);
-
-    stakingpoolDispatcher.stakeNFT(collection, id);
-    start_warp(CheatTarget::Multiple(multipleAddres2), timeStamp);
+    start_prank(CheatTarget::Multiple(array![stakingpoolAddress]), creator_contract_address);
+    stakingpoolDispatcher.unstakeNFT(collection, id);
     let resultTotalPoints = stakingpoolDispatcher.getUserTotalPoint(creator_contract_address);
     let resultPointByItem = stakingpoolDispatcher.getUserPointByItem(creator_contract_address, collection, id);
 
     println!("resultTotalPoints: {:?}", resultTotalPoints);
     println!("resultPointByItem: {:?}", resultPointByItem);
-    
-    assert(resultTotalPoints == 1, 'error');
-    assert(resultPointByItem == 1, 'error');
-    stop_prank(CheatTarget::One(stakingpoolAddress));
+
+    assert(resultTotalPoints == 0, 'error');
+    assert(resultPointByItem == 0, 'error');
+    stop_prank(CheatTarget::Multiple(array![stakingpoolAddress]));
 }
 
 // #[test]
