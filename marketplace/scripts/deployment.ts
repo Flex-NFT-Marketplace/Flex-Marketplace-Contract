@@ -59,7 +59,7 @@ async function deployContract(sierraFilePath: any, casmFilePath: any, constructo
         constructorCalldata: constructorCalldata
     })
 
-    const contractName = compiledContract.contract_name
+    const contractName = compiledContract.abi[0].name.slice(0, -4)
 
     console.log(`✅ ${contractName} Deployed: ${deployResponse.deploy.contract_address}`)
 
@@ -70,7 +70,10 @@ async function deployContract(sierraFilePath: any, casmFilePath: any, constructo
 async function whitelistContract(name: string, contract: Contract, methodName: string, args: any) {
     console.log(`\n📦 Whitelist ${name}...`)
     const contractCall = contract.populate(methodName, [args])
-    const tx = await contract[methodName](contractCall.calldata)
+    console.log("ContractCall:", contractCall)
+    console.log("ContractCall calldata:", contractCall.calldata)
+    const tx = await contract.add_currency(contractCall.calldata)
+    console.log("tx", tx)
     await provider.waitForTransaction(tx.transaction_hash)
     console.log(`✅ ${name} whitelisted.`)
 }
@@ -94,11 +97,12 @@ async function deploy() {
     const [deployCurrencyManagerResponse, compiledCurrencyManagerSierraAbi] = await deployContract(compiledCurrencyManagerSierraPath, compiledCurrencyManagerCasmPath, { owner: account0.address })
 
     const currencyManagerContract = new Contract(compiledCurrencyManagerSierraAbi, deployCurrencyManagerResponse, provider)
-    currencyManagerContract.connect(account0);
 
-    await whitelistContract("ETH", currencyManagerContract, "add_currency", ethAddress)
+    currencyManagerContract.connect(account0)
 
-    await whitelistContract("STRK", currencyManagerContract, "add_currency", strkAddress)
+    // await whitelistContract("ETH", currencyManagerContract, "add_currency", ethAddress)
+
+    // await whitelistContract("STRK", currencyManagerContract, "add_currency", strkAddress)
 
     console.log("\n📦 Deploying StrategyStandardSaleForFixedPrice...")
 
@@ -114,7 +118,7 @@ async function deploy() {
     const executionManagerContract = new Contract(compiledExecutionManagerSierraAbi, deployExecutionManagerResponse, provider)
     executionManagerContract.connect(account0);
 
-    await whitelistContract("StrategyStandardSaleForFixedPrice", executionManagerContract, "add_strategy", deployStrategyStandardSaleForFixedPriceResponse)
+    // await whitelistContract("StrategyStandardSaleForFixedPrice", executionManagerContract, "add_strategy", deployStrategyStandardSaleForFixedPriceResponse)
 
     console.log("\n📦 Deploying RoyaltyFeeRegistry...")
 
@@ -135,10 +139,10 @@ async function deploy() {
 
     console.log("\n📦 Deploying MarketPlace...")
 
-    const [compiledMarketplaceSierraPath, compiledMarketplaceCasmPath] = buildPath("marketplace_MarketPlace.contract_class")
+    const [compiledMarketplaceSierraPath, compiledMarketplaceCasmPath] = buildPath("marketplace_MarketPlace")
 
     const [deployMarketplaceResponse, compiledMarketplaceSierraAbi] = await deployContract(compiledMarketplaceSierraPath, compiledMarketplaceCasmPath, {
-        domain_name: "Flex",
+        domain_name: "marketplace",
         domain_ver: "1",
         recipient: account0.address,
         currency: deployCurrencyManagerResponse,
@@ -169,10 +173,10 @@ async function deploy() {
 
     const [deployTransferSelectorNFTResponse] = await deployContract(compiledTransferSelectorNFTSierraPath, compiledTransferSelectorNFTCasmPath, { transfer_manager_ERC721: deployTransferManagerNFTResponse, transfer_manager_ERC1155: deployERC1155TransferManagerResponse, owner: account0.address })
 
-    await whitelistContract("TransferSelectorNFT", marketplaceContract, "update_transfer_selector_NFT", deployTransferSelectorNFTResponse)
+    // await whitelistContract("TransferSelectorNFT", marketplaceContract, "update_transfer_selector_NFT", deployTransferSelectorNFTResponse)
 
-    console.log("\n📦 Set ProtocolFeeRecipient...")
-    await setProtocolFeeRecipient(marketplaceContract, account0.address)
+    // console.log("\n📦 Set ProtocolFeeRecipient...")
+    // await setProtocolFeeRecipient(marketplaceContract, account0.address)
 }
 
 deploy()
