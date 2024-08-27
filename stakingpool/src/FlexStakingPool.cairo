@@ -121,16 +121,21 @@ mod FlexStakingPool {
         fn stakeNFT(ref self: ContractState, collection: ContractAddress, tokenId: u256) {
             self.reentrancy.start();
             self.assertAllowedCollection(collection);
+            println!("Holla");
 
             let caller = get_caller_address();
+            println!("caller: {:?}", caller);
             self.assertOnlyOwnerOfItem(collection, tokenId, caller);
 
             let stake = self.vault.read(Item { collection, tokenId });
+            println!("Pase read");
             assert(stake.owner.is_zero(), 'Item already staked');
 
             let thisContract = get_contract_address();
             let nftDispatcher = ERC721ABIDispatcher { contract_address: collection };
+             nftDispatcher.approve(caller,tokenId);
             nftDispatcher.transferFrom(caller, thisContract, tokenId);
+            println!("Pase mucho");
 
             let stakedAt = get_block_timestamp();
             self.vault.write(Item { collection, tokenId }, Stake { owner: caller, stakedAt });
@@ -253,9 +258,14 @@ mod FlexStakingPool {
             tokenId: u256,
             caller: ContractAddress
         ) {
+            println!("Antes de");
             let nft = ERC721ABIDispatcher { contract_address: collection };
+            println!("Despues de");
             let owner = nft.ownerOf(tokenId);
+            println!("Saludos XD");
+            println!("owner: {:?}", owner);
             assert(owner == caller, 'Caller Is Not Owner Of The Item');
+            println!("Pase assert");
         }
 
         fn _calculateUnclaimedPoint(
