@@ -8,48 +8,62 @@ The repository is organized into the following directories:
 
 -   `stakingpool`: Includes implementation of the staking NFT pool contracts.
 -   `openedition`: Includes implementation of open-editions NFT minting mechanism contracts.
+-   ## Overview
+This contains smart contracts for minting Openedition NFTs. The contracts are designed to handle the minting process, manage phases, and control access through various security components. 
 
-### ERC721 contract
 
-This contract is an implementation of an ERC-721 Open Edition NFT (Non-Fungible Token) contract on the Starknet blockchain, incorporating features from the OpenZeppelin library for secure and standardized functionality.
+### ERC721 Contract
+The `ERC721` contract implements the ERC721 token standard with additional functionalities tailored for Open Edition NFT minting. It leverages components from OpenZeppelin and Alexandria Storage for enhanced features and security.
 
-##### Key Components
-**ERC721Component:** This provides the basic functionality for ERC-721 tokens, including minting, transferring, and metadata handling.
+- **Purpose**: This handles standard ERC721 NFT operations with extensions for Open Edition minting.
+- **Key Features**:
+  - **ERC721Component**: Implements core ERC721 functionalities and Open Edition methods.
+  - **SRC5Component**: Adheres to SRC5 standards for extended capabilities.
+  - **OwnableComponent**: Manages contract ownership and permissions.
+  - **ReentrancyGuardComponent**: Provides protection against reentrancy attacks.
+- **Storage**: Tracks token IDs, allowed FlexDrop addresses, total minted tokens, and phase information.
+- **Functions**:
+  - **update_allowed_flex_drop**: Updates the list of authorized FlexDrop addresses.
+  - **mint_flex_drop**: Mints tokens through approved FlexDrop addresses.
+  - **create_new_phase_drop**: Initiates new minting phases.
+  - **update_phase_drop**: Modifies existing minting phases.
+  - **multi_configure**: Allows batch configuration for various settings.
 
-**SRC5Component:** Implements interface support detection, likely for custom or extended ERC-721 functionalities.
+### ERC721OpenEditionMultiMetadata
+The `ERC721OpenEditionMultiMetadata` contract extends the ERC721 functionality to support multiple metadata types and is designed for Starknet. It integrates components from Alexandria Storage and OpenZeppelin.
 
-**OwnableComponent:** Implements ownership functionality, allowing only the owner of the contract to perform certain actions.
+- **Purpose**: Manages ERC721 tokens with multi-metadata support on Starknet.
+- **Key Features**:
+  - **SRC5Component**: Manages SRC-5 standards specific to Starknet.
+  - **ERC721MultiMetadataComponent**: Adds support for multiple metadata types.
+  - **OwnableComponent**: Controls ownership of the contract.
+  - **ReentrancyGuardComponent**: Protects against reentrancy attacks.
+- **Storage**: Similar to `ERC721`, but includes support for multiple metadata types and phase management.
+- **Functions**:
+  - **update_allowed_flex_drop**: Allows updates to allowed FlexDrop addresses.
+  - **mint_flex_drop**: Facilitates token minting through FlexDrop addresses.
+  - **create_new_phase_drop**: Starts new phases for token distribution.
+  - **multi_configure**: Configures multiple settings in one call.
 
-**ReentrancyGuardComponent** Provides protection against reentrancy attacks, ensuring that certain functions can't be executed multiple times concurrently.
+## FlexDrop Contract
+The `FlexDrop` contract is designed for managing flexible token drops and integrates with ERC20 and other components for comprehensive management of minting phases and user access.
 
-**FlexDrop:** This contract integrates with a "FlexDrop" mechanism, allowing certain addresses (FlexDrop contracts) to mint NFTs.
+- **Purpose**: Manages the minting process for NFTs, including flexible drop phases and user whitelisting.
+- **Key Features**:
+  - **OwnableComponent**: Manages contract ownership.
+  - **PausableComponent**: Allows pausing and resuming of contract functions.
+  - **ReentrancyGuardComponent**: Protects against reentrancy attacks.
+- **Storage**: Maintains data on phase drops, creator payouts, protocol fees, and whitelist validation.
+- **Functions**:
+  - **mint_public**: Allows public minting during active phases.
+  - **whitelist_mint**: Handles minting for users on the whitelist.
+  - **start_new_phase_drop**: Initiates new minting phases with validation.
+  - **update_phase_drop**: Updates details of existing phases.
+  - **update_creator_payout_address**: Adjusts creator payout addresses.
+  - **update_payer**: Manages allowed payer addresses for minting fees.
+  - **pause/unpause**: Controls the contract's active status.
 
-**PhaseDrop:** Allows for the creation and management of phases for minting, including different configurations for each phase.
-
-### ERC721OpenEditionMultiMetadata 
-This contract defines ERC721OpenEditionMultiMetadata. It is built using several components from different libraries, which provide modular functionality like ownership, metadata handling, security, storage, and more.
-
-#### Key features
-* This contract imports various modules and components, including storage lists, OpenZeppelin components (like Ownable and ReentrancyGuard), and custom components for handling metadata and FlexDrop functionality.
-
-* The contract is designed to handle an ERC721 token with extended metadata capabilities, specifically within the context of a FlexDrop system. The contract manages phases of drops, restricts minting to authorized FlexDrop contracts, and provides a flexible system for configuring and managing token drops.
-
-### FlexDrop
-The FlexDrop contract is a modular and extensible smart contract designed to manage NFT (Non-Fungible Token) drops with flexible configurations. 
-#### Key Features:
-**Phases Management:** The contract allows the creation, updating, and management of different phases for NFT drops, each with specific parameters like start/end times, minting limits, and associated currencies.
-
-**Whitelist and Proof Verification:** It supports whitelist-based minting where a whitelist proof must be validated before minting. It ensures that the proof is not reused and verifies it against the validator and domain hash.
-
-**Fee Management:** It includes mechanisms to manage protocol fees, including fees for starting new phases and minting when prices are set to zero. The contract allows for flexible fee recipient configurations, ensuring only allowed recipients can receive fees.
-
-**Minting Process:** The contract provides functions to mint NFTs either publicly or through a whitelist. It handles payment, ensures the phase is active, and checks for valid recipients and quantities.
-
-**Payer and Payout Management:** The contract supports the configuration of allowed payers for minting and allows updating of creator payout addresses, ensuring funds go to the correct recipients.
-
-**Access Control and Pausability:** The contract includes standard access control features like ownership checks and the ability to pause or unpause certain operations, adding an extra layer of security.
-
-**Signature and Currency Handling:** It integrates with external contracts for signature verification and currency management, ensuring flexibility in handling different types of currencies and validations.
+Each contract is designed to work seamlessly within the broader ecosystem, ensuring secure and flexible NFT minting processes.
 
 -   `marketplace`: Includes implementation of the marketplace contracts.
 
