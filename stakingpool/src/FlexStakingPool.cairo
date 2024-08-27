@@ -133,7 +133,8 @@ mod FlexStakingPool {
 
             let thisContract = get_contract_address();
             let nftDispatcher = ERC721ABIDispatcher { contract_address: collection };
-             nftDispatcher.approve(caller,tokenId);
+            println!("thisContract: {:?}", thisContract);
+
             nftDispatcher.transferFrom(caller, thisContract, tokenId);
             println!("Pase mucho");
 
