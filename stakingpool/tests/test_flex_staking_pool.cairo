@@ -7,7 +7,7 @@ use stakingpool::interfaces::IFlexStakingPool::{
 IFlexStakingPoolDispatcher, IFlexStakingPoolDispatcherTrait
 };
 
-use starknet::{ContractAddress};
+use starknet::{ContractAddress, get_block_timestamp};
 use starknet::contract_address_const;
 use openzeppelin::presets::{account::Account, erc721::ERC721};
 
@@ -59,12 +59,14 @@ fn deploy_flex_staking_pool() ->(IFlexStakingPoolDispatcher, ContractAddress, Co
     let mut constructor_calldata = array![creator_contract_address.try_into().unwrap()];
     let (contract_address, _) = contract.deploy(@constructor_calldata).unwrap_syscall();
     let dispatcher = IFlexStakingPoolDispatcher { contract_address };
-    (dispatcher, contract_address, creator_contract_address, collection)
+    (dispatcher, contract_address, creator_contract_address, collection )
 }
 
 fn call_stageNFT(stakingpoolDispatcher:IFlexStakingPoolDispatcher,stakingpoolAddress: ContractAddress, collection: ContractAddress, creator_contract_address: ContractAddress, id: u256){
     start_prank(CheatTarget::Multiple(array![stakingpoolAddress, collection]), creator_contract_address);
     stakingpoolDispatcher.setAllowedCollection(collection, true);
+    stakingpoolDispatcher.setTimeUnit(collection, 5);
+    stakingpoolDispatcher.setRewardPerUnitTime(collection, 300);
 
     stakingpoolDispatcher.stakeNFT(collection, id);
     println!("primer llamado");
@@ -90,8 +92,9 @@ fn test_stake_nft() {
     // Define the test collection address and token ID
     // let collection =  contract_address_const::<'0x1234'>();
     // let sender = starknet::contract_address_const::<0x01>();
+    let block_time = get_block_timestamp();
     let id :u256 = 1;
-    let timeStamp :u64 = 200000000000000000;
+    let timeStamp :u64 = 2629743;
     let mut multipleAddres: Array<ContractAddress> = ArrayTrait::new();
     let mut multipleAddres2: Array<ContractAddress> = ArrayTrait::new();
     multipleAddres.append(stakingpoolAddress);
@@ -108,10 +111,12 @@ fn test_stake_nft() {
 
     // stop_prank(CheatTarget::Multiple(array![stakingpoolAddress, collection]));
 
-
-
+    // println!("block_time: {:?}", block_time);
+    
     start_prank(CheatTarget::Multiple(array![stakingpoolAddress]), creator_contract_address);
-    stakingpoolDispatcher.unstakeNFT(collection, id);
+    start_warp(CheatTarget::Multiple(array![collection, stakingpoolAddress]), block_time+timeStamp+1);
+    // stakingpoolDispatcher.unstakeNFT(collection, id);
+    
     let resultTotalPoints = stakingpoolDispatcher.getUserTotalPoint(creator_contract_address);
     let resultPointByItem = stakingpoolDispatcher.getUserPointByItem(creator_contract_address, collection, id);
 
@@ -121,6 +126,7 @@ fn test_stake_nft() {
     assert(resultTotalPoints == 0, 'error');
     assert(resultPointByItem == 0, 'error');
     stop_prank(CheatTarget::Multiple(array![stakingpoolAddress]));
+    stop_warp(CheatTarget::Multiple(array![collection, stakingpoolAddress]));
 }
 
 // #[test]

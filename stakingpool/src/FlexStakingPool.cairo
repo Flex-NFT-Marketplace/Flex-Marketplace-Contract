@@ -192,6 +192,7 @@ mod FlexStakingPool {
                     }
                 );
             self.reentrancy.end();
+            println!("Fin unstake");
         }
 
         fn getUserPointByItem(
@@ -206,6 +207,7 @@ mod FlexStakingPool {
         fn getUserTotalPoint(self: @ContractState, user: ContractAddress,) -> u256 {
             let items = self.getItemStaked(user);
             let mut totalPoints: u256 = 0;
+            println!("lenght: {:?}",  items.len());
 
             let mut index = 0;
             loop {
@@ -278,6 +280,7 @@ mod FlexStakingPool {
             let mut index = 0;
             let mut point = 0;
             let blockTime = get_block_timestamp();
+            println!("blockAA: {:?}", blockTime);
 
             // calculate unclaimed point
             loop {
@@ -288,8 +291,11 @@ mod FlexStakingPool {
                 let item = *stakerItems.at(index);
                 if (item == Item { collection, tokenId }) {
                     let stakedDetail = self.getStakedStatus(item.collection, item.tokenId);
+                    // println!("stakedDetail: {:?}", stakedDetail);
                     let timeUnit = self.getTimeUnit(item.collection);
+                    println!("timeUnit: {:?}", timeUnit);
                     let rewardPerUnitTime = self.getRewardPerUnitTime(item.collection);
+                    println!("rewardPerUnitTime: {:?}", rewardPerUnitTime);
 
                     if (timeUnit > 0 && rewardPerUnitTime > 0) {
                         let stakedPeriod = blockTime - stakedDetail.stakedAt;
