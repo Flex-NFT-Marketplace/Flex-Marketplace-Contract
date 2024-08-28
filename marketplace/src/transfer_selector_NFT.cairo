@@ -34,7 +34,7 @@ mod TransferSelectorNFT {
     use marketplace::utils::order_types::{MakerOrder, TakerOrder};
     use marketplace::mocks::erc1155::IERC1155_ID;
     use openzeppelin::token::erc721::interface::IERC721_ID;
-    use openzeppelin::introspection::interface::{ISRC5Dispatcher, ISRC5DispatcherTrait};
+    use openzeppelin::introspection::interface::{ISRC5CamelDispatcher, ISRC5CamelDispatcherTrait};
     use openzeppelin::access::ownable::OwnableComponent;
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
 
@@ -178,15 +178,15 @@ mod TransferSelectorNFT {
             }
 
             let transfer_manager_ERC721 = self.get_TRANSFER_MANAGER_ERC721();
-            let supports_ERC721 = ISRC5Dispatcher { contract_address: collection }
-                .supports_interface(self.INTERFACE_ID_ERC721.read());
+            let supports_ERC721 = ISRC5CamelDispatcher { contract_address: collection }
+                .supportsInterface(self.INTERFACE_ID_ERC721.read());
             if supports_ERC721 {
                 return transfer_manager_ERC721;
             }
 
             let transfer_manager_ERC1155 = self.get_TRANSFER_MANAGER_ERC1155();
-            let supports_ERC1155 = ISRC5Dispatcher { contract_address: collection }
-                .supports_interface(self.INTERFACE_ID_ERC1155.read());
+            let supports_ERC1155 = ISRC5CamelDispatcher { contract_address: collection }
+                .supportsInterface(self.INTERFACE_ID_ERC1155.read());
             if supports_ERC1155 {
                 return transfer_manager_ERC1155;
             }
