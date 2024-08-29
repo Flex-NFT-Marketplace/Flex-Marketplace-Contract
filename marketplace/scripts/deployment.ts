@@ -24,10 +24,8 @@ dotenv.config()
 // 13. Deploy `TransferSelectorNFT`
 // 14. Update `TransferSelectorNFT` on `Marketplace`
 
-// const ethAddress = "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7"
-// const strkAddress = "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d"
-const ethAddress = "0x98852f6116FdB6bc449d2c8e7581a71Aa406597b"
-const strkAddress = "0x0307784111703d85B35Ff9542ED0b9FB959aBBe193e12662D079715D2C1c1864"
+const ethAddress = "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7"
+const strkAddress = "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d"
 
 // connect provider
 const providerUrl = process.env.PROVIDER_URL as string
@@ -72,7 +70,7 @@ async function deployContract(sierraFilePath: any, casmFilePath: any, constructo
 async function whitelistContract(name: string, contract: Contract, methodName: string, args: any) {
     console.log(`\n📦 Whitelist ${name}...`)
     const contractCall = contract.populate(methodName, [args])
-    const tx = await contract[methodName](contractCall.calldata)
+    const tx = await account0.execute(contractCall)
     await provider.waitForTransaction(tx.transaction_hash)
     console.log(`✅ ${name} whitelisted.`)
 }
@@ -80,7 +78,7 @@ async function whitelistContract(name: string, contract: Contract, methodName: s
 // Utility function to set protocol fee recipient
 async function setProtocolFeeRecipient(contract: Contract, args: any) {
     const contractCall = contract.populate("set_protocol_fee_recipient", [args])
-    const tx = await contract.set_protocol_fee_recipient(contractCall.calldata)
+    const tx = await account0.execute(contractCall)
     await provider.waitForTransaction(tx.transaction_hash)
     console.log("✅ ProtocolFeeRecipient set.")
 }
@@ -172,10 +170,10 @@ async function deploy() {
 
     const [deployTransferSelectorNFTResponse] = await deployContract(compiledTransferSelectorNFTSierraPath, compiledTransferSelectorNFTCasmPath, { transfer_manager_ERC721: deployTransferManagerNFTResponse, transfer_manager_ERC1155: deployERC1155TransferManagerResponse, owner: account0.address })
 
-    // await whitelistContract("TransferSelectorNFT", marketplaceContract, "update_transfer_selector_NFT", deployTransferSelectorNFTResponse)
+    await whitelistContract("TransferSelectorNFT", marketplaceContract, "update_transfer_selector_NFT", deployTransferSelectorNFTResponse)
 
-    // console.log("\n📦 Set ProtocolFeeRecipient...")
-    // await setProtocolFeeRecipient(marketplaceContract, account0.address)
+    console.log("\n📦 Set ProtocolFeeRecipient...")
+    await setProtocolFeeRecipient(marketplaceContract, account0.address)
 }
 
 deploy()
