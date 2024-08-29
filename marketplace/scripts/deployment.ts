@@ -97,9 +97,9 @@ async function deploy() {
 
     currencyManagerContract.connect(account0)
 
-    // await whitelistContract("ETH", currencyManagerContract, "add_currency", ethAddress)
+    await whitelistContract("ETH", currencyManagerContract, "add_currency", ethAddress)
 
-    // await whitelistContract("STRK", currencyManagerContract, "add_currency", strkAddress)
+    await whitelistContract("STRK", currencyManagerContract, "add_currency", strkAddress)
 
     console.log("\n📦 Deploying StrategyStandardSaleForFixedPrice...")
 
@@ -115,7 +115,7 @@ async function deploy() {
     const executionManagerContract = new Contract(compiledExecutionManagerSierraAbi, deployExecutionManagerResponse, provider)
     executionManagerContract.connect(account0);
 
-    // await whitelistContract("StrategyStandardSaleForFixedPrice", executionManagerContract, "add_strategy", deployStrategyStandardSaleForFixedPriceResponse)
+    await whitelistContract("StrategyStandardSaleForFixedPrice", executionManagerContract, "add_strategy", deployStrategyStandardSaleForFixedPriceResponse)
 
     console.log("\n📦 Deploying RoyaltyFeeRegistry...")
 
