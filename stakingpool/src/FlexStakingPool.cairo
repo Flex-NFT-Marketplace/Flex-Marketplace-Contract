@@ -121,22 +121,16 @@ mod FlexStakingPool {
         fn stakeNFT(ref self: ContractState, collection: ContractAddress, tokenId: u256) {
             self.reentrancy.start();
             self.assertAllowedCollection(collection);
-            println!("Holla");
 
             let caller = get_caller_address();
-            println!("caller: {:?}", caller);
             self.assertOnlyOwnerOfItem(collection, tokenId, caller);
 
             let stake = self.vault.read(Item { collection, tokenId });
-            println!("Pase read");
             assert(stake.owner.is_zero(), 'Item already staked');
 
             let thisContract = get_contract_address();
             let nftDispatcher = ERC721ABIDispatcher { contract_address: collection };
-            println!("thisContract: {:?}", thisContract);
-
             nftDispatcher.transferFrom(caller, thisContract, tokenId);
-            println!("Pase mucho");
 
             let stakedAt = get_block_timestamp();
             self.vault.write(Item { collection, tokenId }, Stake { owner: caller, stakedAt });
@@ -154,14 +148,12 @@ mod FlexStakingPool {
             self.reentrancy.start();
             let caller = get_caller_address();
             let stake = self.vault.read(Item { collection, tokenId });
-            println!("caller unstakeNFT: {:?}", caller);
             assert(stake.owner == caller, 'Not Item Owner');
 
             let thisContract = get_contract_address();
             self.assertOnlyOwnerOfItem(collection, tokenId, thisContract);
 
             let nftDispatcher = ERC721ABIDispatcher { contract_address: collection };
-            // nftDispatcher.approve(thisContract, tokenId);
             nftDispatcher.transferFrom(thisContract, caller, tokenId);
 
             self.totalStaked.write(collection, self.totalStaked.read(collection) - 1);
@@ -192,7 +184,6 @@ mod FlexStakingPool {
                     }
                 );
             self.reentrancy.end();
-            println!("Fin unstake");
         }
 
         fn getUserPointByItem(
@@ -207,7 +198,6 @@ mod FlexStakingPool {
         fn getUserTotalPoint(self: @ContractState, user: ContractAddress,) -> u256 {
             let items = self.getItemStaked(user);
             let mut totalPoints: u256 = 0;
-            println!("lenght: {:?}",  items.len());
 
             let mut index = 0;
             loop {
@@ -263,14 +253,9 @@ mod FlexStakingPool {
             tokenId: u256,
             caller: ContractAddress
         ) {
-            println!("Antes de");
             let nft = ERC721ABIDispatcher { contract_address: collection };
-            println!("Despues de");
             let owner = nft.ownerOf(tokenId);
-            println!("Saludos XD");
-            println!("owner: {:?}", owner);
             assert(owner == caller, 'Caller Is Not Owner Of The Item');
-            println!("Pase assert");
         }
 
         fn _calculateUnclaimedPoint(
@@ -280,7 +265,6 @@ mod FlexStakingPool {
             let mut index = 0;
             let mut point = 0;
             let blockTime = get_block_timestamp();
-            println!("blockAA: {:?}", blockTime);
 
             // calculate unclaimed point
             loop {
@@ -291,11 +275,8 @@ mod FlexStakingPool {
                 let item = *stakerItems.at(index);
                 if (item == Item { collection, tokenId }) {
                     let stakedDetail = self.getStakedStatus(item.collection, item.tokenId);
-                    // println!("stakedDetail: {:?}", stakedDetail);
                     let timeUnit = self.getTimeUnit(item.collection);
-                    println!("timeUnit: {:?}", timeUnit);
                     let rewardPerUnitTime = self.getRewardPerUnitTime(item.collection);
-                    println!("rewardPerUnitTime: {:?}", rewardPerUnitTime);
 
                     if (timeUnit > 0 && rewardPerUnitTime > 0) {
                         let stakedPeriod = blockTime - stakedDetail.stakedAt;
@@ -344,4 +325,3 @@ mod FlexStakingPool {
         }
     }
 }
-
