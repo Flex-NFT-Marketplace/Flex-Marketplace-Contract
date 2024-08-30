@@ -35,3 +35,27 @@ async function deployContract(name: string) {
     console.log(` Deployed ✅ [${name}] -> (${deployResponse.deploy.contract_address})`);
     return { contract: new Contract(compiledSierra.abi, deployResponse.deploy.contract_address, provider), response: deployResponse };
 }
+
+// Deploys the contract with a constructor
+async function deployContractWithConstructor(name: string, constructorArgs: any = {}) {
+    console.log(`\n Declaring and deploying 🚀 [${name}] with constructor...`);
+    const compiledSierra = json.parse(
+        fs.readFileSync(`../target/dev/marketplace_${name}.contract_class.json`).toString('ascii')
+    );
+    const compiledCasm = json.parse(
+        fs.readFileSync(`../target/dev/marketplace_${name}.compiled_contract_class.json`).toString('ascii')
+    );
+
+    const calldata = new CallData(compiledSierra.abi);
+    const constructorCalldata = calldata.compile("constructor", constructorArgs);
+
+    const deployResponse = await account.declareAndDeploy({
+        contract: compiledSierra,
+        casm: compiledCasm,
+        constructorCalldata
+    });
+
+    console.log(` Deployed ✅ [${name}] -> (${deployResponse.deploy.contract_address}):`);
+    const contract = new Contract(compiledSierra.abi, deployResponse.deploy.contract_address, provider);
+    return { contract: contract, provider, response: deployResponse };
+}
