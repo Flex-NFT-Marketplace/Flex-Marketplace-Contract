@@ -114,3 +114,89 @@ async function updateProtocolFeeRecipient(marketPlaceContract: Contract, address
         console.error("Error Updating Protocol Fee Recipient:", error);
     }
 }
+
+// Deploys all the contracts
+async function deploy() {
+    await setupProvider();
+
+    // Deploy and initialize CurrencyManager
+    console.log("\n\n[-------------------- 📦 CurrencyManager 📦 --------------------]\n");
+    const { contract: currencyManagerContract } = await deployContract("CurrencyManager");
+    await initializeContract(currencyManagerContract, { owner: account.address, proxy_admin: account.address });
+    await connectContract(currencyManagerContract);
+
+    // Add ETH and STARK as currencies
+    console.log("\n\n[-------------------- 📦 Adding ETH as a Currency 📦 --------------------]\n");
+    await addCurrency(currencyManagerContract, ethAddress);
+    console.log("\n[-------------------- 📦 Adding STARK as a Currency 📦 --------------------]");
+    await addCurrency(currencyManagerContract, starkAddress);
+
+    // Deploy and initialize StrategyStandardSaleForFixedPrice
+    console.log("\n\n[-------------------- 📦 StrategyStandardSalesForFixedPrice 📦 --------------------]\n");
+    const { contract: strategyContract } = await deployContract("StrategyStandardSaleForFixedPrice");
+    await initializeContract(strategyContract, { fee: 0, owner: account.address });
+
+    // Deploy and initialize ExecutionManager
+    console.log("\n\n[-------------------- 📦 ExecutionManager 📦 --------------------]\n");
+    const { contract: executionManagerContract } = await deployContract("ExecutionManager");
+    await initializeContract(executionManagerContract, { owner: account.address });
+    await connectContract(executionManagerContract);
+    await executionManagerContract.add_strategy(ethAddress);
+
+    // Deploy and initialize RoyaltyFeeRegistry
+    console.log("\n\n[-------------------- 📦 RoyaltyFeeRegistry 📦 --------------------]\n");
+    const { contract: royaltyFeeRegistryContract } = await deployContract("RoyaltyFeeRegistry");
+    await initializeContract(royaltyFeeRegistryContract, { fee_limit: 9500, owner: account.address });
+
+    // Deploy and initialize RoyaltyFeeManager
+    console.log("\n\n[-------------------- 📦 RoyaltyFeeManager 📦 --------------------]\n");
+    const { contract: royaltyFeeManagerContract } = await deployContract("RoyaltyFeeManager");
+    await initializeContract(royaltyFeeManagerContract, { fee_registry: royaltyFeeRegistryContract.address, owner: account.address });
+
+    // Deploy SignatureChecker2 with constructor
+    console.log("\n\n[-------------------- 📦 SignatureChecker2 📦 --------------------]\n");
+    const { contract: signatureCheckerContract } = await deployContractWithConstructor("SignatureChecker2");
+
+    // Deploy and initialize MarketPlace
+    console.log("\n\n[-------------------- 📦 MarketPlace 📦 --------------------]\n");
+    const { contract: marketPlaceContract, response: marketPlaceResponse } = await deployContract("MarketPlace");
+    await initializeContract(marketPlaceContract, {
+        hash: marketPlaceResponse.deploy.classHash,
+        recepient: account.address,
+        currency: currencyManagerContract.address,
+        execution: executionManagerContract.address,
+        fee_manager: royaltyFeeManagerContract.address,
+        checker: signatureCheckerContract.address,
+        owner: account.address,
+        proxy_admin: account.address
+    });
+    await connectContract(marketPlaceContract);
+
+    // Deploy and initialize TransferManagerNFT
+    console.log("\n\n[-------------------- 📦 TransferManagerNFT 📦 --------------------]\n");
+    const { contract: transferManagerNFTContract } = await deployContract("TransferManagerNFT");
+    await initializeContract(transferManagerNFTContract, { marketplace: marketPlaceContract.address, owner: account.address });
+
+    // Deploy and initialize ERC1155TransferManager
+    console.log("\n\n[-------------------- 📦 ERC1155TransferManager 📦 --------------------]\n");
+    const { contract: erc1155TransferManagerContract } = await deployContract("ERC1155TransferManager");
+    await initializeContract(erc1155TransferManagerContract, { marketplace: marketPlaceContract.address, owner: account.address });
+
+    // Deploy and initialize TransferSelectorNFT
+    console.log("\n\n[-------------------- 📦 TransferSelectorNFT 📦 --------------------]\n");
+    const { contract: transferSelectorNFTContract } = await deployContract("TransferSelectorNFT");
+    await initializeContract(transferSelectorNFTContract, {
+        transfer_manager_ERC721: transferManagerNFTContract.address,
+        transfer_manager_ERC1155: erc1155TransferManagerContract.address,
+        owner: account.address
+    });
+    await connectContract(transferSelectorNFTContract);
+
+    // Update transfer selector NFT and protocol fee recipient
+    console.log("\n\n[-------------------- 📦 Update Transfer Selector NFT 📦 --------------------]");
+    await updateTransferSelectorNFT(marketPlaceContract, transferSelectorNFTContract.address);
+    console.log("\n\n[-------------------- 📦 Protocol Fee Recipient 📦 --------------------]");
+    await updateProtocolFeeRecipient(marketPlaceContract, account.address);
+}
+
+deploy().catch(console.error);
