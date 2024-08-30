@@ -16,3 +16,22 @@ async function setupProvider() {
     const accountAddress = process.env.DEPLOYER_ADDRESS as string;
     account = new Account(provider, accountAddress, privateKey);
 }
+
+// Deploys the contract without a constructor
+async function deployContract(name: string) {
+    console.log(` Declaring and deploying 🚀 [${name}]...`);
+    const compiledSierra = json.parse(
+        fs.readFileSync(`../target/dev/marketplace_${name}.contract_class.json`).toString('ascii')
+    );
+    const compiledCasm = json.parse(
+        fs.readFileSync(`../target/dev/marketplace_${name}.compiled_contract_class.json`).toString('ascii')
+    );
+
+    const deployResponse = await account.declareAndDeploy({
+        contract: compiledSierra,
+        casm: compiledCasm,
+    });
+
+    console.log(` Deployed ✅ [${name}] -> (${deployResponse.deploy.contract_address})`);
+    return { contract: new Contract(compiledSierra.abi, deployResponse.deploy.contract_address, provider), response: deployResponse };
+}
