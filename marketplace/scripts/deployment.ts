@@ -59,3 +59,17 @@ async function deployContractWithConstructor(name: string, constructorArgs: any 
     const contract = new Contract(compiledSierra.abi, deployResponse.deploy.contract_address, provider);
     return { contract: contract, provider, response: deployResponse };
 }
+
+// Initializes the contract with an initializer
+async function initializeContract(contract: Contract, calldata: any) {
+    console.log(`\n Initializing 🚀 [${contract.address}]...`);
+    const initializeResponse = await account.execute([
+        {
+            contractAddress: contract.address,
+            entrypoint: "initializer",
+            calldata: CallData.compile(calldata)
+        }
+    ]);
+    console.log(` Initialized ✅ [${contract.address}] -> (${initializeResponse.transaction_hash})`);
+    await provider.waitForTransaction(initializeResponse.transaction_hash);
+}
