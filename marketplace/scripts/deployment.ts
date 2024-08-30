@@ -102,3 +102,15 @@ async function updateTransferSelectorNFT(marketPlaceContract: Contract, address:
         console.error("Error Updating Transfer Selector NFT:", error);
     }
 }
+
+// Updates the protocol fee recipient
+async function updateProtocolFeeRecipient(marketPlaceContract: Contract, address: string) {
+    console.log("\n Seting ProtocolFeeRecipient 🚀");
+    try {
+        const updateResponse = await marketPlaceContract.update_protocol_fee_recepient(address);
+        console.log(` Protocol Fee Recipient Updated ✅ [${updateResponse.transaction_hash}]`);
+        await provider.waitForTransaction(updateResponse.transaction_hash);
+    } catch (error) {
+        console.error("Error Updating Protocol Fee Recipient:", error);
+    }
+}
