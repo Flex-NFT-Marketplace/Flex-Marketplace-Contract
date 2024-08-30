@@ -8,3 +8,11 @@ const starkAddress = "0x0307784111703d85B35Ff9542ED0b9FB959aBBe193e12662D079715D
 
 let provider: RpcProvider;
 let account: Account;
+
+async function setupProvider() {
+    const myNodeUrl = process.env.RPC_ENDPOINT as string;
+    provider = new RpcProvider({ nodeUrl: myNodeUrl });
+    const privateKey = process.env.DEPLOYER_PRIVATE_KEY as string;
+    const accountAddress = process.env.DEPLOYER_ADDRESS as string;
+    account = new Account(provider, accountAddress, privateKey);
+}
