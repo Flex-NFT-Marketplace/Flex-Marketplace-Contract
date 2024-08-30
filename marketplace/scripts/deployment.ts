@@ -90,3 +90,15 @@ async function addCurrency(currencyManagerContract: Contract, address: string) {
         console.error(`Error adding ${address}:`, error);
     }
 }
+
+// Updates the transfer selector NFT
+async function updateTransferSelectorNFT(marketPlaceContract: Contract, address: string) {
+    console.log("\n Updating transfer selector NFT 🚀");
+    try {
+        const updateResponse = await marketPlaceContract.update_transfer_selector_NFT(address);
+        console.log(` Transfer Selector NFT Updated ✅ [${updateResponse.transaction_hash}]`);
+        await provider.waitForTransaction(updateResponse.transaction_hash);
+    } catch (error) {
+        console.error("Error Updating Transfer Selector NFT:", error);
+    }
+}
