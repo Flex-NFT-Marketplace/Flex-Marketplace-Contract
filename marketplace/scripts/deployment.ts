@@ -73,3 +73,8 @@ async function initializeContract(contract: Contract, calldata: any) {
     console.log(` Initialized ✅ [${contract.address}] -> (${initializeResponse.transaction_hash})`);
     await provider.waitForTransaction(initializeResponse.transaction_hash);
 }
+
+// Connects the contract
+async function connectContract(contract: Contract) {
+    contract.connect(account);
+}
