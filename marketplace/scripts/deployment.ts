@@ -78,3 +78,15 @@ async function initializeContract(contract: Contract, calldata: any) {
 async function connectContract(contract: Contract) {
     contract.connect(account);
 }
+
+// Adds a currency to the contract
+async function addCurrency(currencyManagerContract: Contract, address: string) {
+    console.log(`\n Adding 🚀 [${address}]`);
+    try {
+        const addResponse = await currencyManagerContract.add_currency(address);
+        console.log(` Added ✅ [${address}] -> (${addResponse.transaction_hash})`);
+        await provider.waitForTransaction(addResponse.transaction_hash);
+    } catch (error) {
+        console.error(`Error adding ${address}:`, error);
+    }
+}
