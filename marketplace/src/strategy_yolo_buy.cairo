@@ -34,7 +34,7 @@ mod StrategyYoloBuy {
     use openzeppelin::access::ownable::OwnableComponent;
     use pragma_lib::abi::{IRandomnessDispatcher, IRandomnessDispatcherTrait};
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
-    component!(path: UpgradeableComponent, storage: upgradable, event: UpgradeableEvent);
+    component!(path: UpgradeableComponent, storage: upgradeable, event: UpgradeableEvent);
 
     #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
@@ -49,7 +49,7 @@ mod StrategyYoloBuy {
         #[substorage(v0)]
         ownable: OwnableComponent::Storage,
         #[substorage(v0)]
-        upgradable: UpgradeableComponent::Storage,
+        upgradeable: UpgradeableComponent::Storage,
         randomness_contract: IRandomnessDispatcher,
         marketplace_address: ContractAddress,
     }
@@ -107,22 +107,28 @@ mod StrategyYoloBuy {
 
         fn can_execute_taker_bid_async(
             self: @ContractState, taker_bid: TakerOrder, maker_ask: MakerOrder
-        ) -> (bool, u256, u128) {
+        ) {
             let price_match: bool = maker_ask.price == taker_bid.price;
             let token_id_match: bool = maker_ask.token_id == taker_bid.token_id;
             let start_time_valid: bool = maker_ask.start_time < get_block_timestamp();
             let end_time_valid: bool = maker_ask.end_time > get_block_timestamp();
             if (price_match && token_id_match && start_time_valid && end_time_valid) {
                 // Call the YOLO buy processing function
-                self.process_yolo_buy(taker_bid, maker_ask);
+                self.process_yolo_buy(taker_bid, maker_ask); // TODO maybe add marketplace address to calldata
             }
-            // Always return false for async execution
-            (false, maker_ask.token_id, maker_ask.amount)
+            // Call the callback method on the Marketplace contract
+            let marketplace = IMarketplaceDispatcher {
+                contract_address: self.marketplace_address.read() // TODO take marketplace address from get_caller_address()
+            };
+            marketplace
+                .async_match_callback(
+                    taker_bid, maker_ask, false, maker_ask.token_id, maker_ask.amount
+                );
         }
 
         fn upgrade(ref self: ContractState, impl_hash: ClassHash) {
             self.ownable.assert_only_owner();
-            self.upgradable._upgrade(impl_hash);
+            self.upgradeable._upgrade(impl_hash);
         }
     }
     #[generate_trait]
@@ -130,26 +136,66 @@ mod StrategyYoloBuy {
         fn process_yolo_buy(
             self: @ContractState, taker_bid: TakerOrder, maker_ask: MakerOrder
         ) {
-            // Calculate odds based on bid amount
-            let odds = self.calculate_odds(taker_bid.price, maker_ask.price);
-
             // Request randomness from Pragma VRF
             let randomness_dispatcher = IRandomnessDispatcher {
                 contract_address: self.randomness_contract.read()
             };
 
             // pack the taker bid and maker ask into a single felt252 array
-            let mut vrf_calldata = array![];
-            taker_bid.serialize(ref vrf_calldata);
-            maker_ask.serialize(ref vrf_calldata);
+            let vrf_calldata = self.serialize_callback_calldata(taker_bid, maker_ask);
             let request_id = randomness_dispatcher
                 .request_random(vrf_calldata);
         }
 
+        fn serialize_callback_calldata(
+            taker_bid: TakerOrder, maker_ask: MakerOrder
+        ) -> Array<felt252> {
+            let mut calldata = array![];
+            taker_bid.serialize(ref calldata);
+            maker_ask.serialize(ref calldata);
+            calldata
+        }
+
+        fn deserialize_callback_calldata(
+            calldata: Array<felt252>
+        ) -> (TakerOrder, MakerOrder) {
+            let mut data = calldata.span();
+            let taker_bid = TakerOrder::deserialize(ref data); // TODO check if this is correct
+            let maker_ask = MakerOrder::deserialize(ref data);
+            (taker_bid, maker_ask)
+        }
+
         fn calculate_odds(
             bid_amount: u128, full_price: u128
-        ) -> u128 { // Implement odds calculation logic
-        // Return odds as a percentage (e.g., 25 for 25%)
+        ) -> u128 {
+            // Ensure bid_amount is not greater than full_price
+            assert(bid_amount <= full_price, 'Bid exceeds full price');
+
+            // Calculate the percentage of the full price that the bid represents
+            // We multiply by 100 to get a percentage
+            let odds = (bid_amount * 100_u128) / full_price;
+
+            // Ensure odds are between 1 and 100
+            if odds == 0_u128 {
+                1_u128 // Minimum 1% chance
+            } else {
+                odds
+            }
+        }
+
+        fn determine_win(
+            random_number: felt252, bid_amount: u128, full_price: u128
+        ) -> bool {
+            let odds = self.calculate_odds(bid_amount, full_price);
+
+            // Convert felt252 to u256 for easier comparison
+            let random_u256: u256 = random_number.into();
+
+            // Calculate the threshold for winning
+            let max_felt252: u256 = 3618502788666131213697322783095070105623107215331596699973092056135872020480;
+            let threshold: u256 = (max_felt252 / 100_u256) * odds.into();
+            
+            random_u256 < threshold
         }
 
         fn receive_random_words(
@@ -162,29 +208,25 @@ mod StrategyYoloBuy {
             // Verify caller is the Pragma Randomness contract
             assert(get_caller_address() == self.randomness_contract.read(), 'Invalid caller');
 
-            // Retrieve pending bid
-            let (bidder, bid_amount) = self.pending_bids.read(request_id);
+            // Retrieve market orders from calldata:
+            let (taker_bid, maker_ask) = self.deserialize_callback_calldata(calldata);
 
             // Use randomness to determine if the bid wins
             let random_number = *random_words.at(0);
-            let wins = self.determine_win(random_number, bid_amount);
+            let wins = self.determine_win(random_number, taker_bid.price);
 
-            if wins { // Execute the YOLO Buy (transfer NFT, handle payments)
-            // You might need to call back to the MarketPlace contract here
-            } else { // Handle losing bid (e.g., refund fees, update stats)
-            }
+            // TODO update stats
+            // TODO pay the whole ask amount to the seller (from where?)
+            // TODO Handle losing bid (e.g., refund fees, update stats): here or in the marketplace contract
 
-            // Call the callback method on the Marketplace contract
+            // Call back to the MarketPlace contract here
             let marketplace = IMarketplaceDispatcher {
                 contract_address: self.marketplace_address.read()
             };
-            marketplace.async_match_callback(taker_bid, maker_ask, get_contract_address());
-            
-        }
-
-        fn determine_win(
-            random_number: felt252, bid_amount: u128
-        ) -> bool { // Implement win determination logic using the random number and bid amount
+            marketplace
+                .async_match_callback(
+                    taker_bid, maker_ask, wins, maker_ask.token_id, maker_ask.amount
+                ); // TODO check the order of the arguments
         }
 
         fn set_randomness_contract(ref self: ContractState, randomness_contract: ContractAddress) {

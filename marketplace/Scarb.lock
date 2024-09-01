@@ -12,6 +12,7 @@ version = "0.1.0"
 dependencies = [
  "alexandria_storage",
  "openzeppelin",
+ "pragma_lib",
  "snforge_std",
 ]
 
@@ -19,6 +20,11 @@ dependencies = [
 name = "openzeppelin"
 version = "0.10.0"
 source = "git+https://github.com/openzeppelin/cairo-contracts?tag=v0.10.0#d77082732daab2690ba50742ea41080eb23299d3"
+
+[[package]]
+name = "pragma_lib"
+version = "1.0.0"
+source = "git+https://github.com/astraly-labs/pragma-lib?rev=fe9a467#fe9a46743254182ac331da488ccfc05e0185cdd0"
 
 [[package]]
 name = "snforge_std"

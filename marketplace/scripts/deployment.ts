@@ -75,6 +75,18 @@ async function deploy() {
     })
     console.log("✅ StrategyStandardSaleForFixedPrice Deployed: ", deployStrategyStandardSaleForFixedPriceResponse.deploy.contract_address)
 
+    console.log("\n📦 Deploying StrategyYoloBuy...")
+    const compiledStrategyYoloBuyCasm = json.parse(fs.readFileSync("../target/dev/flex_StrategyYoloBuy.compiled_contract_class.json").toString("ascii"))
+    const compiledStrategyYoloBuySierra = json.parse(fs.readFileSync("../target/dev/flex_StrategyYoloBuy.contract_class.json").toString("ascii"))
+    const strategyYoloBuyCallData: CallData = new CallData(compiledStrategyYoloBuySierra.abi)
+    const strategyYoloBuyConstructor: Calldata = strategyYoloBuyCallData.compile("constructor", { fee: 0, owner: account0.address })
+    const deployStrategyYoloBuyResponse = await account0.declareAndDeploy({
+        contract: compiledStrategyYoloBuySierra,
+        casm: compiledStrategyYoloBuyCasm,
+        constructorCalldata: strategyYoloBuyConstructor
+    })
+    console.log("✅ StrategyYoloBuy Deployed: ", deployStrategyYoloBuyResponse.deploy.contract_address)
+
     console.log("\n📦 Deploying ExecutionManager...")
     const compiledExecutionManagerCasm = json.parse(fs.readFileSync("../target/dev/flex_ExecutionManager.compiled_contract_class.json").toString("ascii"))
     const compiledExecutionManagerSierra = json.parse(fs.readFileSync("../target/dev/flex_ExecutionManager.contract_class.json").toString("ascii"))
@@ -95,6 +107,13 @@ async function deploy() {
     const add_strategy_tx = await executionManagerContract.add_strategy(strategyCall.calldata)
     await provider.waitForTransaction(add_strategy_tx.transaction_hash)
     console.log("✅ StrategyStandardSaleForFixedPrice whitelisted.")
+
+    // Whitelist StrategyYoloBuy on ExecutionManager
+    console.log("\n📦 Whitelist StrategyYoloBuy...")
+    const strategyYoloBuyCall = executionManagerContract.populate("add_strategy", [deployStrategyYoloBuyResponse.deploy.contract_address])
+    const add_strategy_yolo_buy_tx = await executionManagerContract.add_strategy(strategyYoloBuyCall.calldata)
+    await provider.waitForTransaction(add_strategy_yolo_buy_tx.transaction_hash)
+    console.log("✅ StrategyYoloBuy whitelisted.")
 
     console.log("\n📦 Deploying RoyaltyFeeRegistry...")
     const compiledRoyaltyFeeRegistryCasm = json.parse(fs.readFileSync("../target/dev/flex_RoyaltyFeeRegistry.compiled_contract_class.json").toString("ascii"))
