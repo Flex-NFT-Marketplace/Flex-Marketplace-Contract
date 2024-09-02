@@ -7,8 +7,10 @@ trait IStrategySaleAnyItemAtFixedPrice<TState> {
     // fn initializer(ref self: TState, fee: u128, owner: ContractAddress);
     fn update_protocol_fee(ref self: TState, fee: u128);
     fn protocol_fee(self: @TState) -> u128;
-    fn set_item_sale(ref self: TState, token_id: u128);
-    fn set_price_for_item(ref self: TState, token_id: u128, price: u128);
+    //  fn set_item_sale(ref self: TState, token_id: u128);
+    fn set_buy_back_price_for_item(
+        ref self: TState, token_id: u128, price: u128, collection_address: ContractAddress
+    );
     fn can_execute_buyer_bid(self: @TState, buyer_bid: BuyerBidOrder) -> (bool, u128, u128);
     fn upgrade(ref self: TState, impl_hash: ClassHash);
 }
@@ -19,7 +21,7 @@ mod StrategySaleAnyItemAtFixedPrice {
     use starknet::{ContractAddress, contract_address_const, get_caller_address};
     use starknet::class_hash::ClassHash;
     use starknet::get_block_timestamp;
-   
+
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::upgrades::{
         {UpgradeableComponent, interface::IUpgradeable},
@@ -38,12 +40,12 @@ mod StrategySaleAnyItemAtFixedPrice {
     #[derive(Debug, Drop, Copy, Serde, starknet::Store)]
     pub struct Bids {
         pub token_id: u128,
-        pub price: u128
+        pub price: u128,
+        pub collection_address: ContractAddress
     }
 
     #[storage]
     struct Storage {
-        bid_count: u256,
         protocol_fee: u128,
         item_for_sale: LegacyMap::<
             u128, ContractAddress
@@ -65,7 +67,7 @@ mod StrategySaleAnyItemAtFixedPrice {
         #[flat]
         UpgradeableEvent: UpgradeableComponent::Event,
         ItemForSaleAdded: ItemForSaleAdded,
-        SetPriceForItemByBuyer: SetPriceForItemByBuyer
+        SetBuyBackPriceForItem: SetBuyBackPriceForItem
     }
 
     #[derive(Drop, starknet::Event)]
@@ -76,11 +78,12 @@ mod StrategySaleAnyItemAtFixedPrice {
     }
 
     #[derive(Drop, starknet::Event)]
-    pub struct SetPriceForItemByBuyer {
+    pub struct SetBuyBackPriceForItem {
         #[key]
         pub token_id: u128,
         pub buyer_address: ContractAddress,
         pub price: u128,
+        pub collection_address: ContractAddress
     }
 
 
@@ -102,31 +105,32 @@ mod StrategySaleAnyItemAtFixedPrice {
         fn protocol_fee(self: @ContractState) -> u128 {
             self.protocol_fee.read()
         }
-        fn set_item_sale(ref self: ContractState, token_id: u128) {
-            let item_for_sale_owner = self.item_for_sale.read(token_id);
-            let token_owner = get_caller_address();
-            assert(item_for_sale_owner == token_owner, 'Not Token owner');
-            self.item_for_sale.write(token_id, token_owner);
 
-            // emit event 
-            self.emit(ItemForSaleAdded { token_id: token_id, token_owner: token_owner });
-        }
-        fn set_price_for_item(ref self: ContractState, token_id: u128, price: u128) {
-            let item_for_sale_owner = self.item_for_sale.read(token_id);
-            let buyer = get_caller_address();
-            assert(item_for_sale_owner != buyer, 'Cannot Buy Your Own Token');
-            let existing_buyer_bids = self.buyer_bids.read(buyer);
+        fn set_buy_back_price_for_item(
+            ref self: ContractState,
+            token_id: u128,
+            price: u128,
+            collection_address: ContractAddress
+        ) {
+            let owner = get_caller_address();
+
+            let existing_buyer_bids = self.buyer_bids.read(owner);
 
             let buyer_token_price = existing_buyer_bids.price;
-            assert(buyer_token_price != price, 'Bid Placed Already');
+            assert(buyer_token_price != price, 'Buy Back Price Set Already');
 
-            let new_buyer_bid = Bids { token_id: token_id, price: price };
-            self.buyer_bids.write(buyer, new_buyer_bid);
+            let new_buy_back_price = Bids {
+                token_id: token_id, price: price, collection_address: collection_address
+            };
+            self.buyer_bids.write(owner, new_buy_back_price);
             // emit an event
             self
                 .emit(
-                    SetPriceForItemByBuyer {
-                        token_id: token_id, buyer_address: buyer, price: price
+                    SetBuyBackPriceForItem {
+                        token_id: token_id,
+                        buyer_address: owner,
+                        price: price,
+                        collection_address: collection_address
                     }
                 );
         }
@@ -146,7 +150,6 @@ mod StrategySaleAnyItemAtFixedPrice {
                 return (false, buyer_bid.token_id, buyer_bid.price);
             }
             return (true, buyer_bid.token_id, buyer_bid.price);
-
         }
         fn upgrade(ref self: ContractState, impl_hash: ClassHash) {
             self.ownable.assert_only_owner();
