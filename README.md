@@ -6,68 +6,6 @@
 
 The repository is organized into the following directories:
 
-
--   `stakingpool`: Includes implementation of the staking NFT pool contracts.
--   `openedition`: Includes implementation of open-editions NFT minting mechanism contracts.
--   ## Overview
-This contains smart contracts for minting Openedition NFTs. The contracts are designed to handle the minting process, manage phases, and control access through various security components. 
-
-
-### ERC721 Contract
-The `ERC721` contract implements the ERC721 token standard with additional functionalities tailored for Open Edition NFT minting. It leverages components from OpenZeppelin and Alexandria Storage for enhanced features and security.
-
-- **Purpose**: This handles standard ERC721 NFT operations with extensions for Open Edition minting.
-- **Key Features**:
-  - **ERC721Component**: Implements core ERC721 functionalities and Open Edition methods.
-  - **SRC5Component**: Adheres to SRC5 standards for extended capabilities.
-  - **OwnableComponent**: Manages contract ownership and permissions.
-  - **ReentrancyGuardComponent**: Provides protection against reentrancy attacks.
-- **Storage**: Tracks token IDs, allowed FlexDrop addresses, total minted tokens, and phase information.
-- **Functions**:
-  - **update_allowed_flex_drop**: Updates the list of authorized FlexDrop addresses.
-  - **mint_flex_drop**: Mints tokens through approved FlexDrop addresses.
-  - **create_new_phase_drop**: Initiates new minting phases.
-  - **update_phase_drop**: Modifies existing minting phases.
-  - **multi_configure**: Allows batch configuration for various settings.
-
-### ERC721OpenEditionMultiMetadata
-The `ERC721OpenEditionMultiMetadata` contract extends the ERC721 functionality to support multiple metadata types and is designed for Starknet. It integrates components from Alexandria Storage and OpenZeppelin.
-
-- **Purpose**: Manages ERC721 tokens with multi-metadata support on Starknet.
-- **Key Features**:
-  - **SRC5Component**: Manages SRC-5 standards specific to Starknet.
-  - **ERC721MultiMetadataComponent**: Adds support for multiple metadata types.
-  - **OwnableComponent**: Controls ownership of the contract.
-  - **ReentrancyGuardComponent**: Protects against reentrancy attacks.
-- **Storage**: Similar to `ERC721`, but includes support for multiple metadata types and phase management.
-- **Functions**:
-  - **update_allowed_flex_drop**: Allows updates to allowed FlexDrop addresses.
-  - **mint_flex_drop**: Facilitates token minting through FlexDrop addresses.
-  - **create_new_phase_drop**: Starts new phases for token distribution.
-  - **multi_configure**: Configures multiple settings in one call.
-
-## FlexDrop Contract
-The `FlexDrop` contract is designed for managing flexible token drops and integrates with ERC20 and other components for comprehensive management of minting phases and user access.
-
-- **Purpose**: Manages the minting process for NFTs, including flexible drop phases and user whitelisting.
-- **Key Features**:
-  - **OwnableComponent**: Manages contract ownership.
-  - **PausableComponent**: Allows pausing and resuming of contract functions.
-  - **ReentrancyGuardComponent**: Protects against reentrancy attacks.
-- **Storage**: Maintains data on phase drops, creator payouts, protocol fees, and whitelist validation.
-- **Functions**:
-  - **mint_public**: Allows public minting during active phases.
-  - **whitelist_mint**: Handles minting for users on the whitelist.
-  - **start_new_phase_drop**: Initiates new minting phases with validation.
-  - **update_phase_drop**: Updates details of existing phases.
-  - **update_creator_payout_address**: Adjusts creator payout addresses.
-  - **update_payer**: Manages allowed payer addresses for minting fees.
-  - **pause/unpause**: Controls the contract's active status.
-
-Each contract is designed to work seamlessly within the broader ecosystem, ensuring secure and flexible NFT minting processes.
-
--   `marketplace`: Includes implementation of the marketplace contracts.
-
 1. `stakingpool`: Includes implementation of the staking NFT pool contracts.
 #### Overview
 The `StakingPool` contract allows users to stake their NFTs (ERC721 tokens) from specified eligible collections and earn rewards over time. This mechanism is designed to incentivize NFT holders by rewarding them based on the duration their NFTs remain staked.
@@ -103,6 +41,28 @@ The `StakingPool` contract allows users to stake their NFTs (ERC721 tokens) from
 - Only the contract owner has the authority to modify which NFT collections are eligible for staking and to set the reward parameters.
 
 2. `openedition`: Includes implementation of open-editions NFT minting mechanism contracts.
+#### ERC721OpenEditionMultiMetadata
+  The `ERC721OpenEditionMultiMetadata` contract is designed to handle complex interactions between its various functions and components to enable flexible minting phases, secure operations, and dynamic configuration for ERC721 Open Edition Token. It supports multiple metadata types and it integrates components from Alexandria Storage and OpenZeppelin.ETC.
+
+- **Functions**:
+  * **Constructor Function:**
+   The contract's `constructor` function intializes with parameters like the`ref self` which is the `ContractState`, the `creator` of the contract wish is the `ContractAddress`, the `name` of the OpenEdition Non-Fungible Token, `symbol` of the Token in, and `token_base_uri` in `ByteArray`, `total_supply` of the OpenEdition Non-Fungible Token in `u64`, and the `allowed_flex_drop` which constatins an array where the `contracAddress` is gotten, which will all be exectuted once when the contract is deployed.
+   * **update_allowed_flex_drop function:** The function manages the FlexDrop contract by updating the `ContractState` with the allowed flex drop `ContractAddress` when this function is called. It loops through the array of addresses to verify the `old_allowed_flex_drop`. It Sets the new mapping for allowed FlexDrop contracts with the new `allowed_flex_drop`. The`UpdateAllowedFlexDrop` event is then emitted to log for the new `allowed_flex_drop`.
+   * **mint_flex_drop Function:** This function allows FlexDrop contracts to mint tokens, where the `minter` is `ContractAddress`. It utilizes reentrancy protection and it internally calls `safe_mint_flex_drop` to perform the minting of the OpenEdition Non-Fungible Token explicitly specifying the `phase_id`, 
+   `quantity` to be minted ETC.
+   * **create_new_phase_drop Fuction:** This function interacts with the FlexDrop dispatcher to initiate new minting phases. The function asserts for the restriction of only owner and also for the allowed flex drop. To start the new phase drop,it require parameters like `current_phase_id`, `phase_detail`which is the phaseDrop, and the `fee_recipient` which is the `ContractAddress `.ETC. 
+   * **update_phase_drop Fuction:** This function updates the details of existing phaseDrops in the contract. It has a check for access control through the `assert_owner_or_self` to ensures that only the contract owner or the contract itself  can execute the function and also validation  check through  `assert_allowed_flex_drop`. It also allows for modifying the minting conditions like `phase_id` and `phase_detail` within existing phase.
+   * **update_creator_payout Function:** This function updates the payout address for FlexDrop by changing the address that receives payouts with correct`payout_address` specified in the function parameters. It checks who execute the function through `assert_owner_or_self` to ensures that it is only the contract owner or the contract itself.
+   * **update_payer Function:** The function updates the address for paying gas fee of minting the NFT in the contract. It has a parameter in place to check if the payers address to update the contract state with allowed and it returns a bolean, it has parameters for `payer` and the `flex_drop` which is the `ContractAddress`. It asserts for the caller of the function and allowed flex drop.
+   * **multi_configure Function:** This function which is only executed by the owner of the contract enables dynamic changes like setting the `base_uri`and `contract_uri` if their length is > 0, updating `phase_drops`, and modifies `update_creator_payout` and `update_payer` with configured parameters. It also update the`create_new_phase_drop` and `update_phase_drop` function based on the provided configuration Parameters.
+   * **get_mint_state Function:** This function provides information on the minting state, such as the `total_minted` token per a wallet address,The `current_total_supply` of the erc721 token that is minted. 
+   * **get_current_token_id Function:** This function read the `ContractState` and return the id of the current token that has been minted.
+   * **get_allowed_flex_drops Function:** The function is executed to retrieve the `enumerated_allowed_flex_drop` from the contract state which is the `ContractAddress` that is stored in an array.
+   *  **safe_mint_flex_drop Function:** This is an internal function that performs the minting operation.It mints tokens to the `ContractAddress`, the `phase_id` and the  `quantity` of token to be minted are also specified. this function updates the `index` and `current_token_id` in the contract address.
+   *  **assert_allowed_flex_drop:** This function checks whether a FlexDrop address is allowed to execute minting and phase update functions. It revert a message which reads `Only allowed FlexDrop'` if the address calling the functions with the check are not allowed.
+   *   **get_total_minted Function:** The function gets the `total_minted` value of OpenEdition Non-Fungible Token minted in the contract. 
+   * **assert_owner_or_self Function:** This function is put in place verifies that the contract utilizes the ownable modifier. that is, only the contract owner or the contract itself can perform state changing updates, used across multiple functions that require restricted access.
+
 3. `marketplace`: Includes implementation of the marketplace contracts.
 
 
