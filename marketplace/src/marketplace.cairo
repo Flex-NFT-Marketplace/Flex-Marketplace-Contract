@@ -46,8 +46,8 @@ trait IMarketPlace<TState> {
     fn update_royalty_fee_manager(ref self: TState, manager: ContractAddress);
     fn update_transfer_selector_NFT(ref self: TState, selector: ContractAddress);
     fn update_signature_checker(ref self: TState, checker: ContractAddress);
-    fn whitelist_collection(ref self: TState, collection: ContractAddress, is_whitelisted: bool);
-    fn whitelist_address(ref self: TState, address: ContractAddress, is_whitelisted: bool);
+    fn whitelist_collection_for_zero_fees(ref self: TState, collection: ContractAddress, is_whitelisted: bool);
+    fn whitelist_address_for_zero_fees(ref self: TState, address: ContractAddress, is_whitelisted: bool);
     fn get_hash_domain(self: @TState) -> felt252;
     fn get_protocol_fee_recipient(self: @TState) -> ContractAddress;
     fn get_currency_manager(self: @TState) -> ContractAddress;
@@ -59,8 +59,8 @@ trait IMarketPlace<TState> {
     fn get_is_user_order_nonce_executed_or_cancelled(
         self: @TState, user: ContractAddress, nonce: u128
     ) -> bool;
-    fn is_address_whitelisted(self: @TState, address: ContractAddress) -> bool;
-    fn is_collection_whitelisted(self: @TState, collection: ContractAddress) -> bool;
+    fn is_address_whitelisted_for_zero_fees(self: @TState, address: ContractAddress) -> bool;
+    fn is_collection_whitelisted_for_zero_fees(self: @TState, collection: ContractAddress) -> bool;
 }
 
 #[starknet::interface]
@@ -147,9 +147,9 @@ mod MarketPlace {
         #[substorage(v0)]
         reentrancyguard: ReentrancyGuardComponent::Storage,
         // Mapping for whitelisted NFT collections
-        whitelisted_collections: LegacyMap::<ContractAddress, bool>,
+        whitelisted_collections_for_zero_fees: LegacyMap::<ContractAddress, bool>,
         // Mapping for whitelisted addresses
-        whitelisted_addresses: LegacyMap::<ContractAddress, bool>,
+        whitelisted_addresses_for_zero_fees: LegacyMap::<ContractAddress, bool>,
     }
 
     #[event]
@@ -663,31 +663,31 @@ mod MarketPlace {
         }
 
         //util to whitelist collection
-        fn whitelist_collection(
+        fn whitelist_collection_for_zero_fees(
             ref self: ContractState, collection: ContractAddress, is_whitelisted: bool
         ) {
             self.ownable.assert_only_owner();
-            self.whitelisted_collections.write(collection, is_whitelisted);
+            self.whitelisted_collections_for_zero_fees.write(collection, is_whitelisted);
             self.emit(CollectionWhitelisted { collection, is_whitelisted });
         }
 
         //util to whitelist address
-        fn whitelist_address(
+        fn whitelist_address_for_zero_fees(
             ref self: ContractState, address: ContractAddress, is_whitelisted: bool
         ) {
             self.ownable.assert_only_owner();
-            self.whitelisted_addresses.write(address, is_whitelisted);
+            self.whitelisted_addresses_for_zero_fees.write(address, is_whitelisted);
             self.emit(AddressWhitelisted { address, is_whitelisted });
         }
 
         //util to check whitelisted collection
-        fn is_collection_whitelisted(self: @ContractState, collection: ContractAddress) -> bool {
-            self.whitelisted_collections.read(collection)
+        fn is_collection_whitelisted_for_zero_fees(self: @ContractState, collection: ContractAddress) -> bool {
+            self.whitelisted_collections_for_zero_fees.read(collection)
         }
 
         //util to check whitelisted address
-        fn is_address_whitelisted(self: @ContractState, address: ContractAddress) -> bool {
-            self.whitelisted_addresses.read(address)
+        fn is_address_whitelisted_for_zero_fees(self: @ContractState, address: ContractAddress) -> bool {
+            self.whitelisted_addresses_for_zero_fees.read(address)
         }
     }
 
@@ -765,8 +765,8 @@ mod MarketPlace {
             user: ContractAddress
         ) -> u128 {
             // Check if the collection or address is whitelisted
-            if self.whitelisted_collections.read(collection)
-                || self.whitelisted_addresses.read(user) {
+            if self.whitelisted_collections_for_zero_fees.read(collection)
+                || self.whitelisted_addresses_for_zero_fees.read(user) {
                 return 0;
             }
 
