@@ -46,8 +46,12 @@ trait IMarketPlace<TState> {
     fn update_royalty_fee_manager(ref self: TState, manager: ContractAddress);
     fn update_transfer_selector_NFT(ref self: TState, selector: ContractAddress);
     fn update_signature_checker(ref self: TState, checker: ContractAddress);
-    fn whitelist_collection_for_zero_fees(ref self: TState, collection: ContractAddress, is_whitelisted: bool);
-    fn whitelist_address_for_zero_fees(ref self: TState, address: ContractAddress, is_whitelisted: bool);
+    fn whitelist_collection_for_zero_fees(
+        ref self: TState, collection: ContractAddress, is_whitelisted: bool
+    );
+    fn whitelist_address_for_zero_fees(
+        ref self: TState, address: ContractAddress, is_whitelisted: bool
+    );
     fn get_hash_domain(self: @TState) -> felt252;
     fn get_protocol_fee_recipient(self: @TState) -> ContractAddress;
     fn get_currency_manager(self: @TState) -> ContractAddress;
@@ -173,8 +177,8 @@ mod MarketPlace {
         UpgradeableEvent: UpgradeableComponent::Event,
         #[flat]
         ReentrancyGuardEvent: ReentrancyGuardComponent::Event,
-        CollectionWhitelisted: CollectionWhitelisted,
-        AddressWhitelisted: AddressWhitelisted,
+        CollectionWhitelistedForZeroFees: CollectionWhitelistedForZeroFees,
+        AddressWhitelistedForZeroFees: AddressWhitelistedForZeroFees,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -275,14 +279,14 @@ mod MarketPlace {
     }
 
     #[derive(Drop, starknet::Event)]
-    struct CollectionWhitelisted {
+    struct CollectionWhitelistedForZeroFees {
         #[key]
         collection: ContractAddress,
         is_whitelisted: bool,
     }
 
     #[derive(Drop, starknet::Event)]
-    struct AddressWhitelisted {
+    struct AddressWhitelistedForZeroFees {
         #[key]
         address: ContractAddress,
         is_whitelisted: bool,
@@ -668,7 +672,7 @@ mod MarketPlace {
         ) {
             self.ownable.assert_only_owner();
             self.whitelisted_collections_for_zero_fees.write(collection, is_whitelisted);
-            self.emit(CollectionWhitelisted { collection, is_whitelisted });
+            self.emit(CollectionWhitelistedForZeroFees { collection, is_whitelisted });
         }
 
         //util to whitelist address
@@ -677,16 +681,20 @@ mod MarketPlace {
         ) {
             self.ownable.assert_only_owner();
             self.whitelisted_addresses_for_zero_fees.write(address, is_whitelisted);
-            self.emit(AddressWhitelisted { address, is_whitelisted });
+            self.emit(AddressWhitelistedForZeroFees { address, is_whitelisted });
         }
 
         //util to check whitelisted collection
-        fn is_collection_whitelisted_for_zero_fees(self: @ContractState, collection: ContractAddress) -> bool {
+        fn is_collection_whitelisted_for_zero_fees(
+            self: @ContractState, collection: ContractAddress
+        ) -> bool {
             self.whitelisted_collections_for_zero_fees.read(collection)
         }
 
         //util to check whitelisted address
-        fn is_address_whitelisted_for_zero_fees(self: @ContractState, address: ContractAddress) -> bool {
+        fn is_address_whitelisted_for_zero_fees(
+            self: @ContractState, address: ContractAddress
+        ) -> bool {
             self.whitelisted_addresses_for_zero_fees.read(address)
         }
     }
