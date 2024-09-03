@@ -51,7 +51,7 @@ mod StrategySaleAnyItemAtFixedPrice {
         >, // token_id: u128, seller_address:ContractAddress
         buyer_bids: LegacyMap<
             ContractAddress, BuyBack
-        >, // LegacyMap<buyer_addesss, (collectionId, price)> LegacyMap<u128, u128>
+        >, // LegacyMap<buyer_addesss, (collectionAddress, price)> LegacyMap<u128, u128>
         #[substorage(v0)]
         ownable: OwnableComponent::Storage,
         #[substorage(v0)]
