@@ -9,7 +9,7 @@ trait IStrategySaleAnyItemAtFixedPrice<TState> {
     fn protocol_fee(self: @TState) -> u128;
     //  fn set_item_sale(ref self: TState, token_id: u128);
     fn set_buy_back_price_for_item(
-        ref self: TState, token_id: u128, price: u128, collection_address: ContractAddress
+        ref self: TState, price: u128, collection_address: ContractAddress
     );
     fn can_execute_buyer_bid(self: @TState, buyer_bid: BuyerBidOrder) -> (bool, u128, u128);
     fn upgrade(ref self: TState, impl_hash: ClassHash);
@@ -38,8 +38,7 @@ mod StrategySaleAnyItemAtFixedPrice {
     use marketplace::utils::order_types::{TakerOrder, MakerOrder, BuyerBidOrder};
 
     #[derive(Debug, Drop, Copy, Serde, starknet::Store)]
-    pub struct Bids {
-        pub token_id: u128,
+    pub struct BuyBack {
         pub price: u128,
         pub collection_address: ContractAddress
     }
@@ -51,8 +50,8 @@ mod StrategySaleAnyItemAtFixedPrice {
             u128, ContractAddress
         >, // token_id: u128, seller_address:ContractAddress
         buyer_bids: LegacyMap<
-            ContractAddress, Bids
-        >, // LegacyMap<buyer_addesss, (token_id, price)> LegacyMap<u128, u128>
+            ContractAddress, BuyBack
+        >, // LegacyMap<buyer_addesss, (collectionId, price)> LegacyMap<u128, u128>
         #[substorage(v0)]
         ownable: OwnableComponent::Storage,
         #[substorage(v0)]
@@ -66,21 +65,13 @@ mod StrategySaleAnyItemAtFixedPrice {
         OwnableEvent: OwnableComponent::Event,
         #[flat]
         UpgradeableEvent: UpgradeableComponent::Event,
-        ItemForSaleAdded: ItemForSaleAdded,
         SetBuyBackPriceForItem: SetBuyBackPriceForItem
     }
 
-    #[derive(Drop, starknet::Event)]
-    pub struct ItemForSaleAdded {
-        #[key]
-        pub token_id: u128,
-        pub token_owner: ContractAddress,
-    }
 
     #[derive(Drop, starknet::Event)]
     pub struct SetBuyBackPriceForItem {
         #[key]
-        pub token_id: u128,
         pub buyer_address: ContractAddress,
         pub price: u128,
         pub collection_address: ContractAddress
@@ -107,10 +98,7 @@ mod StrategySaleAnyItemAtFixedPrice {
         }
 
         fn set_buy_back_price_for_item(
-            ref self: ContractState,
-            token_id: u128,
-            price: u128,
-            collection_address: ContractAddress
+            ref self: ContractState, price: u128, collection_address: ContractAddress
         ) {
             let owner = get_caller_address();
 
@@ -119,18 +107,15 @@ mod StrategySaleAnyItemAtFixedPrice {
             let buyer_token_price = existing_buyer_bids.price;
             assert(buyer_token_price != price, 'Buy Back Price Set Already');
 
-            let new_buy_back_price = Bids {
-                token_id: token_id, price: price, collection_address: collection_address
+            let new_buy_back_price = BuyBack {
+                price: price, collection_address: collection_address
             };
             self.buyer_bids.write(owner, new_buy_back_price);
             // emit an event
             self
                 .emit(
                     SetBuyBackPriceForItem {
-                        token_id: token_id,
-                        buyer_address: owner,
-                        price: price,
-                        collection_address: collection_address
+                        buyer_address: owner, price: price, collection_address: collection_address
                     }
                 );
         }
