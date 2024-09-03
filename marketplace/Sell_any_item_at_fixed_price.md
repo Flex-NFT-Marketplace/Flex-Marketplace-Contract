@@ -1,34 +1,33 @@
-## Strategy for selling any item at a fix price
+## Strategy for Selling Any Item at a Fixed Price
 
-The function implements a Cairo contract named 'StrategySaleAnyItemAtFixedPrice'. This contract manages the sale of items (identified by token_id) at a fixed price, with specific features such as setting prices, handling bids, and upgrading the contract.
-Key functionalities:
+This contract, StrategySaleAnyItemAtFixedPrice, implements a strategy for selling items at a fixed price on StarkNet. The contract manages sales by allowing owners to list items (identified by token_id), set prices, handle buyer bids, and upgrade the contract.
+Key Functionalities
 
     Initialization (constructor):
-        Initializes the contract with the owner's address and a protocol fee.
+    Initializes the contract with the owner's address and a protocol fee. The owner's address must not be zero, and the protocol fee is set during the initialization process.
 
     Updating Protocol Fee (update_protocol_fee):
-        Allows the owner to update the protocol fee, which is the fee applied to transactions.
+    Allows the contract owner to update the protocol fee, which is a fee applied to transactions executed within the marketplace. Only the contract owner has the authority to modify this fee.
 
     Getting Protocol Fee (protocol_fee):
-        Retrieves the current protocol fee.
+    Retrieves the current protocol fee stored in the contract.
 
-    Setting an Item for Sale (set_item_sale):
-        Allows the owner of a specific token_id to list it for sale. It checks if the caller is the token owner and emits an event once the item is listed.
-
-    Setting Price for an Item (set_price_for_item):
-        Allows a buyer to set a price for a listed item. It verifies that the buyer is not the token owner, checks if the bid price is different from any existing bids by the buyer, and then records the bid, emitting an event for the action.
+    Setting Buy-Back Price for an Item (set_buy_back_price_for_item):
+    Allows a buyer to set a buy-back price for an item from a specific collection. The buyer must be the caller, and the new price must be different from any existing price set by the buyer. If the conditions are met, the price is updated, and an event is emitted to notify that the price has been set.
 
     Executing Buyer Bids (can_execute_buyer_bid):
-        Checks if a buyer's bid can be executed. It verifies that the token has been listed by the seller and compares the buyer's bid price against the existing bid to determine if the bid is executable.
+    Verifies whether a buyer's bid can be executed. The contract checks if the token was listed for sale by the seller and compares the bid price with the existing buy-back price to determine if the bid is valid and executable.
 
     Contract Upgrading (upgrade):
-        Allows the contract owner to upgrade the contract implementation using a new ClassHash, ensuring only the owner can perform this action.
+    Allows the contract owner to upgrade the contract's implementation using a new ClassHash. This operation can only be performed by the contract owner to ensure the contract's integrity.
 
-Events:
+Events
 
-    ItemForSaleAdded: Emitted when a new item is listed for sale.
-    SetPriceForItemByBuyer: Emitted when a buyer sets a price for a listed item.
+    SetBuyBackPriceForItem:
+    Emitted when a buyer sets a buy-back price for an item. This event logs the buyer's address, the price set, and the collection address.
 
-This contract integrates with StarkNet's components for ownership (OwnableComponent) and upgradability (UpgradeableComponent), ensuring that only authorized users can perform sensitive operations like updating the protocol fee and upgrading the contract.
+Integrations
+
+This contract integrates with StarkNet's OwnableComponent for ownership management and UpgradeableComponent for upgradability. These integrations ensure that sensitive operations, such as updating protocol fees and upgrading the contract, are restricted to authorized users only.
 
 PR: https://github.com/Flex-NFT-Marketplace/Flex-Marketplace-Contract/pull/98
