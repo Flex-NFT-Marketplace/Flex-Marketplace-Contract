@@ -12,7 +12,7 @@ Key Functionalities
     Getting Protocol Fee (protocol_fee):
     Retrieves the current protocol fee stored in the contract.
 
-    Setting Buy-Back Price for an Item (set_buy_back_price_for_item):
+    Setting Buy-Back Price for any item (set_buy_back_price_for_any_item):
     Allows a buyer to set a buy-back price for any item from a specific collection.
 
     Executing Buyer Bids (can_execute_buyer_bid):
