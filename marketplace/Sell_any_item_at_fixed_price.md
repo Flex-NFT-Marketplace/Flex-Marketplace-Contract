@@ -13,7 +13,7 @@ Key Functionalities
     Retrieves the current protocol fee stored in the contract.
 
     Setting Buy-Back Price for an Item (set_buy_back_price_for_item):
-    Allows a buyer to set a buy-back price for an item from a specific collection. The buyer must be the caller, and the new price must be different from any existing price set by the buyer. If the conditions are met, the price is updated, and an event is emitted to notify that the price has been set.
+    Allows a buyer to set a buy-back price for any item from a specific collection.
 
     Executing Buyer Bids (can_execute_buyer_bid):
     Verifies whether a buyer's bid can be executed. The contract checks if the token was listed for sale by the seller and compares the bid price with the existing buy-back price to determine if the bid is valid and executable.
