@@ -93,43 +93,63 @@ use marketplace::utils::order_types::{TakerOrder, MakerOrder};
             self.protocol_fee.read()
         }
 
+        // Add address to the whitelist of an order using the `order_nonce`
         fn add_address_to_whitelist(ref self: ContractState, order_nonce: u128, address: ContractAddress) {
             self.ownable.assert_only_owner();
+
+            // Verify address is not already whitelisted
             let index = self.order_whitelist_index.read((order_nonce, address));
             assert!(index.is_zero(), "PrivateSaleStrategy: address already whitelisted");
 
+            // Increment order whitelist count by 1
             let new_count = self.order_whitelist_count.read(order_nonce) + 1;
 
+            // Set order whitelist index
             self.order_whitelist_index.write((order_nonce, address), new_count);
 
+            // Add address to whitelist
             self.order_whitelist.write((order_nonce, new_count), address);
 
+            // Set order whitelist count
             self.order_whitelist_count.write(order_nonce, new_count);
             let timestamp = get_block_timestamp();
             self.emit(AddressWhitelisted { address, timestamp });
         }
 
+        // Remove address from the whitelist of an order using the `order_nonce`
         fn remove_address_from_whitelist(ref self: ContractState, order_nonce: u128, address: ContractAddress) {
             self.ownable.assert_only_owner();
+
+            // Verify address is whitelisted
             let index = self.order_whitelist_index.read((order_nonce, address));
             assert!(!index.is_zero(), "PrivateSaleStrategy: address not whitelisted");
 
+            // Get current order whitelist count
             let count = self.order_whitelist_count.read(order_nonce);
 
+            // Get the last whitelisted address
             let address_at_last_index = self.order_whitelist.read((order_nonce, count));
+
+            // Replace p
             self.order_whitelist.write((order_nonce, index), address_at_last_index);
+
+            // Remove whitelisted address at last index
             self.order_whitelist.write((order_nonce, count), contract_address_const::<0>());
+
+            // Remove index of last whitelisted address
             self.order_whitelist_index.write((order_nonce, address), 0);
 
             if (count != 1) {
                 self.order_whitelist_index.write((order_nonce, address_at_last_index), index);
             }
 
+            // Decrement order whitelist count
             self.order_whitelist_count.write(order_nonce, count - 1);
             let timestamp = get_block_timestamp();
             self.emit(AddressRemoved { address, timestamp });
         }
 
+        // Function to check whitelisted status. Returns `true` is address is whitelisted else returns `false`
         fn is_address_whitelisted(self: @ContractState, order_nonce: u128, address: ContractAddress) -> bool {
             let index = self.order_whitelist_index.read((order_nonce, address));
             if (index == 0) {
@@ -156,7 +176,10 @@ use marketplace::utils::order_types::{TakerOrder, MakerOrder};
             let token_id_match: bool = maker_bid.token_id == taker_ask.token_id;
             let start_time_valid: bool = maker_bid.start_time < get_block_timestamp();
             let end_time_valid: bool = maker_bid.end_time > get_block_timestamp();
+
+            // Get the `caller` is whitelisted status
             let is_address_whitelisted: bool = self.is_address_whitelisted(maker_bid.salt_nonce, get_caller_address());
+
             if (price_match
                 && token_id_match
                 && start_time_valid
@@ -175,7 +198,10 @@ use marketplace::utils::order_types::{TakerOrder, MakerOrder};
             let token_id_match: bool = maker_ask.token_id == taker_bid.token_id;
             let start_time_valid: bool = maker_ask.start_time < get_block_timestamp();
             let end_time_valid: bool = maker_ask.end_time > get_block_timestamp();
+
+            // Get the `caller` is whitelisted status
             let is_address_whitelisted: bool = self.is_address_whitelisted(maker_ask.salt_nonce, get_caller_address());
+
             if (price_match
                 && token_id_match
                 && start_time_valid
