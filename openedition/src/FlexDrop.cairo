@@ -9,9 +9,7 @@ mod FlexDrop {
     };
     use openedition::{
         interfaces::ICurrencyManager::{ICurrencyManagerDispatcher, ICurrencyManagerDispatcherTrait},
-        interfaces::ISignatureChecker2::{
-            ISignatureChecker2Dispatcher, ISignatureChecker2DispatcherTrait
-        },
+        interfaces::ISignatureChecker2::{ISignatureChecker2Dispatcher, ISignatureChecker2DispatcherTrait},
     };
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin::access::ownable::OwnableComponent;
@@ -627,7 +625,7 @@ mod FlexDrop {
                     fee_recipient,
                     currency_address,
                     total_mint_price,
-                    is_whitelist_mint,
+                    is_whitelist_mint
                 );
 
             INonFungibleFlexDropTokenDispatcher { contract_address: nft_address }
@@ -637,7 +635,6 @@ mod FlexDrop {
             if total_mint_price == 0 && !is_whitelist_mint && !is_warpcast {
                 fee_mint = self.fee_mint_when_zero_price.read();
             }
-
             self
                 .emit(
                     FlexDropMinted {
@@ -654,7 +651,6 @@ mod FlexDrop {
                 )
         }
 
-
         fn split_payout(
             ref self: ContractState,
             from: ContractAddress,
@@ -670,7 +666,6 @@ mod FlexDrop {
             let fee_currency_contract = IERC20Dispatcher {
                 contract_address: self.fee_currency.read()
             };
-
             if total_mint_price == 0
                 && fee_mint_when_zero_price > 0
                 && !is_whitelist_mint

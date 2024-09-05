@@ -6,7 +6,9 @@ mod ERC721OpenEdition {
     use openzeppelin::introspection::src5::SRC5Component;
     use openzeppelin::security::reentrancyguard::ReentrancyGuardComponent;
     use openedition::ERC721::ERC721Component;
-    use openedition::interfaces::IFlexDrop::{IFlexDropDispatcher, IFlexDropDispatcherTrait};
+    use openedition::interfaces::IFlexDrop::{
+        IFlexDropDispatcher, IFlexDropDispatcherTrait
+    };
     use openedition::interfaces::INonFungibleFlexDropToken::{
         INonFungibleFlexDropToken, I_NON_FUNGIBLE_FLEX_DROP_TOKEN_ID
     };
