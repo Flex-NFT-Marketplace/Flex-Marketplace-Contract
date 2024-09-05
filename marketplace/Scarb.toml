@@ -8,7 +8,7 @@ starknet = "2.6.3"
 snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry.git", tag = "v0.26.0" }
 openzeppelin = { git = "https://github.com/openzeppelin/cairo-contracts", tag = "v0.10.0"  }
 alexandria_storage = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag = "cairo-v2.3.0-rc0" }
-
+pragma_lib = { git = "https://github.com/astraly-labs/pragma-lib", rev = "fe9a467" }
 [scripts]
 test = "snforge test"
 

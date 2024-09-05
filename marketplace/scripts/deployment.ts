@@ -71,6 +71,7 @@ async function deploy() {
     const contractsToDeploy = [
         { name: "CurrencyManager", initArgs: { owner: account.address, proxy_admin: account.address } },
         { name: "StrategyStandardSaleForFixedPrice", initArgs: { fee: 0, owner: account.address } },
+        { name: "StrategyYoloBuy", initArgs: { fee: 0, owner: account.address } },
         { name: "ExecutionManager", initArgs: { owner: account.address } },
         { name: "RoyaltyFeeRegistry", initArgs: { fee_limit: 9500, owner: account.address } },
         { name: "RoyaltyFeeManager", initArgs: { fee_registry: "", owner: account.address }, afterDeploy: (contract) => contract.address },
