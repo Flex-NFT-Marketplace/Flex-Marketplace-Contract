@@ -1,5 +1,3 @@
-use core::clone::Clone;
-use core::serde::Serde;
 use core::array::ArrayTrait;
 use starknet::{ContractAddress, SyscallResultTrait, get_block_timestamp};
 use snforge_std::{declare, ContractClassTrait, ContractClass, CheatTarget, start_prank, stop_prank};
@@ -25,8 +23,6 @@ fn __setup__() -> (
     ContractAddress,
     ContractAddress,
     ContractAddress,
-    ContractAddress,
-    ContractAddress,
     PhaseDrop
 ) {
 
@@ -35,11 +31,6 @@ fn __setup__() -> (
         let owner_contract_address = deploy_account(account_class, 'Owner');
         let user_one_contract_address = deploy_account(account_class, 'Adam');
         let user_two_contract_address = deploy_account(account_class, 'Eve');
-
-        // Declare and deploy the ERC721 contract mock
-        let erc721_hash = declare("ERC721").unwrap();
-        let first_test_collection = deploy_erc721(erc721_hash, owner_contract_address, 1);
-        let second_test_collection = deploy_erc721(erc721_hash, owner_contract_address, 2);
 
         // Declare and deploy the ERC20 contract mock
         let erc20_class_hash = declare("ERC20").unwrap();
@@ -127,8 +118,6 @@ fn __setup__() -> (
             owner_contract_address,
             user_one_contract_address,
             user_two_contract_address,
-            first_test_collection,
-            second_test_collection,
             phase_details
         )
 }
@@ -170,31 +159,28 @@ fn deploy_erc721(
     collection
 }
 
-// #[test]
-// #[should_panic(expected: ('Only allowed public',))]
-// fn test_unauthorized_mint_public() {
-//     let (
-//         dispatcher_flex_drop, 
-//         dispatcher_token, 
-//         _, 
-//         _, 
-//         _, 
-//         _, 
-//         user_one_contract_address, 
-//         user_two_contract_address, 
-//         _, 
-//         _, 
-//         phase_details
-//     ) = __setup__();
-//     println!("Setup Passed");
-    
-//     dispatcher_token { contract_address: user_one_contract_address }.create_new_phase_drop(user_one_contract_address, phase_detail, user_one_contract_address);
-//     println!("Phase Drop Created");
+// Tests for unauthorized mint public
+#[test]
+#[should_panic(expected: ('Only allowed public',))]
+fn test_unauthorized_mint_public() {
+    let (
+        dispatcher_flex_drop, 
+        dispatcher_token, 
+        _, 
+        _, 
+        _, 
+        _, 
+        user_one_contract_address, 
+        user_two_contract_address, 
+        phase_details
+    ) = __setup__();
 
-//     dispatcher_flex_drop.mint_public(user_two_contract_address, 1, user_two_contract_address, user_two_contract_address, 5, true);
-//     println!("Test Passed");
-// }
+    dispatcher_token { contract_address: user_one_contract_address }.create_new_phase_drop(user_one_contract_address, phase_detail, user_one_contract_address);
 
+    dispatcher_flex_drop.mint_public(user_two_contract_address, 1, user_two_contract_address, user_two_contract_address, 5, true);
+}
+
+// Test for mint public
 #[test]
 fn test_mint_public() {
     let (
@@ -206,111 +192,197 @@ fn test_mint_public() {
         owner_contract_address, 
         user_one_contract_address, 
         _, 
-        _, 
-        _, 
         phase_details
     ) = __setup__();
-    println!("Setup Passed");
 
     start_prank(CheatTarget::Multiple(array![contract_address_flex_drop, contract_address_token]), owner_contract_address);
-    println!("0");
 
     dispatcher_token.create_new_phase_drop(owner_contract_address, phase_details, owner_contract_address);
-    println!("1");
 
     dispatcher_flex_drop.mint_public(user_one_contract_address, 1, user_one_contract_address, user_one_contract_address, 5, true);
-    println!("2");
 
     assert(dispatcher_token.get_mint_state(user_one_contract_address, 1) == (1, 1, 1),'invalid mint state');
-    println!("3");
 
     assert(dispatcher_token.get_current_token_id() == 2, 'invalid current token id');
-    println!("4");
 
     stop_prank(CheatTarget::Multiple(array![contract_address_flex_drop, contract_address_token]));
 }
 
-// #[test]
-// #[should_panic(expected: ('Caller is not the owner',))]
-// fn test_unauthorized_update_payer() {
-//     let (_, dispatcher, _, user_one_contract_address, user_two_contract_address, _) = __setup__();
+// Test for unauthorized update payer
+#[test]
+#[should_panic(expected: ('Caller is not the owner',))]
+fn test_unauthorized_update_payer() {
+    let (_, dispatcher, _, user_one_contract_address, user_two_contract_address, _) = __setup__();
 
-//     // Unauthorized user (not owner) attempting to update payer
-//     let payer = user_one_contract_address;
+    // Unauthorized user attempting to update payer
+    let payer = user_one_contract_address;
 
-//     dispatcher.update_payer(payer, true);
-// }
+    dispatcher.update_payer(payer, true);
+}
 
-// #[test]
-// fn test_update_payer() {
-//     let (
-//         dispatcher_flex_drop, 
-//         _, 
-//         contract_address_flex_drop, 
-//         _, 
-//         _, 
-//         owner_contract_address, 
-//         user_one_contract_address, 
-//         _, 
-//         _, 
-//         _, 
-//         _
-//     ) = __setup__();
+// Test for update payer
+#[test]
+fn test_update_payer() {
+    let (
+        dispatcher_flex_drop, 
+        _, 
+        contract_address_flex_drop, 
+        _, 
+        _, 
+        owner_contract_address, 
+        user_one_contract_address, 
+        _,  
+        _
+    ) = __setup__();
 
-//     let payer = user_one_contract_address;
+    let payer = user_one_contract_address;
 
-//     // Act as the contract owner
-//     start_prank(CheatTarget::One(contract_address_flex_drop), owner_contract_address);
+    start_prank(CheatTarget::One(contract_address_flex_drop), owner_contract_address);
 
-//     // Add the payer
-//     dispatcher_flex_drop.update_payer(payer, true); // Update payer to allowed
+    dispatcher_flex_drop.update_payer(payer, true); 
 
-//     // Validate that the payer is now allowed using the getter
-//     let is_allowed = dispatcher_flex_drop.is_payer_allowed(payer);
-//     assert(is_allowed == true, 'Payer should be allowed');
+    let is_allowed = dispatcher_flex_drop.is_payer_allowed(payer);
+    assert(is_allowed == true, 'Payer should be allowed');
 
-//     // Remove the payer
-//     dispatcher_flex_drop.update_payer(payer, false); // Update payer to not allowed
+    dispatcher_flex_drop.update_payer(payer, false); 
 
-//     // Validate that the payer is now disallowed using the getter
-//     let is_allowed = dispatcher_flex_drop.is_payer_allowed(payer);
-//     assert(is_allowed == false, 'Payer should be removed');
+    let is_allowed = dispatcher_flex_drop.is_payer_allowed(payer);
+    assert(is_allowed == false, 'Payer should be removed');
 
-//     stop_prank(CheatTarget::One(contract_address_flex_drop));
-// }
+    stop_prank(CheatTarget::One(contract_address_flex_drop));
+}
 
-// #[test]
-// #[should_panic(expected = 'Caller is not the owner')]
-// fn test_unauthorized_update_creator_payout_address() {
-//     let (_, dispatcher, _, user_one_contract_address, _) = __setup__();
+// Tests for update creator payout address
+#[test]
+fn test_update_creator_payout_address() {
+    let (
+        flex_drop_dispatcher,
+        _,
+        _,
+        contract_address_token,
+        _,
+        owner_contract_address,
+        user_one_contract_address,
+        _,
+        _
+    ) = __setup__();
 
-//     // Unauthorized user (not owner) attempting to update the payout address
-//     let new_payout_address = ContractAddress::from(0x1234);
+    // Call update_creator_payout_address
+    let new_payout_address = user_one_contract_address;
+    start_prank(owner_contract_address);
+    flex_drop_dispatcher.update_creator_payout_address(new_payout_address).unwrap_syscall();
+    stop_prank();
 
-//     // Attempting update from an unauthorized account
-//     dispatcher.update_creator_payout_address(new_payout_address); // Expected to panic due to unauthorized access
-// }
+    // Verify that the creator payout address has been updated
+    let updated_payout_address = flex_drop_dispatcher.get_creator_payout_address(contract_address_token);
+    assert(updated_payout_address, new_payout_address);
 
-// #[test]
-// fn test_update_creator_payout_address() {
-//     let (
-//         contract_address,
-//         dispatcher,
-//         owner_contract_address,
-//         user_one_contract_address,
-//         _
-//     ) = __setup__();
+}
 
-//     let new_payout_address = ContractAddress::from(0x1234);
+// Tests for Whitelist mint 
+#[test]
+fn test_whitelist_mint() {
+    let (
+        flex_drop_dispatcher,
+        token_dispatcher,
+        _,
+        contract_address_token,
+        _,
+        owner_contract_address,
+        user_one_contract_address,
+        _,
+        phase_details
+    ) = __setup__();
 
-//     // Act as the contract owner
-//     start_prank(CheatTarget::One(contract_address), owner_contract_address);
-//     dispatcher.update_creator_payout_address(new_payout_address);
-//     stop_prank(CheatTarget::One(contract_address));
+    // Simulate user minting with whitelist data
+    let whitelist_data = WhiteListParam {
+        nft_address: contract_address_token,
+        minter: user_one_contract_address,
+        phase_id: phase_details.phase_type
+    };
+    
+    let proof = array[0x123456789]; 
 
-//     // Validate that the payout address was updated
-//     assert(
-//         dispatcher.creator_payout_address.read(contract_address) == new_payout_address,
-//         'Payout address should be updated'
-//     );
-// }
+    start_prank(user_one_contract_address);
+    flex_drop_dispatcher.whitelist_mint(whitelist_data, owner_contract_address, proof).unwrap_syscall();
+    stop_prank();
+
+    // Assertions
+    let (minted_amount, _, _) = token_dispatcher.get_mint_state(user_one_contract_address, phase_details.phase_type);
+    assert(minted_amount, 1); 
+}
+
+// Tests for Start New Phase Drop
+#[test]
+fn test_start_new_phase_drop() {
+    // Set up contracts and environment
+    let (
+        flex_drop_dispatcher,
+        _,
+        _,
+        contract_address_token,
+        erc20_contract_address,
+        owner_contract_address,
+        user_one_contract_address,
+        _,
+        _
+    ) = __setup__();
+
+    // New phase details
+    let new_phase_id = 2;
+    let new_phase_details = PhaseDrop {
+        mint_price: 1500,
+        currency: erc20_contract_address,
+        start_time: get_block_timestamp(),
+        end_time: get_block_timestamp() + 86400,
+        max_mint_per_wallet: 5,
+        phase_type: 1
+    };
+
+    // Call start_new_phase_drop
+    start_prank(owner_contract_address);
+    flex_drop_dispatcher.start_new_phase_drop(new_phase_id, new_phase_details, user_one_contract_address).unwrap_syscall();
+    stop_prank();
+
+    // Check the new phase is stored correctly
+    let phase_drop = flex_drop_dispatcher.get_phase_drop(contract_address_token, new_phase_id);
+    assert(phase_drop.mint_price, 1500);
+    assert(phase_drop.max_mint_per_wallet, 5);
+}
+
+// Tests for Update Phase Drop
+#[test]
+fn test_update_phase_drop() {
+    // Set up contracts and environment
+    let (
+        flex_drop_dispatcher,
+        _,
+        _,
+        contract_address_token,
+        erc20_contract_address,
+        owner_contract_address,
+        _,
+        _,
+        phase_details
+    ) = __setup__();
+
+    // Existing phase drop id and details to update
+    let updated_phase_details = PhaseDrop {
+        mint_price: 1200,
+        currency: erc20_contract_address,
+        start_time: get_block_timestamp(),
+        end_time: get_block_timestamp() + 86400,
+        max_mint_per_wallet: 8,
+        phase_type: 1
+    };
+
+    // Call update_phase_drop
+    start_prank(owner_contract_address);
+    flex_drop_dispatcher.update_phase_drop(phase_details.phase_type, updated_phase_details).unwrap_syscall();
+    stop_prank();
+
+    // Check that the phase details are updated
+    let updated_phase_drop = flex_drop_dispatcher.get_phase_drop(contract_address_token, phase_details.phase_type);
+    assert(updated_phase_drop.mint_price, 1200);
+    assert(updated_phase_drop.max_mint_per_wallet, 8);
+}
