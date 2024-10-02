@@ -48,6 +48,7 @@ mod strategy_any_item_from_collection_for_fixed_price;
 mod strategy_highest_bidder_auction_sale;
 mod strategy_private_sale;
 mod strategy_standard_sale_for_fixed_price;
+mod strategy_yolo_buy;
 mod transfer_manager_ERC721;
 mod transfer_manager_ERC1155;
 mod transfer_selector_NFT;

@@ -53,7 +53,6 @@ mod ERC20 {
     use integer::BoundedInt;
     use starknet::ContractAddress;
     use starknet::get_caller_address;
-    use snforge_std::PrintTrait;
 
     #[storage]
     struct Storage {
