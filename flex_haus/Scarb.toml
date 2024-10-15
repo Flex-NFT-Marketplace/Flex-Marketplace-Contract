@@ -1,0 +1,16 @@
+[package]
+name = "flexhaus"
+version = "0.1.0"
+edition = "2023_01"
+
+[dependencies]
+starknet = ">2.8.0"
+openzeppelin = { git = "https://github.com/openzeppelin/cairo-contracts", tag = "v0.17.0"  }
+
+[scripts]
+test = "snforge test"
+
+[[target.starknet-contract]]
+allowed-libfuncs-list.name = "audited"
+sierra = true
+casm = true
