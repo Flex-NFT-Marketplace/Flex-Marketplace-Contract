@@ -89,22 +89,29 @@ mod FlexHausCollectible {
         }
 
         fn set_base_uri(ref self: ContractState, base_uri: ByteArray) {
-            self.reentrancyguard.start();
             self.assert_only_flex_haus_factory();
             self.erc721._set_base_uri(base_uri);
-            self.reentrancyguard.end();
         }
 
         fn set_total_supply(ref self: ContractState, total_supply: u256) {
-            self.reentrancyguard.start();
             self.assert_only_flex_haus_factory();
             self.totalSupply.write(total_supply);
+        }
+
+        fn set_name(ref self: ContractState, name: ByteArray) {
+            self.assert_only_flex_haus_factory();
+            self.erc721._set_name(name);
+        }
+
+        fn set_symbol(ref self: ContractState, symbol: ByteArray) {
+            self.assert_only_flex_haus_factory();
+            self.erc721._set_symbol(symbol);
         }
 
         fn mint_collectible(ref self: ContractState, minter: ContractAddress) {
             self.reentrancyguard.start();
             self.assert_only_flex_haus_factory();
-            let tokenId = self.totalSupply.read() + 1;
+            let tokenId = self.currentId.read() + 1;
             assert(tokenId <= self.total_supply(), 'Max supply reached');
 
             self.currentId.write(tokenId);
@@ -128,6 +135,14 @@ mod FlexHausCollectible {
 
         fn setTotalSupply(ref self: ContractState, totalSupply: u256) {
             self.set_total_supply(totalSupply);
+        }
+
+        fn setName(ref self: ContractState, name: ByteArray) {
+            self.set_name(name);
+        }
+
+        fn setSymbol(ref self: ContractState, symbol: ByteArray) {
+            self.set_symbol(symbol);
         }
 
         fn mintCollectible(ref self: ContractState, minter: ContractAddress) {
