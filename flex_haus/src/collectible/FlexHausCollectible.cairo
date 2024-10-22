@@ -8,7 +8,7 @@ mod FlexHausCollectible {
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::security::reentrancyguard::ReentrancyGuardComponent;
     use starknet::storage::{
-        StoragePointerReadAccess, StoragePointerWriteAccess, Vec, VecTrait, MutableVecTrait
+        StoragePointerReadAccess, StoragePointerWriteAccess, Map, StoragePathEntry
     };
     use starknet::{ContractAddress, get_caller_address};
 
@@ -35,7 +35,7 @@ mod FlexHausCollectible {
     struct Storage {
         totalSupply: u256,
         currentId: u256,
-        flexHausFactories: Vec<ContractAddress>,
+        flexHausFactories: Map::<ContractAddress, bool>,
         #[substorage(v0)]
         ownable: OwnableComponent::Storage,
         #[substorage(v0)]
@@ -74,7 +74,7 @@ mod FlexHausCollectible {
         self.ownable.initializer(owner);
         self.totalSupply.write(totalSupply);
         self.src5.register_interface(IFLEX_HAUS_COLLECTIBLE_ID);
-        self.flexHausFactories.append().write(flexHausFactory);
+        self.flexHausFactories.entry(flexHausFactory).write(true);
     }
 
 
@@ -106,6 +106,18 @@ mod FlexHausCollectible {
         fn set_symbol(ref self: ContractState, symbol: ByteArray) {
             self.assert_only_flex_haus_factory();
             self.erc721._set_symbol(symbol);
+        }
+
+        fn add_factory(ref self: ContractState, factory: ContractAddress) {
+            self.ownable.assert_only_owner();
+            assert(!self.flexHausFactories.entry(factory).read(), 'Factory already added');
+            self.flexHausFactories.entry(factory).write(true);
+        }
+
+        fn remove_factory(ref self: ContractState, factory: ContractAddress) {
+            self.ownable.assert_only_owner();
+            assert(self.flexHausFactories.entry(factory).read(), 'Factory not added');
+            self.flexHausFactories.entry(factory).write(false);
         }
 
         fn mint_collectible(ref self: ContractState, minter: ContractAddress) {
@@ -145,6 +157,14 @@ mod FlexHausCollectible {
             self.set_symbol(symbol);
         }
 
+        fn addFactory(ref self: ContractState, factory: ContractAddress) {
+            self.add_factory(factory);
+        }
+
+        fn removeFactory(ref self: ContractState, factory: ContractAddress) {
+            self.remove_factory(factory);
+        }
+
         fn mintCollectible(ref self: ContractState, minter: ContractAddress) {
             self.mint_collectible(minter);
         }
@@ -155,16 +175,7 @@ mod FlexHausCollectible {
     impl InternalImpl of InternalImplTrait {
         fn assert_only_flex_haus_factory(ref self: ContractState) {
             let flexHausFactory = get_caller_address();
-            let mut is_allowed_factory = false;
-            for i in 0
-                ..self
-                    .flexHausFactories
-                    .len() {
-                        let factory = self.flexHausFactories.at(i).read();
-                        if factory == flexHausFactory {
-                            is_allowed_factory = true;
-                        }
-                    };
+            let is_allowed_factory = self.flexHausFactories.entry(flexHausFactory).read();
             assert(is_allowed_factory, 'Only Flex Haus Factory');
         }
     }

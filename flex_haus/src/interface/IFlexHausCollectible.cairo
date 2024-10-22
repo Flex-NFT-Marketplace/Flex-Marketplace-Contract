@@ -11,6 +11,8 @@ trait IFlexHausCollectible<TContractState> {
     fn set_total_supply(ref self: TContractState, total_supply: u256);
     fn set_name(ref self: TContractState, name: ByteArray);
     fn set_symbol(ref self: TContractState, symbol: ByteArray);
+    fn add_factory(ref self: TContractState, factory: ContractAddress);
+    fn remove_factory(ref self: TContractState, factory: ContractAddress);
     fn mint_collectible(ref self: TContractState, minter: ContractAddress);
 }
 
@@ -22,6 +24,8 @@ trait IFlexHausCollectibleCamelOnly<TContractState> {
     fn setTotalSupply(ref self: TContractState, totalSupply: u256);
     fn setName(ref self: TContractState, name: ByteArray);
     fn setSymbol(ref self: TContractState, symbol: ByteArray);
+    fn addFactory(ref self: TContractState, factory: ContractAddress);
+    fn removeFactory(ref self: TContractState, factory: ContractAddress);
     fn mintCollectible(ref self: TContractState, minter: ContractAddress);
 }
 
@@ -34,11 +38,15 @@ trait IFlexHausCollectibleMixin<TContractState> {
     fn set_name(ref self: TContractState, name: ByteArray);
     fn set_symbol(ref self: TContractState, symbol: ByteArray);
     fn mint_collectible(ref self: TContractState, minter: ContractAddress);
+    fn add_factory(ref self: TContractState, factory: ContractAddress);
+    fn remove_factory(ref self: TContractState, factory: ContractAddress);
     fn getBaseUri(self: @TContractState) -> ByteArray;
     fn totalSupply(self: @TContractState) -> u256;
     fn setBaseUri(ref self: TContractState, baseUri: ByteArray);
     fn setTotalSupply(ref self: TContractState, totalSupply: u256);
     fn setName(ref self: TContractState, name: ByteArray);
     fn setSymbol(ref self: TContractState, symbol: ByteArray);
+    fn addFactory(ref self: TContractState, factory: ContractAddress);
+    fn removeFactory(ref self: TContractState, factory: ContractAddress);
     fn mintCollectible(ref self: TContractState, minter: ContractAddress);
 }
