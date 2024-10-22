@@ -1,11 +1,13 @@
 #[starknet::contract]
 mod FlexHausFactory {
+    use starknet::storage::MutableVecTrait;
     use starknet::{
         ContractAddress, ClassHash, get_caller_address, deploy_syscall, get_contract_address,
         get_block_timestamp, get_tx_info
     };
     use starknet::storage::{
-        Map, StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry
+        Map, StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Vec, VecTrait,
+        MutableTrait
     };
     use flexhaus::interface::IFlexHausFactory::{IFlexHausFactory, DropDetail};
     use flexhaus::interface::IFlexHausCollectible::{
@@ -46,6 +48,9 @@ mod FlexHausFactory {
         fee_recipient: ContractAddress,
         flex_haus_collectible_class: ClassHash,
         collectible_salt: u256,
+        all_collectibles: Vec<ContractAddress>,
+        // mapping collectible by owner
+        mapping_collectible: Map<ContractAddress, Vec<ContractAddress>>,
         is_flex_haus_collectible: Map<ContractAddress, bool>,
         mapping_drop: Map<ContractAddress, DropDetail>,
         signer: ContractAddress,
@@ -182,6 +187,8 @@ mod FlexHausFactory {
                 .unwrap();
 
             self.is_flex_haus_collectible.entry(collectible).write(true);
+            self.all_collectibles.append().write(collectible);
+            self.mapping_collectible.entry(creator).append().write(collectible);
 
             self.emit(UpdateCollectible { creator, collectible });
             self.reentrancyguard.end();
@@ -383,6 +390,34 @@ mod FlexHausFactory {
 
         fn get_min_duration_time_for_update(self: @ContractState) -> u64 {
             self.min_duration_time_for_update.read()
+        }
+
+        fn get_all_collectibles_addresses(self: @ContractState) -> Array<ContractAddress> {
+            let mut collectibles = ArrayTrait::new();
+            for i in 0
+                ..self
+                    .all_collectibles
+                    .len() {
+                        collectibles.append(self.all_collectibles.at(i).read());
+                    };
+            collectibles
+        }
+
+        fn get_total_collectibles_count(self: @ContractState) -> u64 {
+            self.all_collectibles.len()
+        }
+
+        fn get_collectibles_of_owner(
+            self: @ContractState, owner: ContractAddress
+        ) -> Array<ContractAddress> {
+            let mut collectibles = ArrayTrait::new();
+            let collectibles_of_owner = self.mapping_collectible.entry(owner);
+            for i in 0
+                ..collectibles_of_owner
+                    .len() {
+                        collectibles.append(collectibles_of_owner.at(i).read());
+                    };
+            collectibles
         }
     }
 

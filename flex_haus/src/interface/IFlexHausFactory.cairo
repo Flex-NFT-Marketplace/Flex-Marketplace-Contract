@@ -57,4 +57,7 @@ trait IFlexHausFactory<TContractState> {
     fn get_signer(self: @TContractState) -> ContractAddress;
     fn get_flex_haus_collectible_class(self: @TContractState) -> ClassHash;
     fn get_min_duration_time_for_update(self: @TContractState) -> u64;
+    fn get_all_collectibles_addresses(self: @TContractState) -> Array<ContractAddress>;
+    fn get_total_collectibles_count(self: @TContractState) -> u64;
+    fn get_collectibles_of_owner(self: @TContractState, owner: ContractAddress) -> Array<ContractAddress>;
 }
