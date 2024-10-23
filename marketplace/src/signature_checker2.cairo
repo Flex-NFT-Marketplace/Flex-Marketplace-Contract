@@ -7,6 +7,7 @@ struct WhiteListParam {
     phase_id: u64,
     nft_address: ContractAddress,
     minter: ContractAddress,
+    mint_price: u256,
 }
 
 const STARKNET_MESSAGE: felt252 = 110930206544689809660069706067448260453;
@@ -20,7 +21,9 @@ const STARKNET_MAKER_ORDER_TYPE_HASH: felt252 =
     );
 
 const STARKNET_WHITELIST_TYPE_HASH: felt252 =
-    selector!("WhiteListParam(phase_id:u64,nft_address:felt,minter:felt)");
+    selector!(
+        "WhiteListParam(phase_id:u64,nft_address:felt,minter:felt,mint_price:u256)u256(low:felt,high:felt)"
+    );
 
 const U256_TYPE_HASH: felt252 = selector!("u256(low:felt,high:felt)");
 
@@ -189,7 +192,8 @@ mod SignatureChecker2 {
             state = state.update_with(*self.phase_id);
             state = state.update_with(contract_address_to_felt252(*self.nft_address));
             state = state.update_with(contract_address_to_felt252(*self.minter));
-            state = state.update_with(4);
+            state = state.update_with(self.mint_price.hash_struct());
+            state = state.update_with(5);
             state.finalize()
         }
     }

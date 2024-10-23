@@ -9,7 +9,9 @@ mod FlexDrop {
     };
     use openedition::{
         interfaces::ICurrencyManager::{ICurrencyManagerDispatcher, ICurrencyManagerDispatcherTrait},
-        interfaces::ISignatureChecker2::{ISignatureChecker2Dispatcher, ISignatureChecker2DispatcherTrait},
+        interfaces::ISignatureChecker2::{
+            ISignatureChecker2Dispatcher, ISignatureChecker2DispatcherTrait
+        },
     };
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin::access::ownable::OwnableComponent;
@@ -50,10 +52,14 @@ mod FlexDrop {
         fee_mint: u256,
         // protocol fee mint when creator set mint price is 0
         fee_mint_when_zero_price: u256,
+        // protocol fee when whitelist mint
+        fee_mint_when_wl: u256,
         // protocal fee currency
         fee_currency: ContractAddress,
         // start new phase fee
         new_phase_fee: u256,
+        // mapping nft address => specific fee
+        fee_for_specific_nft: LegacyMap::<ContractAddress, (u256, bool)>,
         // validator validating the proof of whitelist
         validator: ContractAddress,
         // domain hash
@@ -187,6 +193,7 @@ mod FlexDrop {
             self.reentrancy.start();
             let phase_drop = self.phase_drops.read((nft_address, phase_id));
             self.assert_active_phase_drop(@phase_drop);
+            assert(phase_drop.phase_type == 1, 'FlexDrop: Public Sale Not Allow');
 
             let mut minter = get_caller_address();
             if !minter_if_not_payer.is_zero() {
@@ -263,7 +270,7 @@ mod FlexDrop {
                     whitelist_data.phase_id,
                     1,
                     phase_drop.currency,
-                    0,
+                    whitelist_data.mint_price,
                     fee_recipient,
                     true
                 );
@@ -388,15 +395,10 @@ mod FlexDrop {
         }
 
         #[external(v0)]
-        fn change_protocol_fee_mint(
-            ref self: ContractState, new_fee_currency: ContractAddress, new_fee_mint: u256
+        fn change_protocol_fee_currency(
+            ref self: ContractState, new_fee_currency: ContractAddress
         ) {
             self.ownable.assert_only_owner();
-
-            let old_fee_mint = self.fee_mint.read();
-            if old_fee_mint != new_fee_mint {
-                self.fee_mint.write(new_fee_mint);
-            }
 
             let old_fee_currency = self.fee_currency.read();
             if old_fee_currency != new_fee_currency {
@@ -405,10 +407,18 @@ mod FlexDrop {
         }
 
         #[external(v0)]
+        fn change_protocol_fee_mint(ref self: ContractState, new_fee_mint: u256) {
+            self.ownable.assert_only_owner();
+
+            let old_fee_mint = self.fee_mint.read();
+            if old_fee_mint != new_fee_mint {
+                self.fee_mint.write(new_fee_mint);
+            }
+        }
+
+        #[external(v0)]
         fn change_protocol_fee_mint_when_zero_price(
-            ref self: ContractState,
-            new_fee_currency: ContractAddress,
-            new_fee_mint_when_zero_price: u256
+            ref self: ContractState, new_fee_mint_when_zero_price: u256
         ) {
             self.ownable.assert_only_owner();
 
@@ -416,10 +426,43 @@ mod FlexDrop {
             if old_fee_mint != new_fee_mint_when_zero_price {
                 self.fee_mint_when_zero_price.write(new_fee_mint_when_zero_price);
             }
+        }
 
-            let old_fee_currency = self.fee_currency.read();
-            if old_fee_currency != new_fee_currency {
-                self.fee_currency.write(new_fee_currency);
+        #[external(v0)]
+        fn change_protocol_fee_mint_when_wl(
+            ref self: ContractState, new_fee_mint_when_whitelist: u256
+        ) {
+            self.ownable.assert_only_owner();
+
+            let old_fee_mint = self.fee_mint_when_wl.read();
+            if old_fee_mint != new_fee_mint_when_whitelist {
+                self.fee_mint_when_wl.write(new_fee_mint_when_whitelist);
+            }
+        }
+
+        #[external(v0)]
+        fn enable_fee_for_specific_collection(
+            ref self: ContractState, nft_address: ContractAddress, new_fee_mint: u256,
+        ) {
+            self.ownable.assert_only_owner();
+
+            let (old_fee_mint, is_enable) = self.fee_for_specific_nft.read(nft_address);
+            if old_fee_mint != new_fee_mint {
+                self.fee_for_specific_nft.write(nft_address, (new_fee_mint, true));
+            } else if !is_enable {
+                self.fee_for_specific_nft.write(nft_address, (new_fee_mint, true));
+            }
+        }
+
+        #[external(v0)]
+        fn disable_fee_for_specific_collection(
+            ref self: ContractState, nft_address: ContractAddress
+        ) {
+            self.ownable.assert_only_owner();
+
+            let (old_fee_mint, is_enable) = self.fee_for_specific_nft.read(nft_address);
+            if is_enable {
+                self.fee_for_specific_nft.write(nft_address, (old_fee_mint, false));
             }
         }
 
@@ -453,6 +496,18 @@ mod FlexDrop {
         #[external(v0)]
         fn get_fee_mint_when_zero_price(self: @ContractState) -> u256 {
             self.fee_mint_when_zero_price.read()
+        }
+
+        #[external(v0)]
+        fn get_fee_mint_when_wl(self: @ContractState) -> u256 {
+            self.fee_mint_when_wl.read()
+        }
+
+        #[external(v0)]
+        fn get_fee_for_specific_nft(
+            self: @ContractState, nft_address: ContractAddress
+        ) -> (u256, bool) {
+            self.fee_for_specific_nft.read(nft_address)
         }
 
         #[external(v0)]
@@ -542,11 +597,12 @@ mod FlexDrop {
         }
 
         fn validate_new_phase_drop(self: @ContractState, phase_drop: @PhaseDrop) {
-            assert!(*phase_drop.phase_type == 1, "FlexDrop: Currently supported public phase");
             assert!(
-                *phase_drop.start_time >= get_block_timestamp()
-                    + 1800 && *phase_drop.start_time
-                    + 3600 <= *phase_drop.end_time,
+                *phase_drop.phase_type == 1 || *phase_drop.phase_type == 2,
+                "FlexDrop: Invalid drop type"
+            );
+            assert!(
+                *phase_drop.start_time > 0 && *phase_drop.start_time + 3600 <= *phase_drop.end_time,
                 "FlexDrop: Wrong start and end time"
             );
             assert!(*phase_drop.max_mint_per_wallet > 0, "FlexDrop: invalid max mint per wallet");
@@ -661,17 +717,29 @@ mod FlexDrop {
             total_mint_price: u256,
             is_whitelist_mint: bool,
         ) {
-            let fee_mint = self.fee_mint.read();
+            let mut fee_mint = 0;
             let fee_mint_when_zero_price = self.fee_mint_when_zero_price.read();
             let fee_currency_contract = IERC20Dispatcher {
                 contract_address: self.fee_currency.read()
             };
-            if total_mint_price == 0
-                && fee_mint_when_zero_price > 0
-                && !is_whitelist_mint
-                && !is_warpcast {
-                fee_currency_contract.transfer_from(from, fee_recipient, fee_mint_when_zero_price);
-            } else if fee_mint > 0 {
+            if total_mint_price == 0 && fee_mint_when_zero_price > 0 && !is_warpcast {
+                fee_mint = self.fee_mint_when_zero_price.read();
+            }
+
+            if total_mint_price > 0 {
+                if is_whitelist_mint {
+                    fee_mint = self.fee_mint_when_wl.read();
+                } else {
+                    fee_mint = self.fee_mint.read();
+                }
+            }
+
+            let (specific_fee, is_enable) = self.fee_for_specific_nft.read(nft_address);
+            if is_enable {
+                fee_mint = specific_fee;
+            }
+
+            if fee_mint > 0 && !is_warpcast {
                 fee_currency_contract.transfer_from(from, fee_recipient, fee_mint);
             }
 
