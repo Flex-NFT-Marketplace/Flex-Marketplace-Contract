@@ -16,6 +16,7 @@ struct WhiteListParam {
     phase_id: u64,
     nft_address: ContractAddress,
     minter: ContractAddress,
+    mint_price: u256,
 }
 
 #[derive(Drop, Serde)]
