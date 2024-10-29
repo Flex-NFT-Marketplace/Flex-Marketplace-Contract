@@ -2,10 +2,11 @@
 #[starknet::contract]
 mod ERC7765Component {
     
-    use starknet::ContractAddress;
+    use starknet::{ContractAddress, get_caller_address};    
+    use starknet::event::EventEmitter;
     use erc_7765_rwa_integration::interfaces::IERC7765::{IERC7765, IERC7765Metadata};
     use alexandria_storage::list::{List, ListTrait};
-    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess, StorageMapWriteAccess};
+    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess, StorageMapReadAccess, StorageMapWriteAccess};
 
     #[storage]
     struct Storage {
@@ -19,7 +20,8 @@ mod ERC7765Component {
         ERC7765_base_uri: ByteArray,
         ERC7765_privileges_count: u32,
         ERC7765_privileges_index: LegacyMap<u32, u256>,
-        ERC7765_privilege_states: LegacyMap<u256, bool>,
+        ERC7765_privileges_to_index: LegacyMap<u256, u32>,
+        ERC7765_privilege_exercised: LegacyMap<(u256, u256), bool>,
         ERC7765_privileges: List<u256>
     }
     
@@ -29,6 +31,7 @@ mod ERC7765Component {
         Transfer: Transfer,
         Approval: Approval,
         ApprovalForAll: ApprovalForAll,
+        PrivilegeExercised: PrivilegeExercised,
     }
 
     /// Emitted when `token_id` token is transferred from `from` to `to`.
@@ -96,13 +99,14 @@ mod ERC7765Component {
 
 
             let privileges_len = privilege_ids.len().try_into().unwrap();
-            let mut i: u32 = 0;
+            let mut i: u32 = 1;
             loop {
-                if i == privileges_len {
+                if i > privileges_len {
                     break;
                 }
 
                 self.ERC7765_privileges_index.write(i, *privilege_ids.at(i));
+                self.ERC7765_privileges_to_index.write(*privilege_ids.at(i), i);
                 i +=1;
             };
             self.ERC7765_privileges_count.write(privileges_len);
@@ -174,23 +178,40 @@ mod ERC7765Component {
     
         // // Specific to ERC7765
 
-        // TODO
-        fn is_exercisable(self: @ContractState, to: u256, token_id: u256, privilege_id: u256, ) -> bool {
-            false
+        fn is_exercisable(self: @ContractState, token_id: u256, privilege_id: u256, ) -> bool {
+            !self.is_exercised(token_id, privilege_id)
         }
 
-        // TODO
-        fn is_exercised(self: @ContractState, to: u256, token_id: u256, privilege_id: u256, ) -> bool {
-            false
+        fn is_exercised(self: @ContractState,  token_id: u256, privilege_id: u256, ) -> bool {
+            self.ERC7765_privilege_exercised.read((token_id, privilege_id))
         }
 
-        fn get_privilege_ids(self: @ContractState, tokenId: u256) -> Array<u256> {
+        fn get_privilege_ids(self: @ContractState, token_id: u256) -> Array<u256> {
             self.ERC7765_privileges.read().array()
         }
 
         // TODO
-        fn exercise_privilege(self: @ContractState) -> bool {
-            false
+        fn exercise_privilege(ref self: ContractState, token_id: u256, to: ContractAddress, privilege_id: u256) {
+
+            self._assertOwner(token_id);
+            self._assertPrivilegeExists(privilege_id);
+
+            self.ERC7765_privilege_exercised.write((token_id, privilege_id), true);
+
+            self.emit(PrivilegeExercised { to,  operator: to, token_id, privilege_id} );
+
+        }
+    }
+
+    #[generate_trait]
+    impl InternalImpl of InternalImplTrait {
+
+        fn _assertOwner(self: @ContractState, token_id: u256) {
+            assert(self.ERC7765_owners.read(token_id) == get_caller_address(), 'Caller is not the token owner');
+        }
+
+        fn _assertPrivilegeExists(self: @ContractState, token_id: u256) {
+            assert(self.ERC7765_privileges_to_index.read(token_id) != 0, 'Invalid privilege id');
         }
     }
 

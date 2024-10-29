@@ -23,10 +23,10 @@ pub trait IERC7765<TContractState> {
     // ) -> bool;
 
     // Specific to ERC7765
-    fn is_exercisable(self: @TContractState, to: u256, token_id: u256, privilege_id: u256, ) -> bool;
-    fn is_exercised(self: @TContractState, to: u256, token_id: u256, privilege_id: u256, ) -> bool;
-    fn get_privilege_ids(self: @TContractState, tokenId: u256) -> Array<u256>;
-    fn exercise_privilege(self: @TContractState) -> bool;
+    fn is_exercisable(self: @TContractState, token_id: u256, privilege_id: u256, ) -> bool;
+    fn is_exercised(self: @TContractState, token_id: u256, privilege_id: u256, ) -> bool;
+    fn get_privilege_ids(self: @TContractState, token_id: u256) -> Array<u256>;
+    fn exercise_privilege(ref self: TContractState, token_id: u256, to: ContractAddress, privilege_id: u256);
 
 }
 
