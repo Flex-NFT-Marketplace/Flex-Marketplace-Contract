@@ -1,0 +1,1 @@
+{"version":1,"contracts":[{"id":"hpjm75i1df45i","package_name":"erc_7765_rwa_integration","contract_name":"ERC7765Component","module_path":"erc_7765_rwa_integration::ERC7765::ERC7765Component","artifacts":{"sierra":"erc_7765_rwa_integration_ERC7765Component.contract_class.json","casm":"erc_7765_rwa_integration_ERC7765Component.compiled_contract_class.json"}}]}
