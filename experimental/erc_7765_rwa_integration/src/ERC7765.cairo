@@ -1,4 +1,3 @@
-
 #[starknet::contract]
 mod ERC7765Contract {
     
@@ -182,7 +181,7 @@ mod ERC7765Contract {
         }
 
         fn get_approved(self: @ContractState, token_id: u256) -> ContractAddress {
-            self.assert_token_exists(token_id);
+            self._assert_token_exists(token_id);
             self.ERC7765_token_approvals.read(token_id)
         }
 
@@ -193,7 +192,7 @@ mod ERC7765Contract {
             self.ERC7765_operator_approvals.read((owner, operator))
         }
     
-        // // Specific to ERC7765
+        // Specific to ERC7765
 
         fn is_exercisable(self: @ContractState, token_id: u256, privilege_id: u256, ) -> bool {
             !self.is_exercised(token_id, privilege_id)
@@ -207,13 +206,13 @@ mod ERC7765Contract {
             self.ERC7765_privileges.read().array()
         }
 
-        fn exercise_privilege(ref self: ContractState, token_id: u256, to: ContractAddress, privilege_id: u256) {
-
+        fn exercise_privilege(ref self: ContractState, token_id: u256, to: ContractAddress, privilege_id: u256, calldata: Array<felt252>) {
             self._assert_owner(token_id);
             self._assert_privilege_exists(privilege_id);
             self.ERC7765_privilege_exercised.write((token_id, privilege_id), true);
-            self.emit(PrivilegeExercised { to,  operator: to, token_id, privilege_id} );
 
+            self._handle_data(calldata);
+            self.emit(PrivilegeExercised { to,  operator: to, token_id, privilege_id} );
         }
     }
 
@@ -268,13 +267,26 @@ mod ERC7765Contract {
             assert(from == owner, 'Wrong sender');
 
             // Implicit clear approvals, no need to emit an event
-            self.ERC7765_token_approvals.write(token_id, Zeroable::zero());
+            self.ERC7765_token_approvals.write(token_id, Zero::zero());
 
             self.ERC7765_balances.write(from, self.ERC7765_balances.read(from) - 1);
             self.ERC7765_balances.write(to, self.ERC7765_balances.read(to) + 1);
             self.ERC7765_owners.write(token_id, to);
 
             self.emit(Transfer { from, to, token_id });
+        }
+
+        /// Checks if `to` either is an account contract or has registered support
+        /// for the `IERC721Receiver` interface through SRC5.
+        fn _check_on_erc7765_received(
+            ref self: ContractState, from: ContractAddress, to: ContractAddress, token_id: u256, data: Span<felt252>
+        ) -> bool {
+            // TODO: add check for erc7765 received
+            true
+        }
+
+        fn _handle_data(ref self: ContractState, calldata: Array<felt252>) {
+            // Process/ handle calldata
         }
 
         fn _safe_transfer(
@@ -285,9 +297,7 @@ mod ERC7765Contract {
             data: Span<felt252>
         ) {
             self._transfer(from, to, token_id);
-            // assert(
-            //     _check_on_erc7765_received(from, to, token_id, data), 'Safe transfer failed'
-            // );
+            assert(self._check_on_erc7765_received(from, to, token_id, data), 'Safe transfer failed');
         }
 
         fn _assert_owner(self: @ContractState, token_id: u256) {
@@ -308,10 +318,9 @@ mod ERC7765Contract {
             );
         }
 
-        fn assert_token_exists(self: @ContractState, token_id: u256) {
+        fn _assert_token_exists(self: @ContractState, token_id: u256) {
             assert(self._exists(token_id), 'Invalid token id');
         }
-
     }
-
+        
 }
