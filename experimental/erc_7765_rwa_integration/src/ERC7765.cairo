@@ -268,7 +268,7 @@ mod ERC7765Contract {
             assert(from == owner, 'Wrong sender');
 
             // Implicit clear approvals, no need to emit an event
-            // self.ERC7765_token_approvals.write(token_id, ContractAddress(0));
+            self.ERC7765_token_approvals.write(token_id, Zeroable::zero());
 
             self.ERC7765_balances.write(from, self.ERC7765_balances.read(from) - 1);
             self.ERC7765_balances.write(to, self.ERC7765_balances.read(to) + 1);
