@@ -67,6 +67,7 @@ mod ERC7765Contract {
         pub approved: bool
     }
 
+    // Emitted when privilege is exercised
     #[derive(Drop, PartialEq, starknet::Event)]
     pub struct PrivilegeExercised {
         #[key]
@@ -104,7 +105,6 @@ mod ERC7765Contract {
                 if i > privileges_len {
                     break;
                 }
-
                 self.ERC7765_privileges_index.write(i, *privilege_ids.at(i));
                 self.ERC7765_privileges_to_index.write(*privilege_ids.at(i), i);
                 i +=1;
@@ -127,10 +127,9 @@ mod ERC7765Contract {
         }
     
         // Specific to ERC7765
-
-        // TODO
         fn privilegeURI(self: @ContractState, privilege_id: u256) -> ByteArray{
-            self.ERC7765_symbol.read()
+            self._assert_privilege_exists(privilege_id);
+            return format!("name: Privilege # {}, description: description -, resource: ipfs://abc/{}", privilege_id, privilege_id);
         }
     }
     #[abi(embed_v0)]
