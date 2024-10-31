@@ -1,11 +1,6 @@
 use starknet::ContractAddress;
 
 #[starknet::interface]
-trait IERC165<TContractState> {
-    fn supports_interface(self: @TContractState, interface_id: felt252) -> bool;
-}
-
-#[starknet::interface]
 pub trait IERC5173FutureRewards<TContractState> {
     /// @dev view functions
     fn get_fr_info(self: @TContractState, token_id: u256) -> (u8, u256, u256, u256, u256, Array<ContractAddress>);
