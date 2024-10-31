@@ -1,4 +1,4 @@
-mod interfaces {
+pub mod interfaces {
     pub mod IERC7765;
 }
 
