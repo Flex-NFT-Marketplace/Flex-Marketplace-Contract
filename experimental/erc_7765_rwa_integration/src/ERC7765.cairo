@@ -201,6 +201,8 @@ mod ERC7765Contract {
         }
 
         fn is_exercised(self: @ContractState,  token_id: u256, privilege_id: u256, ) -> bool {
+            self._assert_privilege_exists(privilege_id);
+            self._assert_token_exists(token_id);
             self.ERC7765_privilege_exercised.read((token_id, privilege_id))
         }
 
