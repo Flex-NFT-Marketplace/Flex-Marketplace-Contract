@@ -18,15 +18,12 @@ Explore and implement an experimental feature that enables NFT fractionalization
 Pros 
 - Increased accessibility and affordability for investors
 - Higher liquidity for NFT owners. 
-- Potential for the increased value of NFTs. 
-- Greater exposure for NFT creators
+- Potentially increases the NFT's value and exposure for creators.
 
 Cons
 - Malicious entities sometimes trick investors into thinking they are buying partial ownership of a popular NFT
-- They could be perceived as unregistered securities.
-- Rreduces decision-making power for the asset's original owner. 
-- If the owner wishes to sell the original NFT, they'd have to initiate a buyback auction, in which case, they could lose the original NFT if they're outbid.
-
+- Reduces original owner’s decision-making power.
+- Reselling the full NFT requires a buyback auction, where the original owner could lose the asset if outbid.
 
 ## Research Fractionalization Methods
 
@@ -49,9 +46,24 @@ Vaults, powered by smart contracts, take custody of users’ NFTs and lock them 
 The next step involves setting the parameters of fractionalization for your token(s), such as deciding the number of fractional shares to be issued. Once done, you must transfer the custody of the NFT(s) to the vault, which, in turn, will give you 100% fractional shares of the locked-up NFT(s).
 
 
-
 ### Define Fractional Ownership Logic
+1. **Token Supply**: Set the number of fungible tokens representing fractional ownership.
+2. **Ownership Rights**: Define the rights of fractional owners, including voting rights on major decisions (e.g., sale of the NFT).
+3. **Resale Mechanism**: Allow a buyback mechanism to resell the original NFT or facilitate buyouts by fractional owners.
 
 ### Implement a Fractional Ownership Contract
+**Overview**
+
+This Cairo contract enables the fractional ownership of an NFT by locking it in a contract and issuing fractions as tokens. Fraction holders can collectively decide on actions, such as selling the NFT.
+
+**Key Components**
+- **NFT Locking**: The contract holds custody of an NFT for fractional ownership.
+- **Fractional Tokens**: Represent fractions of the NFT and can be transferred among users.
+- **Buyout Mechanism**: Fraction holders can initiate a buyout and receive proceeds if a buyer pays the set price.
+
+```
+#[starknet::contract]
+```
+
 
 ### Documentation and Compatibility Checks 
