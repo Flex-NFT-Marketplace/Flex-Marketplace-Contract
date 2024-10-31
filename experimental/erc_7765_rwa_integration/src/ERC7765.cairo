@@ -114,35 +114,58 @@ mod ERC7765Contract {
     #[abi(embed_v0)]
     impl ERC7765Metadata of IERC7765Metadata<ContractState> {
         
+        // Returns the name of the token
         fn name(self: @ContractState) -> ByteArray {
             self.ERC7765_name.read()
         }
 
+        // Returns the symbol of the token
         fn symbol(self: @ContractState) -> ByteArray {
             self.ERC7765_symbol.read()
         }
+
+        /// @notice Returns the Uniform Resource Identifier (URI) for the token.
+        /// @dev If the URI is not set for the `token_id`, the return value will be `0`.
+        /// @param token_id Unique identifier of the token
         fn token_uri(self: @ContractState, token_id: u256) -> ByteArray {
             self.ERC7765_base_uri.read()
         }
     
-        // Specific to ERC7765
+        /// @notice Returns the Uniform Resource Identifier (URI) for the privilege
+        /// @dev Throws if the privilege is invalid
+        /// @param privilege_id Unique identifier of the privilege
         fn privilegeURI(self: @ContractState, privilege_id: u256) -> ByteArray{
             self._assert_privilege_exists(privilege_id);
             return format!("name: Privilege # {}, description: description -, resource: ipfs://abc/{}", privilege_id, privilege_id);
         }
     }
+
     #[abi(embed_v0)]
     impl ERC7765 of IERC7765<ContractState> {
 
+        /// @notice Returns the number of NFTs owned by an account
+        /// @dev Throws if account isnt valid
+        /// @param account Contract address of the account
         fn balance_of(self: @ContractState, account: ContractAddress) -> u256 {
             self._assert_valid_account(account);
             self.ERC7765_balances.read(account)
         }
         
+        /// @notice Returns the owner of a token
+        /// @dev Throws if token isnt valid
+        /// @param token_id Unique token identifier
         fn owner_of(self: @ContractState, token_id: u256) -> ContractAddress {
             self._owner_of(token_id)
         }
 
+        /// @notice Transfers ownership of a token if to is valid
+        /// @dev Throws if token isnt valid
+        /// @dev Throws if user unauthorized
+        /// @dev Throws from or to are invalid addresses
+        /// @param from from address
+        /// @param to to address
+        /// @param token_id Unique token identifier
+        /// @param data additional call data
         fn safe_transfer_from(
             ref self: ContractState,
             from: ContractAddress,
@@ -154,6 +177,13 @@ mod ERC7765Contract {
             self._safe_transfer(from, to, token_id, data);
         }
 
+        /// @notice Transfers ownership of a token
+        /// @dev Throws if token isnt valid
+        /// @dev Throws if user unauthorized
+        /// @dev Throws from or to are invalid addresses
+        /// @param from from address
+        /// @param to to address
+        /// @param token_id Unique token identifier
         fn transfer_from(
             ref self: ContractState,
             from: ContractAddress,
@@ -164,6 +194,11 @@ mod ERC7765Contract {
             self._transfer(from, to, token_id);
         }
 
+        /// @notice Set approval for an operator to manage a specific token
+        /// @dev Throws if to is the owner or already approved
+        /// @dev Throws if token invalid
+        /// @param to to address
+        /// @param token_id Unique token identifier
         fn approve(ref self: ContractState, to: ContractAddress, token_id: u256) {
             let owner = self._owner_of(token_id);
 
@@ -174,18 +209,28 @@ mod ERC7765Contract {
             self._approve(to, token_id);
         }
 
+        /// @notice Set approval for an operator to manage all a users tokens
+        /// @dev Operator cannot be the caller
+        /// @param operator ContractAddress of the operator
+        /// @param approved indicates whether approved or unapproved
         fn set_approval_for_all(
             ref self: ContractState, operator: ContractAddress, approved: bool
         ) {
             self._set_approval_for_all(get_caller_address(), operator, approved)
         }
 
+        /// @notice Returns the address approved for a token
+        /// @dev Throws if token doesnt exist
+        /// @param token_id Unique token identifier
         fn get_approved(self: @ContractState, token_id: u256) -> ContractAddress {
             self._assert_token_exists(token_id);
             self.ERC7765_token_approvals.read(token_id)
         }
 
-        /// Query if `operator` is an authorized operator for `owner`.
+        /// @notice Checks if address is authorized operator for owner
+        /// @dev Throws if token doesnt exist
+        /// @param owner Contract address of a token owner
+        /// @param owner Contract address of an operator
         fn is_approved_for_all(
             self: @ContractState, owner: ContractAddress, operator: ContractAddress
         ) -> bool {
@@ -194,22 +239,40 @@ mod ERC7765Contract {
     
         // Specific to ERC7765
 
+        /// @notice Checks whether a specific privilege of a token can be exercised.
+        /// @dev Throws if `privilege_id` is not a valid privilege_id, or token_id doesn't exist.
+        /// @param to The address to benefit from the privilege.
+        /// @param token_id  The NFT token_id.
+        /// @param privilege_id  the id of the privilege.
         fn is_exercisable(self: @ContractState, token_id: u256, privilege_id: u256, ) -> bool {
             self._assert_privilege_exists(privilege_id);
             self._assert_token_exists(token_id);
             !self.is_exercised(token_id, privilege_id)
         }
 
+        /// @notice This function is to check whether a specific privilege of a token has been exercised.
+        /// @dev Throws if `privilege_id` is not a valid privilege_id, or token_id doesn't exist.
+        /// @param to The address to benefit from the privilege.
+        /// @param token_id  the NFT token_id.
+        /// @param _privilegeId  the id of the privilege.
         fn is_exercised(self: @ContractState,  token_id: u256, privilege_id: u256, ) -> bool {
             self._assert_privilege_exists(privilege_id);
             self._assert_token_exists(token_id);
             self.ERC7765_privilege_exercised.read((token_id, privilege_id))
         }
 
+        /// @notice This function lists all privilege_ids of a token.
+        /// @param token_id The NFT token_id.
         fn get_privilege_ids(self: @ContractState, token_id: u256) -> Array<u256> {
             self.ERC7765_privileges.read().array()
         }
 
+        /// @notice This function exercises a specific privilege of a token if it succeeds.
+        /// @dev Throws if `privilege_id` is not a valid privilege_id.
+        /// @param to  The address benefitting from the privilege.
+        /// @param token_id  The NFT token_id.
+        /// @param privilege_id  The identifier of the privileges.
+        /// @param calldata  Extra data passed in for extra message or future extension.
         fn exercise_privilege(ref self: ContractState, token_id: u256, to: ContractAddress, privilege_id: u256, calldata: Array<felt252>) {
             self._assert_owner(token_id);
             self._assert_privilege_exists(privilege_id);
@@ -228,6 +291,7 @@ mod ERC7765Contract {
             assert(!owner.is_zero(), 'Invalid token Id');
             owner
         }
+
 
         fn _is_approved_or_owner(
             self: @ContractState, spender: ContractAddress, token_id: u256
