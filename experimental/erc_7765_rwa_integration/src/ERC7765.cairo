@@ -195,6 +195,8 @@ mod ERC7765Contract {
         // Specific to ERC7765
 
         fn is_exercisable(self: @ContractState, token_id: u256, privilege_id: u256, ) -> bool {
+            self._assert_privilege_exists(privilege_id);
+            self._assert_token_exists(token_id);
             !self.is_exercised(token_id, privilege_id)
         }
 
