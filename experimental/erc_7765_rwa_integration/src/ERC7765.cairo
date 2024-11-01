@@ -128,7 +128,9 @@ mod ERC7765Contract {
         /// @dev If the URI is not set for the `token_id`, the return value will be `0`.
         /// @param token_id Unique identifier of the token
         fn token_uri(self: @ContractState, token_id: u256) -> ByteArray {
-            self.ERC7765_base_uri.read()
+            self._assert_token_exists(token_id);
+            let base_uri = self.ERC7765_base_uri.read();
+            return format!("{}{}/", base_uri, token_id);
         }
     
         /// @notice Returns the Uniform Resource Identifier (URI) for the privilege
@@ -372,8 +374,8 @@ mod ERC7765Contract {
             assert(self.ERC7765_owners.read(token_id) == get_caller_address(), 'Caller is not the token owner');
         }
 
-        fn _assert_privilege_exists(self: @ContractState, token_id: u256) {
-            assert(self.ERC7765_privileges_to_index.read(token_id) != 0, 'Invalid privilege id');
+        fn _assert_privilege_exists(self: @ContractState, privilege_id: u256) {
+            assert(self.ERC7765_privileges_to_index.read(privilege_id) != 0, 'Invalid privilege id');
         }
 
         fn _assert_valid_account(self: @ContractState, account: ContractAddress) {
