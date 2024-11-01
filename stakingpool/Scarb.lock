@@ -13,8 +13,8 @@ source = "git+https://github.com/openzeppelin/cairo-contracts?tag=v0.10.0#d77082
 
 [[package]]
 name = "snforge_std"
-version = "0.14.0"
-source = "git+https://github.com/foundry-rs/starknet-foundry.git?tag=v0.14.0#e8cbecee4e31ed428c76d5173eaa90c8df796fe3"
+version = "0.22.0"
+source = "git+https://github.com/foundry-rs/starknet-foundry.git?tag=v0.22.0#9b215944c6c5871c738381b4ded61bbf06e7ba35"
 
 [[package]]
 name = "stakingpool"
