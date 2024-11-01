@@ -1,0 +1,35 @@
+[package]
+name = "erc_5643_subscription_nft"
+readme = "README.md"
+version = "0.1.0"
+edition = "2024_07"
+cairo-version = "2.8.4"
+scarb-version = "2.8.4"
+authors = ["Flex Marketplace"]
+description = "Subscription NFTs (ERC-5643) written in Cairo for Starknet."
+documentation = "https://github.com/Flex-NFT-Marketplace/Flex-Marketplace-Contract/tree/main/experimental/erc_5643_subscription_nft"
+repository = "https://github.com/Flex-NFT-Marketplace/Flex-Marketplace-Contract"
+license-file = "LICENSE"
+keywords = [
+  "erc5643",
+  "subscription",
+]
+
+[dependencies]
+starknet = "2.8.4"
+openzeppelin_access = "0.18.0"
+openzeppelin_introspection = "0.18.0"
+openzeppelin_token = "0.18.0"
+
+[dev-dependencies]
+assert_macros = "2.8.4"
+openzeppelin_utils = "0.18.0"
+openzeppelin_testing = "0.18.0"
+snforge_std = "0.31.0"
+
+[lib]
+
+[[target.starknet-contract]]
+
+[scripts]
+test = "snforge test"
