@@ -57,9 +57,15 @@ pub mod ERC5643Component {
             let owner = erc721_component.owner_of(token_id);
             self._check_authorized(owner, get_caller_address(), token_id);
 
-            let current_expiration = self.expirations.entry(token_id).read();
+            let expiration = self.expirations.entry(token_id).read();
+            let block_timestamp = get_block_timestamp();
+            let current_expiration = if expiration < block_timestamp {
+                block_timestamp
+            } else {
+                expiration
+            };
             let new_expiration = if current_expiration == 0 {
-                get_block_timestamp() + duration
+                block_timestamp + duration
             } else {
                 assert(self.is_renewable(token_id), Errors::SUBSCRIPTION_NOT_RENEWABLE);
                 current_expiration + duration

@@ -91,3 +91,14 @@ fn test_expires_at() {
     erc5643_test.erc5643_subscription_nft.cancel_subscription(TOKEN_ID);
     assert_eq!(erc5643_test.erc5643_subscription_nft.expires_at(TOKEN_ID), 0);
 }
+
+#[test]
+fn test_expired_subscription() {
+    let erc5643_test = ERC5643TestTrait::setup();
+    start_cheat_block_timestamp(erc5643_test.erc5643_subscription_nft_address, 1000);
+    start_cheat_caller_address(erc5643_test.erc5643_subscription_nft_address, OWNER());
+    erc5643_test.erc5643_subscription_nft.renew_subscription(TOKEN_ID, 2000);
+    start_cheat_block_timestamp(erc5643_test.erc5643_subscription_nft_address, 4000);
+    erc5643_test.erc5643_subscription_nft.renew_subscription(TOKEN_ID, 2000);
+    assert_eq!(erc5643_test.erc5643_subscription_nft.expires_at(TOKEN_ID), 6000);
+}
