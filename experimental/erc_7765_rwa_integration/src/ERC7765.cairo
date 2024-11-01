@@ -99,13 +99,15 @@ mod ERC7765Contract {
 
 
             let privileges_len = privilege_ids.len().try_into().unwrap();
-            let mut i: u32 = 1;
+            // Indexing privileges starting from 1 to avoid zero index which 
+            // helps in existence checks (zero indicates non-existence).  
+            let mut i: u32 = 0;
             loop {
                 if i > privileges_len {
                     break;
                 }
-                self.ERC7765_privileges_index.write(i, *privilege_ids.at(i));
-                self.ERC7765_privileges_to_index.write(*privilege_ids.at(i), i);
+                self.ERC7765_privileges_index.write(i+1, *privilege_ids.at(i));
+                self.ERC7765_privileges_to_index.write(*privilege_ids.at(i), i+1);
                 i +=1;
             };
     }
