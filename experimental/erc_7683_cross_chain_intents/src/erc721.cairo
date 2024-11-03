@@ -30,6 +30,7 @@ mod ERC721 {
         StoragePointerWriteAccess
     };
     use core::num::traits::Zero;
+    use zeroable::Zeroable;
 
     ////////////////////////////////
     // storage variables
@@ -120,7 +121,7 @@ mod ERC721 {
         // balance_of function returns token balance
         ////////////////////////////////
         fn balance_of(self: @ContractState, account: ContractAddress) -> u256 {
-            assert(account.is_non_zero(), 'ERC721: address zero');
+            assert(account.is_zero(), 'ERC721: address zero');
             self.balances.read(account)
         }
 
@@ -201,7 +202,7 @@ mod ERC721 {
         ////////////////////////////////
         fn _exists(self: @ContractState, token_id: u256) -> bool {
             // check that owner of token is not zero
-            self.owner_of(token_id).is_non_zero()
+            self.owner_of(token_id).is_zero()
         }
 
         ////////////////////////////////
@@ -233,7 +234,7 @@ mod ERC721 {
             // check that from address is equal to owner of token
             assert(from == self.owner_of(token_id), 'ERC721: Caller is not owner');
             // check that to address is not zero
-            assert(to.is_non_zero(), 'ERC721: transfer to 0 address');
+            assert(to.is_zero(), 'ERC721: transfer to 0 address');
 
             // remove previously made approvals
             self.token_approvals.write(token_id, Zero::zero());
@@ -253,7 +254,7 @@ mod ERC721 {
         // _mint function mints a new token to the to address
         ////////////////////////////////
         fn _mint(ref self: ContractState, to: ContractAddress, token_id: u256) {
-            assert(to.is_non_zero(), 'TO_IS_ZERO_ADDRESS');
+            assert(to.is_zero(), 'TO_IS_ZERO_ADDRESS');
 
             // Ensures token_id is unique
             assert(!self.owner_of(token_id).is_non_zero(), 'ERC721: Token already minted');
