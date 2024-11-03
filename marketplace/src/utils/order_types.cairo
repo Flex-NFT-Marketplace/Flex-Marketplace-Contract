@@ -39,7 +39,7 @@ struct TakerOrder {
     params: felt252,
 }
 
-trait YoloTrait<TState>  {
+trait YoloTrait<TState> {
     fn compute_order_hash(self: @TState) -> felt252;
 }
 
@@ -49,4 +49,17 @@ impl YoloTraitImpl of YoloTrait<TakerOrder> {
         self.serialize(ref buf);
         poseidon_hash_span(buf.span())
     }
+}
+
+#[derive(Clone, Drop, Serde, starknet::Store)]
+struct PendingRequest {
+    request_id: u64,
+    ask_price: u128,
+    bid_price: u128,
+    taker: ContractAddress,
+    collection: ContractAddress,
+    token_id: u256,
+    amount: u128,
+    finished: bool,
+    won: bool,
 }
