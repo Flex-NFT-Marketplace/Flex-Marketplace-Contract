@@ -36,3 +36,15 @@ struct BuyerBidOrder {
     buyer_adddress: ContractAddress,
     price: u128
 }
+
+trait YoloTrait<TState> {
+    fn compute_order_hash(self: @TState) -> felt252;
+}
+
+impl YoloTraitImpl of YoloTrait<TakerOrder> {
+    fn compute_order_hash(self: @TakerOrder) -> felt252 {
+        let mut buf = array![];
+        self.serialize(ref buf);
+        poseidon_hash_span(buf.span())
+    }
+}
