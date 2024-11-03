@@ -1,5 +1,6 @@
 use starknet::ContractAddress;
 use marketplace::DefaultContractAddress;
+use poseidon::poseidon_hash_span;
 
 #[derive(Copy, Drop, Serde, Default)]
 struct MakerOrder {
@@ -20,6 +21,14 @@ struct MakerOrder {
 }
 
 #[derive(Copy, Drop, Serde, Default)]
+struct BuyerBidOrder {
+    token_id: u128,
+    buyer_adddress: ContractAddress,
+    price: u128
+}
+
+
+#[derive(Copy, Drop, Serde, Default)]
 struct TakerOrder {
     is_order_ask: bool, // 1 = ask / 0 = bid
     taker: ContractAddress, // caller
@@ -30,14 +39,7 @@ struct TakerOrder {
     params: felt252,
 }
 
-#[derive(Copy, Drop, Serde, Default)]
-struct BuyerBidOrder {
-    token_id: u128,
-    buyer_adddress: ContractAddress,
-    price: u128
-}
-
-trait YoloTrait<TState> {
+trait YoloTrait<TState>  {
     fn compute_order_hash(self: @TState) -> felt252;
 }
 
