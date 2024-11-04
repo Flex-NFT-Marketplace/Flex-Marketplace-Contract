@@ -67,7 +67,8 @@ mod StrategyYoloBuy {
         OwnableEvent: OwnableComponent::Event,
         #[flat]
         UpgradeableEvent: UpgradeableComponent::Event,
-        NewYoloBuy: NewYoloBuy
+        NewYoloBuy: NewYoloBuy,
+        YoloResult: YoloResult,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -75,6 +76,17 @@ mod StrategyYoloBuy {
         token_id: u256,
         taker: ContractAddress,
         timestamp: u64,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct YoloResult {
+        request_id: u64,
+        taker: ContractAddress,
+        collection: ContractAddress,
+        token_id: u256,
+        ask_price: u128,
+        bid_price: u128,
+        won: bool,
     }
 
     #[constructor]
@@ -167,6 +179,18 @@ mod StrategyYoloBuy {
                             .token_id;
                         let pending_amount_match: bool = pending_request.amount == taker_bid.amount;
                         if pending_price_match && pending_token_id_match && pending_amount_match {
+                            self
+                                .emit(
+                                    YoloResult {
+                                        request_id: pending_request.request_id,
+                                        taker: pending_request.taker,
+                                        collection: pending_request.collection,
+                                        token_id: pending_request.token_id,
+                                        ask_price: pending_request.ask_price,
+                                        bid_price: pending_request.bid_price,
+                                        won: pending_request.won,
+                                    }
+                                );
                             return (pending_request.won, maker_ask.token_id, taker_bid.amount);
                         } else {
                             return (false, maker_ask.token_id, maker_ask.amount);

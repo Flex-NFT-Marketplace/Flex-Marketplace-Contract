@@ -15,7 +15,7 @@ fn deploy_contract() -> (ContractAddress, ContractAddress) {
     let owner = contract_address_const::<'owner'>();
     let fee = 100_u128;
     let randomness_contract = contract_address_const::<'randomness_contract'>();
-    let mut calldata: Array<felt252> = array![owner.into(), fee.into(), randomness_contract];
+    let mut calldata: Array<felt252> = array![owner.into(), fee.into(), randomness_contract.into()];
     let contract = declare("StrategyYoloBuy").unwrap();
     let (contract_address, _) = contract.deploy(@calldata).unwrap();
     (contract_address, owner)
@@ -91,14 +91,27 @@ fn test_create_bid_successful() {
         seller: seller,
     };
 
-    // Test a successful bid creation
-    IStrategyYoloBuyDispatcher { contract_address }.create_bid(taker_bid, maker_ask);
+    let mut spy = spy_events();
+    cheat_caller_address(contract_address, taker, CheatSpan::TargetCalls(1));
 
-    // spy
-    // .assert_emitted(
-    //     @array![
-    //     ]
-    // );
+    // Test a successful bid creation
+    let res = IStrategyYoloBuyDispatcher { contract_address }.create_bid(taker_bid, maker_ask);
+
+    assert_eq!(res, true, "Failed to create bid");
+
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    contract_address,
+                    StrategyYoloBuy::Event::NewYoloBuy(
+                        StrategyYoloBuy::NewYoloBuy {
+                            token_id: 1_u256, taker: taker, timestamp: get_block_timestamp(),
+                        }
+                    )
+                )
+            ]
+        );
 
     let bid_request = IStrategyYoloBuyDispatcher { contract_address }.get_bid_request(taker_bid);
     assert_eq!(bid_request.finished, false, "Just created request");
