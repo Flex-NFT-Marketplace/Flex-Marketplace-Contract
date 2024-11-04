@@ -51,7 +51,7 @@ fn test_constructor() {
 fn test_update_protocol_fee() {
     let (contract_address, owner) = deploy_contract();
     // Test that only the owner can update update the fee
-    let new = 200_u128;
+    let new_fee = 200_u128;
     cheat_caller_address(contract_address, owner, CheatSpan::TargetCalls(1));
     IStrategyYoloBuyDispatcher { contract_address }.update_protocol_fee(new_fee);
     assert_eq!(IStrategyYoloBuyDispatcher { contract_address }.protocol_fee(), new_fee);
