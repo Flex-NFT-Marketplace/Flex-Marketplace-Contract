@@ -6,6 +6,7 @@ edition = "2023_01"
 [dependencies]
 starknet = ">2.8.0"
 openzeppelin = { git = "https://github.com/openzeppelin/cairo-contracts", tag = "v0.17.0"  }
+snforge_std = { git = "https://github.com/foundry-rs/foundry.git", tag = "0.32.0" }
 
 [scripts]
 test = "snforge test"
