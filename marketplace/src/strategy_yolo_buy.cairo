@@ -1,16 +1,13 @@
 use starknet::ContractAddress;
 use starknet::class_hash::ClassHash;
-use marketplace::utils::order_types::{TakerOrder, MakerOrder};
-
+use marketplace::utils::order_types::{TakerOrder, MakerOrder, YoloTrait, PendingRequest};
 
 #[starknet::interface]
 trait IStrategyYoloBuy<TState> {
-    fn initializer(ref self: TState, fee: u128, owner: ContractAddress);
     fn update_protocol_fee(ref self: TState, fee: u128);
     fn protocol_fee(self: @TState) -> u128;
-    fn can_execute_taker_ask(
-        self: @TState, taker_ask: TakerOrder, maker_bid: MakerOrder, extra_params: Span<felt252>
-    ) -> (bool, u256, u128);
+    fn create_bid(ref self: TState, taker_bid: TakerOrder, maker_ask: MakerOrder) -> bool;
+    fn get_bid_request(ref self: TState, taker_bid: TakerOrder) -> PendingRequest;
     fn can_execute_taker_bid(
         ref self: TState, taker_bid: TakerOrder, maker_ask: MakerOrder
     ) -> (bool, u256, u128);
@@ -28,7 +25,6 @@ trait IStrategyYoloBuy<TState> {
 
 #[starknet::contract]
 mod StrategyYoloBuy {
-
     use starknet::{ContractAddress, contract_address_const};
     use starknet::class_hash::ClassHash;
     use starknet::get_block_timestamp;
@@ -40,6 +36,10 @@ mod StrategyYoloBuy {
     use pragma_lib::abi::{IRandomnessDispatcher, IRandomnessDispatcherTrait};
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
     component!(path: UpgradeableComponent, storage: upgradeable, event: UpgradeableEvent);
+    use marketplace::utils::order_types::{YoloTrait, PendingRequest};
+
+    const MAX_FELT252: u256 =
+        3618502788666131213697322783095070105623107215331596699973092056135872020480_u256;
 
     #[abi(embed_v0)]
     impl OwnableImpl = OwnableComponent::OwnableImpl<ContractState>;
@@ -48,24 +48,11 @@ mod StrategyYoloBuy {
 
     use marketplace::utils::order_types::{TakerOrder, MakerOrder};
 
-    #[derive(Clone, Drop, Serde, starknet::Store)]
-    struct PendingRequest {
-        request_id: u64,
-        ask_price: u128,
-        bid_price: u128,
-        taker: ContractAddress,
-        collection: ContractAddress,
-        token_id: u256,
-        amount: u128,
-        finished: bool,
-        won: bool,
-    }    
-
     #[storage]
     struct Storage {
         protocol_fee: u128,
-        takers_by_request_id: LegacyMap<u64, ContractAddress>,
-        requests_by_taker: LegacyMap<ContractAddress, Option<PendingRequest>>,
+        takers_by_request_id: LegacyMap<u64, felt252>,
+        requests_by_taker: LegacyMap<felt252, Option<PendingRequest>>,
         #[substorage(v0)]
         ownable: OwnableComponent::Storage,
         #[substorage(v0)]
@@ -80,15 +67,47 @@ mod StrategyYoloBuy {
         OwnableEvent: OwnableComponent::Event,
         #[flat]
         UpgradeableEvent: UpgradeableComponent::Event,
+        NewYoloBuy: NewYoloBuy,
+        YoloResult: YoloResult,
     }
+
+    #[derive(Drop, starknet::Event)]
+    struct NewYoloBuy {
+        token_id: u256,
+        taker: ContractAddress,
+        timestamp: u64,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct YoloResult {
+        request_id: u64,
+        taker: ContractAddress,
+        collection: ContractAddress,
+        token_id: u256,
+        ask_price: u128,
+        bid_price: u128,
+        won: bool,
+    }
+
+    #[constructor]
+    fn constructor(
+        ref self: ContractState,
+        owner: ContractAddress,
+        fee: u128,
+        randomness_contract: ContractAddress
+    ) {
+        self.ownable.initializer(owner);
+        self.protocol_fee.write(fee);
+
+        let randomness_dispatcher = IRandomnessDispatcher {
+            contract_address: randomness_contract,
+        };
+        self.randomness_contract.write(randomness_dispatcher);
+    }
+
 
     #[abi(embed_v0)]
     impl StrategyYoloBuyImpl of super::IStrategyYoloBuy<ContractState> {
-        fn initializer(ref self: ContractState, fee: u128, owner: ContractAddress) {
-            self.ownable.initializer(owner);
-            self.protocol_fee.write(fee);
-        }
-
         fn update_protocol_fee(ref self: ContractState, fee: u128) {
             self.ownable.assert_only_owner();
             self.protocol_fee.write(fee);
@@ -98,58 +117,88 @@ mod StrategyYoloBuy {
             self.protocol_fee.read()
         }
 
-        fn can_execute_taker_ask(
-            self: @ContractState,
-            taker_ask: TakerOrder,
-            maker_bid: MakerOrder,
-            extra_params: Span<felt252>
-        ) -> (bool, u256, u128) {
-            // Current implementation works with taker bids only
-            (false, maker_bid.token_id, maker_bid.amount)
+        fn create_bid(
+            ref self: ContractState, taker_bid: TakerOrder, maker_ask: MakerOrder
+        ) -> bool {
+            // Check if the bid is valid (token id matches, start and end times are valid),
+            // then calculate the odds, save the bid in storage, request randomness from Pragma VRF,
+            let token_id_match: bool = maker_ask.token_id == taker_bid.token_id;
+            let start_time_valid: bool = maker_ask.start_time < get_block_timestamp();
+            let end_time_valid: bool = maker_ask.end_time > get_block_timestamp();
+            if (token_id_match && start_time_valid && end_time_valid) {
+                // Get order hash
+                let order_hash = taker_bid.compute_order_hash();
+                // Check if there is this order exists
+                if !self.requests_by_taker.read(order_hash).is_some() {
+                    // Call the YOLO buy processing function
+                    self.process_yolo_buy(taker_bid, maker_ask);
+                    let timestamp = get_block_timestamp();
+                    self
+                        .emit(
+                            NewYoloBuy {
+                                token_id: taker_bid.token_id,
+                                taker: taker_bid.taker,
+                                timestamp: timestamp
+                            }
+                        );
+                    return true;
+                }
+                return false;
+            }
+            return false;
         }
- 
+
+        fn get_bid_request(ref self: ContractState, taker_bid: TakerOrder) -> PendingRequest {
+            let order_hash = taker_bid.compute_order_hash();
+            let bid_request = self.requests_by_taker.read(order_hash);
+            assert(bid_request.is_none(), 'Bid request not found');
+            bid_request.unwrap().into()
+        }
+
+
         fn can_execute_taker_bid(
             ref self: ContractState, taker_bid: TakerOrder, maker_ask: MakerOrder
         ) -> (bool, u256, u128) {
             // Check if the bid is valid (token id matches, start and end times are valid),
             // then calculate the odds, save the bid in storage, request randomness from Pragma VRF,
             // and return "false" because the bid is not executed immediately
-            let price_match: bool = maker_ask.price == taker_bid.price;
             let token_id_match: bool = maker_ask.token_id == taker_bid.token_id;
             let start_time_valid: bool = maker_ask.start_time < get_block_timestamp();
             let end_time_valid: bool = maker_ask.end_time > get_block_timestamp();
-            if (price_match && token_id_match && start_time_valid && end_time_valid) {
+            if (token_id_match && start_time_valid && end_time_valid) {
                 // Try to find the order
-                if let Option::Some(pending_request) = self.requests_by_taker.read(taker_bid.taker) {
+                let order_hash = taker_bid.compute_order_hash();
+                if let Option::Some(pending_request) = self.requests_by_taker.read(order_hash) {
                     if pending_request.finished {
                         // check if it matches
-                        let pending_price_match: bool = pending_request.bid_price == taker_bid.price;
-                        let pending_token_id_match: bool = pending_request.token_id == taker_bid.token_id;
+                        let pending_price_match: bool = pending_request
+                            .bid_price == taker_bid
+                            .price;
+                        let pending_token_id_match: bool = pending_request
+                            .token_id == taker_bid
+                            .token_id;
                         let pending_amount_match: bool = pending_request.amount == taker_bid.amount;
                         if pending_price_match && pending_token_id_match && pending_amount_match {
-                            // release the order
-                            self.requests_by_taker.write(taker_bid.taker, Option::None);
-                            if !pending_request.won {
-                                // pay the fees
-                                self.pay_yolo_bid(
-                                    maker_ask.currency,
-                                    pending_request.taker,
-                                    pending_request.bid_price,
-                                    get_contract_address(),
+                            self
+                                .emit(
+                                    YoloResult {
+                                        request_id: pending_request.request_id,
+                                        taker: pending_request.taker,
+                                        collection: pending_request.collection,
+                                        token_id: pending_request.token_id,
+                                        ask_price: pending_request.ask_price,
+                                        bid_price: pending_request.bid_price,
+                                        won: pending_request.won,
+                                    }
                                 );
-                            }
-                            return (pending_request.won, maker_ask.token_id, maker_ask.amount);
+                            return (pending_request.won, maker_ask.token_id, taker_bid.amount);
                         } else {
                             return (false, maker_ask.token_id, maker_ask.amount);
                         }
                     } else {
-                        // Only one pending request per bidder is allowed
                         return (false, maker_ask.token_id, maker_ask.amount);
                     }
                 }
-
-                // Call the YOLO buy processing function
-                self.process_yolo_buy(taker_bid, maker_ask);
             }
             (false, maker_ask.token_id, maker_ask.amount)
         }
@@ -167,11 +216,14 @@ mod StrategyYoloBuy {
             calldata: Array<felt252>
         ) {
             // Verify caller is the Pragma Randomness contract
-            assert(get_caller_address() == self.randomness_contract.read().contract_address, 'Invalid caller');
+            assert(
+                get_caller_address() == self.randomness_contract.read().contract_address,
+                'Invalid caller'
+            );
 
             // Retrieve market orders from the storage (by request id)
-            let taker = self.takers_by_request_id.read(request_id);
-            let request = self.requests_by_taker.read(taker);
+            let order_hash = self.takers_by_request_id.read(request_id);
+            let request = self.requests_by_taker.read(order_hash);
             if request.is_none() {
                 return;
             }
@@ -184,7 +236,7 @@ mod StrategyYoloBuy {
             // Change the status of the request and save it to the storage
             request2.finished = true;
             request2.won = wins;
-            self.requests_by_taker.write(taker, Option::Some(request2));
+            self.requests_by_taker.write(order_hash, Option::Some(request2));
         }
 
         fn set_randomness_contract(ref self: ContractState, randomness_contract: ContractAddress) {
@@ -218,20 +270,29 @@ mod StrategyYoloBuy {
                     ArrayTrait::new() // empty calldata
                 );
 
-            // Store the request_id and pending request
-            self.takers_by_request_id.write(request_id, taker_bid.taker);
+            let order_hash = taker_bid.compute_order_hash();
 
-            self.requests_by_taker.write(taker_bid.taker, Option::Some(PendingRequest {
-                request_id,
-                ask_price: maker_ask.price,
-                bid_price: taker_bid.price,
-                taker: taker_bid.taker,
-                collection: maker_ask.collection,
-                token_id: maker_ask.token_id,
-                amount: maker_ask.amount,
-                finished: false,
-                won: false,
-            }));
+            // Store the request_id and pending request
+            self.takers_by_request_id.write(request_id, order_hash);
+
+            self
+                .requests_by_taker
+                .write(
+                    order_hash,
+                    Option::Some(
+                        PendingRequest {
+                            request_id,
+                            ask_price: maker_ask.price,
+                            bid_price: taker_bid.price,
+                            taker: taker_bid.taker,
+                            collection: maker_ask.collection,
+                            token_id: maker_ask.token_id,
+                            amount: maker_ask.amount,
+                            finished: false,
+                            won: false,
+                        }
+                    )
+                );
         }
 
         fn calculate_odds(self: @ContractState, bid_amount: u128, full_price: u128) -> u128 {
@@ -245,27 +306,19 @@ mod StrategyYoloBuy {
             odds
         }
 
-        fn determine_win(self: @ContractState, random_number: felt252, bid_amount: u128, full_price: u128) -> bool {
+        fn determine_win(
+            self: @ContractState, random_number: felt252, bid_amount: u128, full_price: u128
+        ) -> bool {
             let odds = self.calculate_odds(bid_amount, full_price);
 
             // Convert felt252 to u256 for easier comparison
             let random_u256: u256 = random_number.into();
 
             // Calculate the threshold for winning
-            let max_felt252: u256 =
-                3618502788666131213697322783095070105623107215331596699973092056135872020480;
-            let threshold: u256 = (max_felt252 / 100_u256) * odds.into();
+            let threshold: u256 = (MAX_FELT252 / 100_u256) * odds.into();
 
             random_u256 < threshold
         }
-
-        fn pay_yolo_bid(self: @ContractState, currency: ContractAddress, taker: ContractAddress, bid_price: u128, recipient: ContractAddress) {
-            let currency_erc20 = IERC20CamelDispatcher { contract_address: currency };
-            if !bid_price.is_zero() && !recipient.is_zero() {
-                currency_erc20.transferFrom(taker, recipient, bid_price.into());
-            }
-        }
     }
 }
-
 

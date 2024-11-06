@@ -33,6 +33,7 @@ mod mocks {
     mod erc1155;
     mod erc721;
     mod strategy;
+    mod randomness;
 }
 
 mod contract_deployer;
