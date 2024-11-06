@@ -1,0 +1,19 @@
+[package]
+name = "flex_cross_chain_intents"
+version = "0.1.0"
+description = "POC implementing NFT cross-chain intents based on the ERC-7683 standard"
+homepage = "https://github.com/Flex-NFT-Marketplace/Flex-Marketplace-Contract"
+
+[dependencies]
+starknet = "2.6.3"
+alexandria_storage = { git = "https://github.com/keep-starknet-strange/alexandria.git" }
+
+[[target.starknet-contract]]
+sierra = true
+casm = true
+
+[dev-dependencies]
+snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry.git", tag = "v0.10.1" }
+
+[scripts]
+test = "snforge test"
