@@ -2,3 +2,5 @@
 .vscode/
 */scripts/node_modules/
 deployment-script/
+.snfoundry_cache
+flex_haus/.snfoundry_cache

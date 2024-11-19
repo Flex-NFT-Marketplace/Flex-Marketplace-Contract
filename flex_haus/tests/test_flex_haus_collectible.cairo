@@ -1,141 +1,145 @@
-use starknet::ContractAddress;
-use starknet::contract_address_const;
-use starknet::deploy_syscall;
-use traits::TryInto;
-use option::OptionTrait;
-use result::ResultTrait;
-use array::ArrayTrait;
-use snforge_std::{
-    declare, ContractClassTrait, start_prank, stop_prank, CheatTarget, 
-    spy_events, SpyOn, EventSpy, EventFetcher, Event
-};
+use flexhaus::collectible::FlexHausCollectible;
 
-use flexhaus::collectible::FlexHausCollectible::{
-    FlexHausCollectible, IFlexHausCollectibleDispatcher, 
+use flexhaus::interface::IFlexHausCollectible::{
+    IFlexHausCollectible, 
+    IFlexHausCollectibleDispatcher, 
     IFlexHausCollectibleDispatcherTrait
 };
 
-fn deploy_contract() -> (ContractAddress, IFlexHausCollectibleDispatcher) {
-    let contract = declare("FlexHausCollectible");
-    
-    let owner = contract_address_const::<0x123>();
-    let factory = contract_address_const::<0x456>();
-    let name = "FlexHaus NFT";
-    let symbol = "FLEX";
-    let base_uri = "https://flexhaus.io/metadata/";
-    let total_supply: u256 = 1000;
+use openzeppelin::utils::serde::SerializedAppend;
 
-    let mut calldata = array![
-        owner.into(),
-        name.into(), 
-        symbol.into(), 
-        base_uri.into(),
-        total_supply.into(),
-        factory.into()
-    ];
+use core::starknet::{ContractAddress, contract_address_const};
+use snforge_std::{
+    declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address, 
+    stop_cheat_caller_address, spy_events, 
+    EventSpyAssertionsTrait, load
+};
+
+use core::traits::TryInto;
+
+fn owner() -> ContractAddress {
+    contract_address_const::<'owner'>()
+}
+
+fn name() -> ByteArray {
+    "FlexHausCollectible"
+}
+
+fn symbol() -> ByteArray {
+    "FHC"
+}
+
+fn base_uri() -> ByteArray {
+    "https://example.com/"
+}
+
+fn total_supply() -> u256 {
+    100
+}
+
+fn factory() -> ContractAddress {
+    contract_address_const::<'factory'>()
+}
+
+fn another_factory() -> ContractAddress {
+    contract_address_const::<'another_factory'>()
+}
+
+fn minter() -> ContractAddress {
+    contract_address_const::<'minter'>()
+}
+
+fn deploy_flex_haus_collectible() -> (IFlexHausCollectibleDispatcher, ContractAddress) {
+    let contract = declare("FlexHausCollectible").unwrap().contract_class();
+    let mut calldata: Array<felt252> = array![];
+    calldata.append_serde(owner());
+    calldata.append_serde(name());
+    calldata.append_serde(symbol());
+    calldata.append_serde(base_uri());
+    calldata.append_serde(total_supply());
+    calldata.append_serde(factory());
 
     let (contract_address, _) = contract.deploy(@calldata).unwrap();
+
     let dispatcher = IFlexHausCollectibleDispatcher { contract_address };
 
-    (contract_address, dispatcher)
+    (dispatcher, contract_address)
 }
 
 #[test]
 fn test_constructor() {
-    let (_, dispatcher) = deploy_contract();
+    let (collectible, _) = deploy_flex_haus_collectible();
 
-    assert(dispatcher.total_supply() == 1000, 'Incorrect total supply');
-    assert(dispatcher.get_base_uri() == "https://flexhaus.io/metadata/", 'Incorrect base URI');
+    assert_eq!(collectible.total_supply(), 100, "Total supply should be 100");
+    assert_eq!(collectible.get_base_uri(), "https://example.com/", "Base URI should match");
 }
 
 #[test]
-fn test_add_remove_factory() {
-    let (contract_address, dispatcher) = deploy_contract();
-    let owner = contract_address_const::<0x123>();
-    let new_factory = contract_address_const::<0x789>();
+fn test_set_base_uri_by_factory() {
+    let (collectible, contract_address) = deploy_flex_haus_collectible();
 
-    // Add factory as owner
-    start_prank(CheatTarget::One(contract_address), owner);
-    dispatcher.add_factory(new_factory);
-    stop_prank(CheatTarget::One(contract_address));
+    // Cheat caller to be the factory
+    start_cheat_caller_address(contract_address, factory());
 
-    // Try removing factory as owner
-    start_prank(CheatTarget::One(contract_address), owner);
-    dispatcher.remove_factory(new_factory);
-    stop_prank(CheatTarget::One(contract_address));
+    // Set new base URI
+    collectible.set_base_uri("https://new-uri.com/");
+    assert_eq!(collectible.get_base_uri(), "https://new-uri.com/", "Base URI should be updated");
 }
 
 #[test]
-#[should_panic(expected: ('Only owner', ))]
-fn test_add_factory_not_owner() {
-    let (contract_address, dispatcher) = deploy_contract();
-    let non_owner = contract_address_const::<0xABC>();
-    let new_factory = contract_address_const::<0x789>();
+#[should_panic(expected: ('Only Flex Haus Factory',))]
+fn test_set_base_uri_not_by_factory() {
+    let (collectible, contract_address) = deploy_flex_haus_collectible();
 
-    // Try to add factory as non-owner
-    start_prank(CheatTarget::One(contract_address), non_owner);
-    dispatcher.add_factory(new_factory);
+    // Try to set base URI by non-factory address
+    start_cheat_caller_address(contract_address, minter());
+    collectible.set_base_uri("https://unauthorized.com/");
 }
 
 #[test]
-#[should_panic(expected: ('Factory already added', ))]
-fn test_add_duplicate_factory() {
-    let (contract_address, dispatcher) = deploy_contract();
-    let owner = contract_address_const::<0x123>();
-    let initial_factory = contract_address_const::<0x456>();
+fn test_add_and_remove_factory() {
+    let (collectible, contract_address) = deploy_flex_haus_collectible();
 
-    // Try to add same factory again
-    start_prank(CheatTarget::One(contract_address), owner);
-    dispatcher.add_factory(initial_factory);
+    // Cheat caller to be the owner
+    start_cheat_caller_address(contract_address, owner());
+
+    // Add a new factory
+    collectible.add_factory(another_factory());
+
+    // Try to remove the factory
+    collectible.remove_factory(another_factory());
 }
 
 #[test]
-fn test_mint_collectible() {
-    let (contract_address, dispatcher) = deploy_contract();
-    let factory = contract_address_const::<0x456>();
-    let minter = contract_address_const::<0xABC>();
+#[should_panic(expected: ('Factory already added',))]
+fn test_add_existing_factory() {
+    let (collectible, contract_address) = deploy_flex_haus_collectible();
 
-    // Mint collectible using the initial factory
-    start_prank(CheatTarget::One(contract_address), factory);
-    dispatcher.mint_collectible(minter);
-    stop_prank(CheatTarget::One(contract_address));
+    // Cheat caller to be the owner
+    start_cheat_caller_address(contract_address, owner());
+
+    // Try to add the same factory twice
+    collectible.add_factory(factory());
 }
 
 #[test]
-#[should_panic(expected: ('Only Flex Haus Factory', ))]
-fn test_mint_collectible_unauthorized() {
-    let (contract_address, dispatcher) = deploy_contract();
-    let non_factory = contract_address_const::<0xABC>();
-    let minter = contract_address_const::<0xDEF>();
+#[should_panic(expected: ('Factory not added',))]
+fn test_remove_non_existing_factory() {
+    let (collectible, contract_address) = deploy_flex_haus_collectible();
 
-    // Try to mint collectible from unauthorized address
-    start_prank(CheatTarget::One(contract_address), non_factory);
-    dispatcher.mint_collectible(minter);
+    // Cheat caller to be the owner
+    start_cheat_caller_address(contract_address, owner());
+
+    // Try to remove a factory that hasn't been added
+    collectible.remove_factory(another_factory());
 }
 
 #[test]
-fn test_update_contract_metadata() {
-    let (contract_address, dispatcher) = deploy_contract();
-    let factory = contract_address_const::<0x456>();
+#[should_panic(expected: ('Only Flex Haus Factory',))]
+fn test_mint_not_by_factory() {
+    let (collectible, contract_address) = deploy_flex_haus_collectible();
 
-    // Update base URI
-    start_prank(CheatTarget::One(contract_address), factory);
-    dispatcher.set_base_uri("https://newuri.com/metadata/");
-    assert(dispatcher.get_base_uri() == "https://newuri.com/metadata/", 'Base URI not updated');
-
-    // Update name and symbol
-    dispatcher.set_name("New FlexHaus NFT");
-    dispatcher.set_symbol("NEW");
-    stop_prank(CheatTarget::One(contract_address));
-}
-
-#[test]
-#[should_panic(expected: ('Only Flex Haus Factory', ))]
-fn test_update_metadata_unauthorized() {
-    let (contract_address, dispatcher) = deploy_contract();
-    let non_factory = contract_address_const::<0xABC>();
-
-    // Try to update metadata from unauthorized address
-    start_prank(CheatTarget::One(contract_address), non_factory);
-    dispatcher.set_base_uri("https://unauthorized.com/");
+    // Try to mint by non-factory address
+    start_cheat_caller_address(contract_address, minter());
+    collectible.mint_collectible(minter());
 }

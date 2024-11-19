@@ -6,6 +6,7 @@ name = "flexhaus"
 version = "0.1.0"
 dependencies = [
  "openzeppelin",
+ "snforge_std",
 ]
 
 [[package]]
@@ -109,3 +110,16 @@ source = "git+https://github.com/openzeppelin/cairo-contracts?tag=v0.17.0#bf5d02
 name = "openzeppelin_utils"
 version = "0.17.0"
 source = "git+https://github.com/openzeppelin/cairo-contracts?tag=v0.17.0#bf5d02c25c989ccc24f3ab42ec649617d3f21289"
+
+[[package]]
+name = "snforge_scarb_plugin"
+version = "0.32.0"
+source = "git+https://github.com/foundry-rs/starknet-foundry?tag=v0.32.0#3817c903b640201c72e743b9bbe70a97149828a2"
+
+[[package]]
+name = "snforge_std"
+version = "0.32.0"
+source = "git+https://github.com/foundry-rs/starknet-foundry?tag=v0.32.0#3817c903b640201c72e743b9bbe70a97149828a2"
+dependencies = [
+ "snforge_scarb_plugin",
+]
