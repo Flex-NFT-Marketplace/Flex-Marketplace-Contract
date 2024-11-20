@@ -17,8 +17,7 @@ pub trait IFractionalNFT<TContractState> {
 
 #[starknet::contract]
 mod FractionalNFT {
-    use super::IFractionalNFT;
-use starknet::{ContractAddress, get_caller_address, get_contract_address};
+    use starknet::{ContractAddress, get_caller_address, get_contract_address};
     use openzeppelin::token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
     use crate::interfaces::ierc721::{IERC721Dispatcher, IERC721DispatcherTrait};
     use crate::interfaces::ierc20::{IERC20Dispatcher, IERC20DispatcherTrait};
@@ -119,27 +118,27 @@ use starknet::{ContractAddress, get_caller_address, get_contract_address};
         }
 
         fn nft_collection(self: @ContractState) -> ContractAddress {
-
+            self.nft_collection.read()
         }
 
         fn token_id(self: @ContractState) -> u256 {
-
+            self.token_id.read()
         }
 
         fn is_initialized(self: @ContractState) -> bool {
-
+            self.is_initialized.read()
         }
 
         fn for_sale(self: @ContractState) -> bool {
-
+            self.for_sale.read()
         }
 
         fn redeemable(self: @ContractState) -> bool {
-
+            self.redeemable.read()
         }
 
         fn sale_price(self: @ContractState) -> u256 {
-
+            self.sale_price.read()
         }
     }
 }
