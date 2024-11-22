@@ -1,0 +1,2 @@
+## Fractional NFT
+NFT fractionalization is an implementation that enables fractional ownership of an asset (NFT) where the cost of an asset is split between multiple individuals who also shares the ownership of the asset.
