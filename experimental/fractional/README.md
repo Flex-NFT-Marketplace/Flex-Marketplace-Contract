@@ -6,8 +6,7 @@ To achieve NFT fractionalization, we have to make use of an ERC20 token which wi
 
 With the ERC20 tokens, holders can claim a fraction of the value of the NFT after has been sold.
 
-### 
-
+### FractionalNFT Smart Contract: `src/fractional_nft.cairo`
 - The `FractionalNFT` contract will take in the `id` of the NFT to be fractionalized and also the NFT will be transferred into the `FractionalNFT` contract when the `initialized()` function is called. <br />
 
 ### 
@@ -25,6 +24,9 @@ With the ERC20 tokens, holders can claim a fraction of the value of the NFT afte
 - The `purchase()` function is used to purchase the NFT from the `FractionalNFT` contract at a price that was set. <br />
 
 - The `redeem()` function is used to redeem the value after the NFT has been sold. The redeemed value sends value to the redeemer based on the amount of the FractionalNFT ERC20 token that they hold. This ERC20 token is what is used as the shares, indication how much of a fraction on the NFT a user owns.
+
+### FlexNFT Smart Contract: `src/mocks/flex_nft.cairo`
+The `FlexNFT` smart contract is a mock ERC721 contract implemented using Openzeppelin component. It is a representation of an NFT which will be used for testing the `FractionalNFT` contract.
 
 ### Summary
 For an NFT to be fractionalized, an ERC20 token is need, to serve as the fractions of a single NFT item whose ID is given to the `FractionalNFT` smart contract.
