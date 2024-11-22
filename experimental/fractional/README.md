@@ -23,7 +23,7 @@ With the ERC20 tokens, holders can claim a fraction of the value of the NFT afte
 
 - The `purchase()` function is used to purchase the NFT from the `FractionalNFT` contract at a price that was set. <br />
 
-- The `redeem()` function is used to redeem the value after the NFT has been sold. The redeemed value sends value to the redeemer based on the amount of the FractionalNFT ERC20 token that they hold. This ERC20 token is what is used as the shares, indication how much of a fraction on the NFT a user owns.
+- The `redeem()` function is used to redeem the value after the NFT has been sold. The redeemed value sends value to the redeemer based on the amount of the FractionalNFT ERC20 token that they hold. This ERC20 token is what is used as the shares, indication how much of a fraction on the NFT a user owns. The ERC20 tokens are burnt from the redeemer's account after redeem their shared value/reward, to prevent them from redeeming more than once with the same ERC20 tokens.
 
 ### FlexNFT Smart Contract: `src/mocks/flex_nft.cairo`
 The `FlexNFT` smart contract is a mock ERC721 contract implemented using Openzeppelin component. It is a representation of an NFT which will be used for testing the `FractionalNFT` contract.
