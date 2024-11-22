@@ -4,7 +4,7 @@ NFT fractionalization is an implementation that enables fractional ownership of 
 ## How the Smart Contract Works
 To achieve NFT fractionalization, we have to make use of an ERC20 token which will serve as the fractions for the NFT. Anyone that holds the ERC20 token that is attached to an NFT with a given id, automatically holds a fraction of the NFT, depending on how many ERC20 tokens they hold. <br />
 
-With the ERC20 tokens, holders can claim a fraction of the value of the NFT after has been sold.
+With the ERC20 tokens, holders can claim a fraction of the value of the NFT after it has been sold.
 
 ### FractionalNFT Smart Contract: `src/fractional_nft.cairo`
 - The `FractionalNFT` contract will take in the `id` of the NFT to be fractionalized and also the NFT will be transferred into the `FractionalNFT` contract when the `initialized()` function is called. <br />
