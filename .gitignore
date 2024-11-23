@@ -4,3 +4,4 @@
 deployment-script/
 .snfoundry_cache
 flex_haus/.snfoundry_cache
+.DS_Store
