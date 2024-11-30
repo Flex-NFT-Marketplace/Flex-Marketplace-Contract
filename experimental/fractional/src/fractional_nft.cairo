@@ -1,7 +1,7 @@
 #[starknet::contract]
 mod FractionalNFT {
     use crate::interfaces::ifractional_nft::IFractionalNFT;
-    use starknet::{ContractAddress, get_caller_address, get_contract_address};
+    use starknet::{ContractAddress, get_contract_address};
     use openzeppelin::token::erc20::{ERC20Component, ERC20HooksEmptyImpl};
     use crate::interfaces::ierc721::{IERC721Dispatcher, IERC721DispatcherTrait};
     use crate::interfaces::ierc20::{IERC20Dispatcher, IERC20DispatcherTrait};
