@@ -1,5 +1,6 @@
 use starknet::ContractAddress;
 
+#[derive(Drop, starknet::Store, Serde)]
 pub struct Policy {
     pub policyholder: ContractAddress,
     pub premium: u256,
@@ -11,6 +12,7 @@ pub struct Policy {
     pub state: State,
 }
 
+#[derive(Drop, Copy, starknet::Store, Serde)]
 pub enum State {
     Active,
     Expired,

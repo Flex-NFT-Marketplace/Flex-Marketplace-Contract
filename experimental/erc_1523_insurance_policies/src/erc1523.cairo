@@ -6,6 +6,11 @@ pub mod ERC1523 {
     use openzeppelin::token::erc721::interface::IERC721Metadata;
     use openzeppelin::introspection::src5::SRC5Component;
     use starknet::ContractAddress;
+    use starknet::storage::{
+        Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
+        StoragePointerWriteAccess, StoragePathEntry, Vec, VecTrait, MutableVecTrait, StorageAsPath,
+        StorageAsPointer, StoragePath, StoragePointer0Offset, Mutable
+    };
 
     use erc_1523_insurance_policies::types::{Policy, State};
     use erc_1523_insurance_policies::interfaces::{IERC1523PolicyMetadata, IERC1523};
@@ -29,9 +34,9 @@ pub mod ERC1523 {
         erc721: ERC721Component::Storage,
         #[substorage(v0)]
         src5: SRC5Component::Storage,
-        token: u256,
-        policies: Map<token_id, Policy>,
-        user_policies: Map<ContractAddress, Vec>,
+        token_count: u256,
+        policies: Map<u256, Policy>,
+        user_policies: Map<ContractAddress, Vec<u256>>,
     }
 
     #[event]
@@ -72,54 +77,56 @@ pub mod ERC1523 {
     #[abi(embed_v0)]
     impl ERC1523PolicyMetadataImpl of IERC1523PolicyMetadata<ContractState> {
         fn policyMetadata(
-            self: @TState, tokenId: u256, propertyPathHash: ByteArray
+            self: @ContractState, tokenId: u256, propertyPathHash: ByteArray
         ) -> ByteArray { //TODO
+            let byte: ByteArray = "ok";
+            byte
         }
     }
 
     #[abi(embed_v0)]
     impl ERC1523Impl of IERC1523<ContractState> {
-        fn create_policy(ref self: TState, policy: Policy) -> token_id {
-            //TODO
-            1_u256
-        }
+        fn create_policy(ref self: ContractState, policy: Policy) -> u256 {
+            let mut token_id = self.token_count.read();
 
-        fn update_policy_state(ref self: TState, state: State) { //TODO
-        }
-
-        fn get_policy(self: @TState, token_id: u256) -> Policy {
-            //TODO
-
-            let risk: ByteArray = "ok";
-            let metadataURI: ByteArray = "ok";
-
-            Policy {
-                policyholder: '123'.try_into().unwrap(),
-                premium: 1_u256,
-                coveragePeriodStart: 1_u256,
-                coveragePeriodEnd: 1_u256,
-                risk,
-                underwriter: '123'.try_into().unwrap(),
-                metadataURI,
-                state: State::Active,
+            if token_id < 1 {
+                token_id += 1;
             }
+
+            self.policies.write(token_id, policy);
+            token_id
         }
 
-        fn get_all_user_policies(self: @TState, user: ContractAddress) -> Span<Policy> {
-            //TODO
+        fn update_policy_state(ref self: ContractState, token_id: u256, state: State) {
+            let mut policy = self.get_policy(token_id);
 
-            let policy = Policy {
-                policyholder: '123'.try_into().unwrap(),
-                premium: 1_u256,
-                coveragePeriodStart: 1_u256,
-                coveragePeriodEnd: 1_u256,
-                risk,
-                underwriter: '123'.try_into().unwrap(),
-                metadataURI,
-                state: State::Active,
+            policy.state = state;
+
+            self.policies.write(token_id, policy);
+        }
+
+        fn get_policy(self: @ContractState, token_id: u256) -> Policy {
+            self.policies.read(token_id)
+        }
+
+        fn get_all_user_policies(self: @ContractState, user: ContractAddress) -> Array<Policy> {
+            // let user_policy_ids = self.user_policies.entry(user).read();
+            let user_policy_id_len = self.user_policies.entry(user).len();
+            let mut user_policy_ids = array![];
+            let mut user_policies = array![];
+
+            for index in 0
+                ..user_policy_id_len {
+                    user_policy_ids.append(self.user_policies.entry(user).at(index).read());
+                };
+
+            for id in user_policy_ids {
+                let policy = self.get_policy(id);
+
+                user_policies.append(policy);
             };
 
-            array![policy].Span()
+            user_policies
         }
     }
 

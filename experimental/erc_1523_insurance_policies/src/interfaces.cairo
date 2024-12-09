@@ -10,9 +10,9 @@ pub trait IERC1523PolicyMetadata<TState> {
 
 #[starknet::interface]
 pub trait IERC1523<TState> {
-    fn create_policy(ref self: TState, policy: Policy) -> token_id;
-    fn update_policy_state(ref self: TState, state: State);
+    fn create_policy(ref self: TState, policy: Policy) -> u256;
+    fn update_policy_state(ref self: TState, token_id: u256, state: State);
 
     fn get_policy(self: @TState, token_id: u256) -> Policy;
-    fn get_all_user_policies(self: @TState, user: ContractAddress) -> Span<Policy>;
+    fn get_all_user_policies(self: @TState, user: ContractAddress) -> Array<Policy>;
 }
