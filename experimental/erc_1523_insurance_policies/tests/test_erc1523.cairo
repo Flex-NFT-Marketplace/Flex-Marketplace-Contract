@@ -36,8 +36,8 @@ fn POLICY() -> Policy {
     let policy = Policy {
         policyholder: OWNER(),
         premium: 200_000,
-        coveragePeriodStart: get_block_timestamp().into(),
-        coveragePeriodEnd: 60,
+        coverage_period_start: get_block_timestamp().into(),
+        coverage_period_end: 60,
         risk: "car insurance coverage",
         underwriter: UNDERWRITER(),
         metadataURI: "uri/v1",

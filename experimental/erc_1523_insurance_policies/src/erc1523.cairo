@@ -3,14 +3,14 @@ pub mod ERC1523 {
     use openzeppelin::token::erc721::ERC721Component;
     use openzeppelin::token::erc721::interface::IERC721Metadata;
     use openzeppelin::introspection::src5::SRC5Component;
-    use starknet::ContractAddress;
+    use starknet::{ContractAddress, get_caller_address};
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
         StoragePointerWriteAccess, StoragePathEntry, Vec, VecTrait, MutableVecTrait
     };
 
-    use erc_1523_insurance_policies::types::{Policy, State, Property};
-    use erc_1523_insurance_policies::interfaces::{IERC1523PolicyMetadata, IERC1523};
+    use erc_1523_insurance_policies::types::{Policy, State};
+    use erc_1523_insurance_policies::interfaces::{IERC1523};
 
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -43,9 +43,20 @@ pub mod ERC1523 {
         ERC721Event: ERC721Component::Event,
         #[flat]
         SRC5Event: SRC5Component::Event,
+        PolicyCreated: PolicyCreated,
     }
 
-    //TODO Events?
+    #[derive(Drop, starknet::Event)]
+    struct PolicyCreated {
+        token_id: u256,
+        policy_holder: ContractAddress,
+        coverage_period_start: u256,
+        coverage_period_end: u256,
+        risk: ByteArray,
+        underwriter: ContractAddress,
+        metadataURI: ByteArray,
+    }
+
 
     #[constructor]
     fn constructor(
@@ -73,15 +84,6 @@ pub mod ERC1523 {
     }
 
     #[abi(embed_v0)]
-    impl ERC1523PolicyMetadataImpl of IERC1523PolicyMetadata<ContractState> {
-        fn policyMetadata(self: @ContractState, token_id: u256, property: Property) -> ByteArray {
-            let policy = self.get_policy(token_id);
-
-            policy.property
-        }
-    }
-
-    #[abi(embed_v0)]
     impl ERC1523Impl of IERC1523<ContractState> {
         fn create_policy(ref self: ContractState, policy: Policy) -> u256 {
             let mut token_id = self.token_count.read();
@@ -90,10 +92,23 @@ pub mod ERC1523 {
                 token_id += 1;
             }
 
-            self._mint(policy.policyholder.clone(), token_id);
+            self._mint(policy.policy_holder.clone(), token_id);
             self.token_count.write(token_id + 1);
             self.policies.write(token_id, policy.clone());
-            self.user_policies.entry(policy.policyholder.clone()).append().write(token_id);
+            self.user_policies.entry(policy.policy_holder.clone()).append().write(token_id);
+
+            self
+                .emit(
+                    PolicyCreated {
+                        token_id,
+                        policy_holder: policy.policy_holder,
+                        coverage_period_start: policy.coverage_period_start,
+                        coverage_period_end: policy.coverage_period_end,
+                        risk: policy.risk,
+                        underwriter: policy.underwriter,
+                        metadataURI: policy.metadataURI,
+                    }
+                );
 
             token_id
         }
@@ -131,6 +146,31 @@ pub mod ERC1523 {
 
         fn get_user_policy_amount(self: @ContractState, user: ContractAddress) -> u64 {
             self.user_policies.entry(user).len()
+        }
+
+        fn transfer_policy(ref self: ContractState, token_id: u256, to: ContractAddress) {
+            let owner = self.get_policy(token_id).policy_holder;
+            assert(get_caller_address() == owner, 'wrong policy holder');
+
+            self.erc721.transfer_from(owner, to, token_id);
+
+            let mut policy = self.policies.entry(token_id).read();
+            policy.policy_holder = to;
+
+            self.policies.entry(token_id).write(policy);
+
+            let owner_policy_id_len = self.get_user_policy_amount(owner);
+
+            for index in 0
+                ..owner_policy_id_len {
+                    let id = self.user_policies.entry(owner).at(index).read();
+
+                    if id == token_id {
+                        self.user_policies.entry(owner).at(index).write(0);
+                    };
+                };
+
+            self.user_policies.entry(to).append().write(token_id);
         }
     }
 
