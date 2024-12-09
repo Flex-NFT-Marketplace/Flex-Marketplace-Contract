@@ -1,10 +1,10 @@
 use starknet::ContractAddress;
 
-use erc_1523_insurance_policies::types::{Policy, State};
+use erc_1523_insurance_policies::types::{Policy, State, Property};
 
 #[starknet::interface]
 pub trait IERC1523PolicyMetadata<TState> {
-    fn policyMetadata(self: @TState, tokenId: u256, propertyPathHash: ByteArray) -> ByteArray;
+    fn policyMetadata(self: @TState, tokenId: u256, property: Property) -> ByteArray;
 }
 
 

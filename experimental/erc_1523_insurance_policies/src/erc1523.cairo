@@ -1,5 +1,3 @@
-use starknet::ContractAddress;
-
 #[starknet::contract]
 pub mod ERC1523 {
     use openzeppelin::token::erc721::ERC721Component;
@@ -8,11 +6,10 @@ pub mod ERC1523 {
     use starknet::ContractAddress;
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
-        StoragePointerWriteAccess, StoragePathEntry, Vec, VecTrait, MutableVecTrait, StorageAsPath,
-        StorageAsPointer, StoragePath, StoragePointer0Offset, Mutable
+        StoragePointerWriteAccess, StoragePathEntry, Vec, VecTrait, MutableVecTrait
     };
 
-    use erc_1523_insurance_policies::types::{Policy, State};
+    use erc_1523_insurance_policies::types::{Policy, State, Property};
     use erc_1523_insurance_policies::interfaces::{IERC1523PolicyMetadata, IERC1523};
 
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
@@ -48,6 +45,7 @@ pub mod ERC1523 {
         SRC5Event: SRC5Component::Event,
     }
 
+    //TODO Events?
 
     #[constructor]
     fn constructor(
@@ -76,11 +74,10 @@ pub mod ERC1523 {
 
     #[abi(embed_v0)]
     impl ERC1523PolicyMetadataImpl of IERC1523PolicyMetadata<ContractState> {
-        fn policyMetadata(
-            self: @ContractState, tokenId: u256, propertyPathHash: ByteArray
-        ) -> ByteArray { //TODO
-            let byte: ByteArray = "ok";
-            byte
+        fn policyMetadata(self: @ContractState, token_id: u256, property: Property) -> ByteArray {
+            let policy = self.get_policy(token_id);
+
+            policy.property
         }
     }
 
@@ -93,9 +90,11 @@ pub mod ERC1523 {
                 token_id += 1;
             }
 
-            self._mint(policy.policyholder , token_id);
-            self.policies.write(token_id, policy);
+            self._mint(policy.policyholder.clone(), token_id);
             self.token_count.write(token_id + 1);
+            self.policies.write(token_id, policy.clone());
+            self.user_policies.entry(policy.policyholder.clone()).append().write(token_id);
+
             token_id
         }
 
@@ -130,15 +129,15 @@ pub mod ERC1523 {
             user_policies
         }
 
-    fn get_user_policy_amount(self: @ContractState, user: ContractAddress) -> u64 {
-        self.user_policies.entry(user).len()
+        fn get_user_policy_amount(self: @ContractState, user: ContractAddress) -> u64 {
+            self.user_policies.entry(user).len()
         }
     }
 
 
-     #[generate_trait]
+    #[generate_trait]
     impl PrivateImpl of PrivateTrait {
-            fn _mint(ref self: ContractState, to: ContractAddress, token_id: u256) {
+        fn _mint(ref self: ContractState, to: ContractAddress, token_id: u256) {
             self.erc721.mint(to, token_id);
         }
     }
