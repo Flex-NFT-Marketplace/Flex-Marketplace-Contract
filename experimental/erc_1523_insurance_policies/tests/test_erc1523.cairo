@@ -1,15 +1,12 @@
 use snforge_std::{
-    start_cheat_caller_address, start_cheat_block_timestamp, spy_events, EventSpyAssertionsTrait,
-    declare, ContractClassTrait
+    start_cheat_caller_address, stop_cheat_caller_address, declare, ContractClassTrait
 };
 
 use openzeppelin::token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
 use starknet::{ContractAddress, get_block_timestamp};
 
 use erc_1523_insurance_policies::types::{Policy, State};
-use erc_1523_insurance_policies::interfaces::{
-    IERC1523PolicyMetadata, IERC1523, IERC1523Dispatcher, IERC1523DispatcherTrait
-};
+use erc_1523_insurance_policies::interfaces::{IERC1523Dispatcher, IERC1523DispatcherTrait};
 
 fn NAME() -> ByteArray {
     let name: ByteArray = "name";
@@ -28,13 +25,17 @@ fn OWNER() -> ContractAddress {
     'owner'.try_into().unwrap()
 }
 
+fn BOB() -> ContractAddress {
+    'bob'.try_into().unwrap()
+}
+
 fn UNDERWRITER() -> ContractAddress {
     'underwriter'.try_into().unwrap()
 }
 
 fn POLICY() -> Policy {
     let policy = Policy {
-        policyholder: OWNER(),
+        policy_holder: OWNER(),
         premium: 200_000,
         coverage_period_start: get_block_timestamp().into(),
         coverage_period_end: 60,
@@ -100,4 +101,34 @@ fn test_update_policy_state() {
     let policy = dispatcher.get_policy(id);
 
     assert(policy.state == State::Claimed, 'wrong state');
+}
+
+
+#[test]
+#[should_panic(expected: ('wrong policy holder',))]
+fn test_transfer_policy_with_not_owner() {
+    let dispatcher = setup();
+
+    let id = dispatcher.create_policy(POLICY());
+
+    start_cheat_caller_address(dispatcher.contract_address, BOB());
+    dispatcher.transfer_policy(id, BOB());
+    stop_cheat_caller_address(dispatcher.contract_address);
+}
+
+#[test]
+fn test_transfer_policy() {
+    let dispatcher = setup();
+    let erc721_dispatcher = IERC721Dispatcher { contract_address: dispatcher.contract_address };
+
+    let id = dispatcher.create_policy(POLICY());
+
+    start_cheat_caller_address(dispatcher.contract_address, OWNER());
+    dispatcher.transfer_policy(id, BOB());
+    stop_cheat_caller_address(dispatcher.contract_address);
+
+    let policy = dispatcher.get_policy(id);
+
+    assert(policy.policy_holder == BOB(), 'wrong policy holder');
+    assert(erc721_dispatcher.owner_of(id) == BOB(), 'wrong owner');
 }
