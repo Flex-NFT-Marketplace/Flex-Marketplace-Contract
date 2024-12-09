@@ -93,7 +93,9 @@ pub mod ERC1523 {
                 token_id += 1;
             }
 
+            self._mint(policy.policyholder , token_id);
             self.policies.write(token_id, policy);
+            self.token_count.write(token_id + 1);
             token_id
         }
 
@@ -110,8 +112,7 @@ pub mod ERC1523 {
         }
 
         fn get_all_user_policies(self: @ContractState, user: ContractAddress) -> Array<Policy> {
-            // let user_policy_ids = self.user_policies.entry(user).read();
-            let user_policy_id_len = self.user_policies.entry(user).len();
+            let user_policy_id_len = self.get_user_policy_amount(user);
             let mut user_policy_ids = array![];
             let mut user_policies = array![];
 
@@ -127,6 +128,18 @@ pub mod ERC1523 {
             };
 
             user_policies
+        }
+
+    fn get_user_policy_amount(self: @ContractState, user: ContractAddress) -> u64 {
+        self.user_policies.entry(user).len()
+        }
+    }
+
+
+     #[generate_trait]
+    impl PrivateImpl of PrivateTrait {
+            fn _mint(ref self: ContractState, to: ContractAddress, token_id: u256) {
+            self.erc721.mint(to, token_id);
         }
     }
 

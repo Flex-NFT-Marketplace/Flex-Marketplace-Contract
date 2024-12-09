@@ -15,4 +15,5 @@ pub trait IERC1523<TState> {
 
     fn get_policy(self: @TState, token_id: u256) -> Policy;
     fn get_all_user_policies(self: @TState, user: ContractAddress) -> Array<Policy>;
+    fn get_user_policy_amount(self: @TState, user: ContractAddress) -> u64;
 }
