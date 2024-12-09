@@ -1,7 +1,6 @@
 #[starknet::contract]
 pub mod ERC1523 {
     use openzeppelin::token::erc721::ERC721Component;
-    use openzeppelin::token::erc721::interface::IERC721Metadata;
     use openzeppelin::introspection::src5::SRC5Component;
     use starknet::{ContractAddress, get_caller_address};
     use starknet::storage::{
@@ -17,9 +16,6 @@ pub mod ERC1523 {
 
     #[abi(embed_v0)]
     impl ERC721Impl = ERC721Component::ERC721Impl<ContractState>;
-    #[abi(embed_v0)]
-    impl ERC721MetadataCamelOnly =
-        ERC721Component::ERC721MetadataCamelOnlyImpl<ContractState>;
     #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
 
@@ -63,24 +59,6 @@ pub mod ERC1523 {
         ref self: ContractState, name: ByteArray, symbol: ByteArray, base_uri: ByteArray
     ) {
         self.erc721.initializer(name, symbol, base_uri);
-    }
-
-    #[abi(embed_v0)]
-    impl ERC721Metadata of IERC721Metadata<ContractState> {
-        /// Returns the NFT name.
-        fn name(self: @ContractState) -> ByteArray {
-            self.erc721.ERC721_name.read()
-        }
-
-        /// Returns the NFT symbol.
-        fn symbol(self: @ContractState) -> ByteArray {
-            self.erc721.ERC721_symbol.read()
-        }
-
-        /// Returns the Uniform Resource Identifier (URI) for the `token_id` token.
-        fn token_uri(self: @ContractState, token_id: u256) -> ByteArray {
-            self.erc721._base_uri()
-        }
     }
 
     #[abi(embed_v0)]
