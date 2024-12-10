@@ -44,7 +44,18 @@ pub mod ERC1523 {
         ERC721Event: ERC721Component::Event,
         #[flat]
         SRC5Event: SRC5Component::Event,
-        PolicyCreated,
+        PolicyCreated: PolicyCreated,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    pub struct PolicyCreated {
+        pub token_id: u256,
+        pub policy_holder: ContractAddress,
+        pub coverage_period_start: u256,
+        pub coverage_period_end: u256,
+        pub risk: ByteArray,
+        pub underwriter: ContractAddress,
+        pub metadataURI: ByteArray,
     }
 
     #[abi(embed_v0)]
@@ -77,7 +88,7 @@ pub mod ERC1523 {
             token_id
         }
 
-        fn update_policy_state(ref self: ContractState, token_id: u256, state: PolicyStatus) {
+        fn update_policy(ref self: ContractState, token_id: u256, state: PolicyStatus) {
             let mut policy = self.get_policy(token_id);
 
             policy.state = state;
@@ -134,6 +145,10 @@ pub mod ERC1523 {
             user_policies
         }
 
+        fn get_user_policy_amount(self: @ContractState, user: ContractAddress) -> u64 {
+            self.user_policies.entry(user).len()
+        }
+
         fn activate_policy(ref self: ContractState, token_id: u256) {
             let mut policy = self.get_policy(token_id);
 
@@ -178,4 +193,15 @@ pub mod ERC1523 {
             self.policies.write(token_id, policy);
         }
     }
+
+    #[generate_trait]
+    impl PrivateImpl of PrivateTrait {
+        fn _mint(ref self: ContractState, to: ContractAddress, token_id: u256) {
+            self.erc721.mint(to, token_id);
+        }
+    }
+
+    impl ERC721HooksEmptyImpl<
+        TContractState
+    > of ERC721Component::ERC721HooksTrait<TContractState> {}
 }
