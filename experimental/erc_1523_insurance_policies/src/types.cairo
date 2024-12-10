@@ -17,6 +17,7 @@ pub struct InsurancePolicy {
 
 #[derive(Drop, Copy, starknet::Store, Serde, PartialEq)]
 pub enum PolicyStatus {
+    Created,
     Active,
     Expired,
     Claimed,
