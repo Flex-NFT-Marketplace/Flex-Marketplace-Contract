@@ -10,7 +10,7 @@ pub struct InsurancePolicy {
     coverage_amount: u256,
     start_date: u64,
     end_date: u64,
-    status: PolicyStatus,
+    state: PolicyStatus,
     additional_details: felt252,
 }
 
@@ -19,4 +19,5 @@ pub enum PolicyStatus {
     Active,
     Expired,
     Claimed,
+    Cancelled,
 }

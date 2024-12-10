@@ -6,25 +6,19 @@ use erc_1523_insurance_policies::types::{InsurancePolicy, PolicyStatus};
 pub trait IERC1523<TContractState> {
     fn create_policy(ref self: TContractState, policy: InsurancePolicy) -> u256;
 
-    fn update_policy(
-        ref self: TContractState, 
-        token_id: u256,
-        status: PolicyStatus
-    );
+    fn update_policy(ref self: TContractState, token_id: u256, status: PolicyStatus);
 
-    fn transfer_policy(
-        ref self: TContractState, 
-        policy_id: felt252, 
-        to: ContractAddress
-    );
+    fn transfer_policy(ref self: TContractState, token_id: u256, to: ContractAddress);
 
     // Policy inquiry methods
-    fn get_policy(self: @TContractState, policy_id: felt252) -> InsurancePolicy;
-    fn get_policies_by_owner(self: @TContractState, owner: ContractAddress) -> Array<InsurancePolicy>;
-    
+    fn get_policy(self: @TContractState, token_id: u256) -> InsurancePolicy;
+    fn get_policies_by_owner(
+        self: @TContractState, owner: ContractAddress
+    ) -> Array<InsurancePolicy>;
+
     // Policy lifecycle methods
-    fn activate_policy(ref self: TContractState, policy_id: felt252);
-    fn expire_policy(ref self: TContractState, policy_id: felt252);
-    fn cancel_policy(ref self: TContractState, policy_id: felt252);
-    fn claim_policy(ref self: TContractState, policy_id: felt252);
+    fn activate_policy(ref self: TContractState, token_id: u256);
+    fn expire_policy(ref self: TContractState, token_id: u256);
+    fn cancel_policy(ref self: TContractState, token_id: u256);
+    fn claim_policy(ref self: TContractState, token_id: u256);
 }
