@@ -1,0 +1,96 @@
+use snforge_std::{
+    start_cheat_caller_address, stop_cheat_caller_address, declare, ContractClassTrait
+};
+
+use starknet::{ContractAddress, get_block_timestamp};
+
+use erc_7662_ai_agent_nft::interfaces::{IERC7662Dispatcher, IERC7662DispatcherTrait};
+
+fn NAME() -> ByteArray {
+    let name: ByteArray = "AgentNFT";
+    name
+}
+fn SYMBOL() -> ByteArray {
+    let symbol: ByteArray = "ANFT";
+    symbol
+}
+fn BASE_URI() -> ByteArray {
+    let base_uri: ByteArray = "https://base.uri/";
+    base_uri
+}
+
+fn OWNER() -> ContractAddress {
+    'owner'.try_into().unwrap()
+}
+
+fn BOB() -> ContractAddress {
+    'bob'.try_into().unwrap()
+}
+
+fn setup() -> IERC7662Dispatcher {
+    let contract_class = declare("ERC7662").unwrap();
+
+    let mut calldata = array![];
+    NAME().serialize(ref calldata);
+    SYMBOL().serialize(ref calldata);
+    BASE_URI().serialize(ref calldata);
+
+    let (contract_address, _) = contract_class.deploy(@calldata).unwrap();
+
+    IERC7662Dispatcher { contract_address }
+}
+
+#[test]
+fn test_mint_agent() {
+    let dispatcher = setup();
+
+    let token_id = dispatcher
+        .mint_agent(
+            OWNER(),
+            "AgentName",
+            "AgentDescription",
+            "AgentModel",
+            "https://user.prompt.uri/",
+            "https://system.prompt.uri/",
+            "https://image.uri/",
+            "AgentCategory"
+        );
+
+    let agent = dispatcher.get_agent(token_id);
+    assert(agent.name == "AgentName", 'Invalid agent name');
+    assert(agent.description == "AgentDescription", 'Invalid agent description');
+    assert(agent.model == "AgentModel", 'Invalid agent model');
+}
+
+#[test]
+fn test_add_encrypted_prompts() {
+    let dispatcher = setup();
+
+    let token_id = dispatcher
+        .mint_agent(
+            OWNER(),
+            "AgentName",
+            "AgentDescription",
+            "AgentModel",
+            "https://user.prompt.uri/",
+            "https://system.prompt.uri/",
+            "https://image.uri/",
+            "AgentCategory"
+        );
+
+    dispatcher
+        .add_encrypted_prompts(
+            token_id, "https://encrypted.user.prompt.uri/", "https://encrypted.system.prompt.uri/"
+        );
+
+    let agent = dispatcher.get_agent(token_id);
+    assert(agent.prompts_encrypted == true, 'Prompts should be encrypted');
+    assert(
+        agent.user_prompt_uri == "https://encrypted.user.prompt.uri/",
+        'Invalid encrypted user prompt'
+    );
+    assert(
+        agent.system_prompt_uri == "https://encrypted.system.prompt.uri/",
+        'Invalid encrypted system prompt'
+    );
+}
