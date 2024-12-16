@@ -1,0 +1,15 @@
+[package]
+name = "multi-owner"
+version = "0.1.0"
+description = "POC implementing NFT multi-owner based on the ERC-7643 standard"
+homepage = "https://github.com/Flex-NFT-Marketplace/Flex-Marketplace-Contract"
+
+[[target.starknet-contract]]
+sierra = true
+casm = true
+
+[dev-dependencies]
+snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry.git", tag = "v0.10.1" }
+
+[scripts]
+test = "snforge test"
