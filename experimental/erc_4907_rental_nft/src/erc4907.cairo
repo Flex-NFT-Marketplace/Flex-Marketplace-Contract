@@ -1,13 +1,13 @@
 #[starknet::interface]
 pub trait IERC4907<TContractState> {
     fn renewSubscription(ref self: TContractState, token_id: u256, duration: u64);
-    fn cancelSubscription(ref self: ContractState, token_id: u256);
-    fn expiresAt(self: @ContractState, token_id: u256) -> u64;
-    fn isRenewable(self: @ContractState, token_id: u256) -> bool;
+    fn cancelSubscription(ref self: TContractState, token_id: u256);
+    fn expiresAt(self: @TContractState, token_id: u256) -> u64;
+    fn isRenewable(self: @TContractState, token_id: u256) -> bool;
 }
 
 #[starknet::contract]
-mod erc721 {
+pub mod erc721 {
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_token::erc721::{ERC721Component, ERC721HooksEmptyImpl};
     use openzeppelin::access::ownable::OwnableComponent;
@@ -17,7 +17,8 @@ mod erc721 {
     use core::traits::Into;
     use starknet::get_caller_address;
     use starknet::get_block_timestamp;
-    use super::Expirations;
+    use starknet::storage::{Map, StorageMapReadAccess, StorageMapWriteAccess};
+
 
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -35,7 +36,7 @@ mod erc721 {
 
     #[storage]
     struct Storage {
-        expirations: LegacyMap<u256, u64>,
+        _expirations: Map<u256, u64>,
         #[substorage(v0)]
         erc721: ERC721Component::Storage,
         #[substorage(v0)]
@@ -58,9 +59,9 @@ mod erc721 {
     #[constructor]
     fn constructor(
         ref self: ContractState,
-        name: felt252,
-        symbol: felt252,
-        base_uri: felt252,
+        name: ByteArray,
+        symbol: ByteArray,
+        base_uri: ByteArray,
         token_id: u256,
         recipient: ContractAddress
     ) {
