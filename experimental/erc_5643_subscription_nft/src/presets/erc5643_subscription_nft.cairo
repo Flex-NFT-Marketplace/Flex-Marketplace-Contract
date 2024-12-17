@@ -7,7 +7,7 @@ pub trait IERC5643SubscriptionNft<TState> {
 
 #[starknet::interface]
 pub trait IERC5643SubscriptionNftMixin<TState> {
-    // IERC5643SubscriptionNft
+    // IERC564SubscriptionNft
     fn mint(ref self: TState, to: ContractAddress, token_id: u256);
     // IERC5643
     fn renew_subscription(ref self: TState, token_id: u256, duration: u64);
