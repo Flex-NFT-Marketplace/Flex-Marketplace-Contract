@@ -135,7 +135,7 @@ pub mod ERC6105Component {
             assert(supported_token == self.listings.entry(token_id).read().supported_token, Errors::INCONSISTENT_TOKENS);
             assert(self._is_for_sale(token_id), Errors::INVALID_LISTING);
 
-            (royalty_recipient: ContractAddress, royalties: u256) = self._calculate_royalties(token_id, sale_price, historical_price);
+            let (royalty_recipient, royalties): (ContractAddress, u256) = self._calculate_royalties(token_id, sale_price, historical_price);
 
             let payment: u256 = sale_price - royalties;
             let address_zero: ContractAddress = 0.try_into().unwrap();
@@ -184,7 +184,6 @@ pub mod ERC6105Component {
         +Drop<TContractState>
     > of InternalTrait<TContractState> {
         fn _remove_listing(ref self: ComponentState<TContractState>, token_id: u256) {
-            let token_owner: ContractAddress = 0.try_into().unwrap();
             let address_zero: ContractAddress = 0.try_into().unwrap();
             let zero_listing = Listing {
                 sale_price: 0,
@@ -209,7 +208,7 @@ pub mod ERC6105Component {
                 taxable_price = price - historical_price;
             }
 
-            (royalty_recipient: ContractAddress, royalties: u256) = royalty_info(token_id, taxable_price);
+            let (royalty_recipient, royalties): (ContractAddress, u256) = royalty_info(token_id, taxable_price);
             return (royalty_recipient, royalties);
         }
 
@@ -223,7 +222,7 @@ pub mod ERC6105Component {
         }
 
         fn _before_token_transfer(ref self: ComponentState<TContractState>, from: ContractAddress, to: ContractAddress, token_id: u256, batch_size: u256) {
-            
+            // TODO: ???
         }
     }
 }
