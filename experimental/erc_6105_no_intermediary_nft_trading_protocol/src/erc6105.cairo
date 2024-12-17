@@ -1,9 +1,8 @@
 #[starknet::component]
 pub mod ERC6105Component {
-    use starknet::{ContractAddress, get_caller_address, get_block_timestamp, get_tx_info};
+    use starknet::{ContractAddress, get_caller_address, get_block_timestamp};
     use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Map};
 
-    use openzeppelin_introspection::src5::SRC5Component::InternalTrait as SRC5InternalTrait;
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_token::erc721::ERC721Component::InternalImpl as ERC721InternalImpl;
     use openzeppelin_token::erc721::ERC721Component::ERC721Impl;
@@ -93,11 +92,11 @@ pub mod ERC6105Component {
             supported_token: ContractAddress,
             benchmark_price: u256
         ) {
-            // let token_owner: ContractAddress = 
-            let token_owner: ContractAddress = 0.try_into().unwrap();
+            let erc721_component = get_dep_component!(@self, ERC721);
+            let token_owner = erc721_component.owner_of(token_id);
             assert(sale_price > 0, Errors::SALE_PRICE_ZERO);
             assert(expires > get_block_timestamp(), Errors::INVALID_EXPIRES);
-            assert(self._is_approved_or_owner(self._msg_sender(), token_id), Errors::NOT_OWNER_OR_APPROVED);
+            assert(self._is_approved_or_owner(get_caller_address(), token_id), Errors::NOT_OWNER_OR_APPROVED);
 
             let mut listing = Listing {
                 sale_price: sale_price,
@@ -114,7 +113,7 @@ pub mod ERC6105Component {
         }
 
         fn delist_item(ref self: ComponentState<TContractState>, token_id: u256) {
-            assert(self._is_approved_or_owner(self._msg_sender(), token_id), Errors::NOT_OWNER_OR_APPROVED);
+            assert(self._is_approved_or_owner(get_caller_address(), token_id), Errors::NOT_OWNER_OR_APPROVED);
             assert(self._is_for_sale(token_id), Errors::INVALID_LISTING);
 
             self._remove_listing(token_id);
@@ -126,8 +125,8 @@ pub mod ERC6105Component {
             sale_price: u256,
             supported_token: ContractAddress
         ) {
-            // let token_owner: ContractAddress = 
-            let token_owner: ContractAddress = 0.try_into().unwrap();
+            let mut erc721_component = get_dep_component_mut!(ref self, ERC721);
+            let token_owner = erc721_component.owner_of(token_id);
             let buyer: ContractAddress = get_caller_address();
             let historical_price: u256 = self.listings.entry(token_id).read().historical_price;
 
@@ -149,7 +148,7 @@ pub mod ERC6105Component {
                 self._process_supported_token_payment(payment, buyer, token_owner, supported_token);
             }
 
-            self._transfer(token_owner, buyer, token_id);
+            erc721_component.transfer_from(token_owner, buyer, token_id);
             self.emit(Purchased {
                 token_id, from: token_owner, to: buyer, sale_price, supported_token, royalties
             });
@@ -208,7 +207,8 @@ pub mod ERC6105Component {
                 taxable_price = price - historical_price;
             }
 
-            let (royalty_recipient, royalties): (ContractAddress, u256) = royalty_info(token_id, taxable_price);
+            let erc2981_component = get_dep_component!(self, ERC2981);
+            let (royalty_recipient, royalties): (ContractAddress, u256) = erc2981_component.royalty_info(token_id, taxable_price);
             return (royalty_recipient, royalties);
         }
 
@@ -223,6 +223,12 @@ pub mod ERC6105Component {
 
         fn _before_token_transfer(ref self: ComponentState<TContractState>, from: ContractAddress, to: ContractAddress, token_id: u256, batch_size: u256) {
             // TODO: ???
+        }
+
+        fn _is_approved_or_owner(self: @ComponentState<TContractState>, spender: ContractAddress, token_id: u256) -> bool {
+            let erc721_component = get_dep_component!(self, ERC721);
+            let owner = erc721_component.owner_of(token_id);
+            return spender == owner || erc721_component.is_approved_for_all(owner, spender) || erc721_component.get_approved(token_id) == spender;
         }
     }
 }
