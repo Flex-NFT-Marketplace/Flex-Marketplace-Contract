@@ -20,6 +20,7 @@ pub trait IERC7662<TState> {
         encrypted_user_prompt_uri: ByteArray,
         encrypted_system_prompt_uri: ByteArray
     );
+    fn get_collection_ids(self: @TState, address: ContractAddress) -> Array<u256>;
     fn get_agent(self: @TState, token_id: u256) -> Agent;
     fn get_agent_data(self: @TState, token_id: u256) -> Agent;
 }

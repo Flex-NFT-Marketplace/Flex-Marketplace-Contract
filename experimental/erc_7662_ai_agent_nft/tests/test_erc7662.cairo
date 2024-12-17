@@ -94,3 +94,37 @@ fn test_add_encrypted_prompts() {
         'Invalid encrypted system prompt'
     );
 }
+
+#[test]
+fn test_get_collection_ids() {
+    let dispatcher = setup();
+
+    let token_id_1 = dispatcher
+        .mint_agent(
+            OWNER(),
+            "Agent1",
+            "Description1",
+            "Model1",
+            "https://user1.prompt.uri/",
+            "https://system1.prompt.uri/",
+            "https://image1.uri/",
+            "Category1"
+        );
+
+    let token_id_2 = dispatcher
+        .mint_agent(
+            OWNER(),
+            "Agent2",
+            "Description2",
+            "Model2",
+            "https://user2.prompt.uri/",
+            "https://system2.prompt.uri/",
+            "https://image2.uri/",
+            "Category2"
+        );
+
+    let collection_ids = dispatcher.get_collection_ids(OWNER());
+    assert(collection_ids.len() == 2, 'Wrong number of tokens');
+    assert(*collection_ids.at(0) == token_id_1, 'Wrong first token');
+    assert(*collection_ids.at(1) == token_id_2, 'Wrong second token');
+}

@@ -131,10 +131,28 @@ pub mod ERC7662 {
             self.emit(AgentUpdated { token_id });
         }
 
+
         // @dev Get Agent NFT data
         // @param _tokenID uint256 ID of the NFT
         fn get_agent(self: @ContractState, token_id: u256) -> Agent {
             self.agents.read(token_id)
+        }
+
+
+        // @dev Return all token ids owned by address from ERC721_owners: Map<u256, ContractAddress>
+        // @param address Address to check for
+        fn get_collection_ids(self: @ContractState, address: ContractAddress) -> Array<u256> {
+            let mut result: Array<u256> = ArrayTrait::new();
+            let mut i: u256 = 1;
+            let current_token_id = self.token_ids.read();
+
+            while i < current_token_id {
+                if self.erc721.ERC721_owners.read(i) == address {
+                    result.append(i);
+                }
+                i += 1;
+            };
+            result
         }
 
         //TODO: return tuple instead of struct
