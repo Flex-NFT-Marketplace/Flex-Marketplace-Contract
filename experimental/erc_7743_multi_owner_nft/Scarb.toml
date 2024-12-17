@@ -1,5 +1,5 @@
 [package]
-name = "multi-owner"
+name = "multi_owner"
 version = "0.1.0"
 description = "POC implementing NFT multi-owner based on the ERC-7643 standard"
 homepage = "https://github.com/Flex-NFT-Marketplace/Flex-Marketplace-Contract"
