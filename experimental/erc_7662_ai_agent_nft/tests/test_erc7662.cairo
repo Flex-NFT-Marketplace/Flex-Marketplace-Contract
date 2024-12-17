@@ -128,3 +128,32 @@ fn test_get_collection_ids() {
     assert(*collection_ids.at(0) == token_id_1, 'Wrong first token');
     assert(*collection_ids.at(1) == token_id_2, 'Wrong second token');
 }
+
+
+#[test]
+fn test_get_agent_data() {
+    let dispatcher = setup();
+
+    let token_id = dispatcher
+        .mint_agent(
+            OWNER(),
+            "AgentName",
+            "AgentDescription",
+            "AgentModel",
+            "https://user.prompt.uri/",
+            "https://system.prompt.uri/",
+            "https://image.uri/",
+            "AgentCategory"
+        );
+
+    let (name, description, model, user_prompt_uri, system_prompt_uri, prompts_encrypted) =
+        dispatcher
+        .get_agent_data(token_id);
+
+    assert(name == "AgentName", 'Invalid agent name');
+    assert(description == "AgentDescription", 'Invalid agent description');
+    assert(model == "AgentModel", 'Invalid agent model');
+    assert(user_prompt_uri == "https://user.prompt.uri/", 'Invalid user prompt uri');
+    assert(system_prompt_uri == "https://system.prompt.uri/", 'Invalid system prompt uri');
+    assert(prompts_encrypted == false, 'Prompts should not be encrypted');
+}

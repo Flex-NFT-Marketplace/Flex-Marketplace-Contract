@@ -155,9 +155,18 @@ pub mod ERC7662 {
             result
         }
 
-        //TODO: return tuple instead of struct
-        fn get_agent_data(self: @ContractState, token_id: u256) -> Agent {
-            self.agents.read(token_id)
+        fn get_agent_data(
+            self: @ContractState, token_id: u256
+        ) -> (ByteArray, ByteArray, ByteArray, ByteArray, ByteArray, bool) {
+            let agent = self.get_agent(token_id);
+            (
+                agent.name,
+                agent.description,
+                agent.model,
+                agent.user_prompt_uri,
+                agent.system_prompt_uri,
+                agent.prompts_encrypted,
+            )
         }
     }
 
