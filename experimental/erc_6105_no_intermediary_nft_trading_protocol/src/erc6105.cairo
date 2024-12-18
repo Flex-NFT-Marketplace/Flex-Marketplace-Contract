@@ -1,3 +1,5 @@
+/// @title No Intermediary NFT Trading Protocol with Value-added Royalty
+/// @dev The royalty scheme used by this reference implementation is Value-Added Royalty
 #[starknet::component]
 pub mod ERC6105Component {
     use starknet::{ContractAddress, get_caller_address, get_block_timestamp, get_contract_address};
@@ -22,6 +24,7 @@ pub mod ERC6105Component {
 
     #[storage]
     struct Storage {
+        // Mapping from token Id to listing index
         listings: Map<u256, Listing>
     }
 
@@ -32,6 +35,17 @@ pub mod ERC6105Component {
         Purchased: Purchased
     }
 
+    /// @notice Emitted when a token is listed for sale or delisted
+    /// @dev The zero `salePrice` indicates that the token is not for sale
+    ///      The zero `expires` indicates that the token is not for sale
+    /// @param tokenId - identifier of the token being listed
+    /// @param from - address of who is selling the token
+    /// @param salePrice - the price the token is being sold for
+    /// @param expires - UNIX timestamp, the buyer could buy the token before expires
+    /// @param supportedToken - contract addresses of supported token or zero address
+    ///                         The zero address indicates that the supported token is ETH
+    ///                         Buyer needs to purchase item with supported token
+    /// @param benchmarkPrice - Additional price parameter, may be used when calculating royalties
     #[derive(Drop, PartialEq, starknet::Event)]
     pub struct UpdateListing {
         #[key]
@@ -43,6 +57,15 @@ pub mod ERC6105Component {
         pub benchmark_price: u256
     }
 
+    /// @notice Emitted when a token is being purchased
+    /// @param tokenId - identifier of the token being purchased
+    /// @param from - address of who is selling the token
+    /// @param to - address of who is buying the token
+    /// @param salePrice - the price the token is being sold for
+    /// @param supportedToken - contract addresses of supported token or zero address
+    ///                         The zero address indicates that the supported token is ETH
+    ///                         Buyer needs to purchase item with supported token
+    /// @param royalties - The amount of royalties paid on this purchase
     #[derive(Drop, PartialEq, starknet::Event)]
     pub struct Purchased {
         #[key]
@@ -78,6 +101,14 @@ pub mod ERC6105Component {
         impl SRC5: SRC5Component::HasComponent<TContractState>,
         +Drop<TContractState>
     > of IERC6105<ComponentState<TContractState>> {
+        /// @notice Create or update a listing for `tokenId`
+        /// @dev `salePrice` MUST NOT be set to zero
+        /// @param tokenId - identifier of the token being listed
+        /// @param salePrice - the price the token is being sold for
+        /// @param expires - UNIX timestamp, the buyer could buy the token before expires
+        /// @param supportedToken - contract addresses of supported ERC20 token or zero address
+        ///                         The zero address indicates that the supported token is ETH
+        ///                         Buyer needs to purchase item with supported token
         fn list_item(
             ref self: ComponentState<TContractState>,
             token_id: u256,
@@ -88,6 +119,15 @@ pub mod ERC6105Component {
             self.list_item_with_benchmark(token_id, sale_price, expires, supported_token, 0);
         }
 
+        /// @notice Create or update a listing for `tokenId` with `historicalPrice`
+        /// @dev `price` MUST NOT be set to zero
+        /// @param tokenId - identifier of the token being listed
+        /// @param salePrice - the price the token is being sold for
+        /// @param expires - UNIX timestamp, the buyer could buy the token before expires
+        /// @param supportedToken - contract addresses of supported ERC20 token or zero address
+        ///                         The zero address indicates that the supported token is ETH
+        ///                         Buyer needs to purchase item with supported token
+        /// @param historicalPrice - The price at which the seller last bought this token
         fn list_item_with_benchmark(
             ref self: ComponentState<TContractState>,
             token_id: u256,
@@ -127,6 +167,8 @@ pub mod ERC6105Component {
                 );
         }
 
+        /// @notice Remove the listing for `tokenId`
+        /// @param tokenId - identifier of the token being listed
         fn delist_item(ref self: ComponentState<TContractState>, token_id: u256) {
             assert(
                 self._is_approved_or_owner(get_caller_address(), token_id),
@@ -137,6 +179,11 @@ pub mod ERC6105Component {
             self._remove_listing(token_id);
         }
 
+        /// @notice Buy a token and transfers it to the caller
+        /// @dev `salePrice` and `supportedToken` must match the expected purchase price and token
+        /// to prevent front-running attacks @param tokenId - identifier of the token being
+        /// purchased @param salePrice - the price the token is being sold for
+        /// @param supportedToken - contract addresses of supported token or zero address
         fn buy_item(
             ref self: ComponentState<TContractState>,
             token_id: u256,
@@ -203,6 +250,12 @@ pub mod ERC6105Component {
                 );
         }
 
+        /// @notice Return the listing for `tokenId`
+        /// @dev The zero sale price indicates that the token is not for sale
+        ///      The zero expires indicates that the token is not for sale
+        ///      The zero supported token address indicates that the supported token is ETH
+        /// @param tokenId identifier of the token being queried
+        /// @return the specified listing (sale price, expires, supported token, benchmark price)
         fn get_listing(
             self: @ComponentState<TContractState>, token_id: u256
         ) -> (u256, u64, ContractAddress, u256) {
