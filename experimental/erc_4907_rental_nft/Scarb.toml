@@ -1,0 +1,26 @@
+[package]
+name = "erc_4907_rental_nft"
+version = "0.1.0"
+edition = "2024_07"
+
+# See more keys and their definitions at https://docs.swmansion.com/scarb/docs/reference/manifest.html
+
+[dependencies]
+starknet = "2.8.4"
+openzeppelin_access = "0.20.0"
+openzeppelin_introspection = "0.20.0"
+openzeppelin_token = "0.20.0"
+
+[dev-dependencies]
+assert_macros = "2.8.4"
+openzeppelin_utils = "0.20.0"
+openzeppelin_testing = "0.20.0"
+snforge_std = "0.34.0"
+
+[lib]
+
+[[target.starknet-contract]]
+
+[scripts]
+test = "snforge test"
+
