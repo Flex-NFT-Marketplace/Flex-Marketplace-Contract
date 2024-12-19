@@ -1,0 +1,16 @@
+[package]
+name = "erc_6105_no_intermediary_nft_trading_protocol"
+version = "0.1.0"
+edition = "2023_11"
+
+# See more keys and their definitions at https://docs.swmansion.com/scarb/docs/reference/manifest.html
+
+[dependencies]
+starknet = "2.8.2"
+openzeppelin_introspection = "0.17.0"
+openzeppelin_token = "0.17.0"
+
+[dev-dependencies]
+
+[[target.starknet-contract]]
+sierra = true
