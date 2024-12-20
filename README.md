@@ -12,7 +12,32 @@ This repository contains contracts for managing staking, open-edition NFT mintin
      - Secure staking and unstaking.
 
 2. **`openedition`**
-   - **Purpose**: Open-edition NFT minting with flexible configurations.
+   - **Purpose**: 
+
+### ERC721OpenEditionMultiMetadata
+The `ERC721OpenEditionMultiMetadata` contract handles flexible minting phases, secure operations, and multiple metadata configurations for ERC721 Open Edition Tokens. Key features include:
+
+- **Metadata Management**: Supports multiple metadata sets using OpenZeppelin's components.
+- **FlexDrop Integration**: Facilitates flexible minting and drop management.
+- **Access Control**: Allows only approved contracts for minting.
+- **Phase Management**: Configures and updates minting phases.
+- **Security**: Includes reentrancy protection and owner-only configurations.
+
+### ERC721OpenEdition Contract
+A StarkNet ERC-721 implementation with flex-drop support. Features include:
+
+- **Owner Authorization**: Only the owner can make state changes.
+- **Minting Operations**: Enables token minting through `safe_mint_flex_drop`.
+- **Phase Management**: Allows creating and updating minting phases.
+- **Access Controls**: Restricts actions to the owner or approved contracts.
+
+### FlexDrop Contract
+Manages flexible minting phases for NFTs with secure payment handling and whitelist features. Highlights:
+
+- **Whitelist Minting**: Supports minting for approved addresses.
+- **Security**: Reentrancy protection and ownership controls.
+- **Dynamic Updates**: Allows phase and configuration updates.
+Open-edition NFT minting with flexible configurations.
    - **Contracts**:
      - **ERC721OpenEditionMultiMetadata**: Handles metadata, flexible drops, and owner controls.
      - **ERC721OpenEdition**: StarkNet ERC-721 implementation for open-edition tokens.
