@@ -32,6 +32,34 @@ pub trait IERC6105Mixin<TState> {
     );
     fn get_listing(self: @TState, token_id: u256) -> (u256, u64, ContractAddress, u256);
 
+    // IERC6105CollectionOffer extension functions
+    fn make_collection_offer(
+        ref self: TState,
+        amount: u256,
+        sale_price: u256,
+        expires: u64,
+        supported_token: ContractAddress
+    );
+    fn accept_collection_offer(
+        ref self: TState,
+        token_id: u256,
+        sale_price: u256,
+        supported_token: ContractAddress,
+        buyer: ContractAddress
+    );
+    fn accept_collection_offer_with_benchmark(
+        ref self: TState,
+        token_id: u256,
+        sale_price: u256,
+        supported_token: ContractAddress,
+        buyer: ContractAddress,
+        benchmark_price: u256
+    );
+    fn cancel_collection_offer(ref self: TState);
+    fn get_collection_offer(
+        self: @TState, buyer: ContractAddress
+    ) -> (u256, u256, u64, ContractAddress);
+
     // IERC721 functions
     fn balance_of(self: @TState, account: ContractAddress) -> u256;
     fn owner_of(self: @TState, token_id: u256) -> ContractAddress;
@@ -68,12 +96,18 @@ pub mod ERC6105NoIntermediaryNftTradingProtocol {
     use openzeppelin_token::erc721::{ERC721Component, ERC721HooksEmptyImpl};
     use openzeppelin_token::common::erc2981::{ERC2981Component, DefaultConfig};
     use erc_6105_no_intermediary_nft_trading_protocol::erc6105::ERC6105Component;
+    use erc_6105_no_intermediary_nft_trading_protocol::collection_offer::ERC6105CollectionOfferComponent;
 
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
     component!(path: ERC6105Component, storage: erc6105, event: ERC6105Event);
     component!(path: ERC2981Component, storage: erc2981, event: ERC2981Event);
+    component!(
+        path: ERC6105CollectionOfferComponent,
+        storage: collection_offer,
+        event: ERC6105CollectionOfferEvent
+    );
 
     // Ownable
     #[abi(embed_v0)]
@@ -101,7 +135,9 @@ pub mod ERC6105NoIntermediaryNftTradingProtocol {
         #[substorage(v0)]
         erc6105: ERC6105Component::Storage,
         #[substorage(v0)]
-        erc2981: ERC2981Component::Storage
+        erc2981: ERC2981Component::Storage,
+        #[substorage(v0)]
+        collection_offer: ERC6105CollectionOfferComponent::Storage,
     }
 
     #[event]
@@ -116,7 +152,9 @@ pub mod ERC6105NoIntermediaryNftTradingProtocol {
         #[flat]
         ERC6105Event: ERC6105Component::Event,
         #[flat]
-        ERC2981Event: ERC2981Component::Event
+        ERC2981Event: ERC2981Component::Event,
+        #[flat]
+        ERC6105CollectionOfferEvent: ERC6105CollectionOfferComponent::Event,
     }
 
     #[constructor]
