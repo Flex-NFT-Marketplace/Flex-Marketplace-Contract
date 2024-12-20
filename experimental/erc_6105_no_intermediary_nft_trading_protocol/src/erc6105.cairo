@@ -12,9 +12,6 @@ pub mod ERC6105Component {
     use openzeppelin_token::erc721::ERC721Component::ERC721Impl;
     use openzeppelin_token::erc721::ERC721Component;
     use openzeppelin_token::erc20::interface::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
-    use openzeppelin_token::erc20::ERC20Component::InternalImpl as ERC20Internal;
-    use openzeppelin_token::erc20::ERC20Component::ERC20Impl;
-    use openzeppelin_token::erc20::ERC20Component;
     use openzeppelin_token::common::erc2981::ERC2981Component::InternalImpl as ERC2981Internal;
     use openzeppelin_token::common::erc2981::ERC2981Component::ERC2981Impl;
     use openzeppelin_token::common::erc2981::ERC2981Component;
@@ -92,8 +89,6 @@ pub mod ERC6105Component {
     impl ERC6105<
         TContractState,
         +HasComponent<TContractState>,
-        impl ERC20: ERC20Component::HasComponent<TContractState>,
-        +ERC20Component::ERC20HooksTrait<TContractState>,
         impl ERC721: ERC721Component::HasComponent<TContractState>,
         +ERC721Component::ERC721HooksTrait<TContractState>,
         impl ERC2981: ERC2981Component::HasComponent<TContractState>,
@@ -281,8 +276,6 @@ pub mod ERC6105Component {
     pub impl InternalImpl<
         TContractState,
         +HasComponent<TContractState>,
-        impl ERC20: ERC20Component::HasComponent<TContractState>,
-        +ERC20Component::ERC20HooksTrait<TContractState>,
         impl ERC721: ERC721Component::HasComponent<TContractState>,
         +ERC721Component::ERC721HooksTrait<TContractState>,
         impl ERC2981: ERC2981Component::HasComponent<TContractState>,

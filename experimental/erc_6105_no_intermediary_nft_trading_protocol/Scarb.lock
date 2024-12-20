@@ -6,7 +6,10 @@ name = "erc_6105_no_intermediary_nft_trading_protocol"
 version = "0.1.0"
 dependencies = [
  "openzeppelin_introspection",
+ "openzeppelin_testing",
  "openzeppelin_token",
+ "openzeppelin_utils",
+ "snforge_std",
 ]
 
 [[package]]
@@ -46,6 +49,15 @@ source = "registry+https://scarbs.xyz/"
 checksum = "sha256:892433a4a1ea0fc9cf7cdb01e06ddc2782182abcc188e4ea5dd480906d006cf8"
 
 [[package]]
+name = "openzeppelin_testing"
+version = "0.17.0"
+source = "registry+https://scarbs.xyz/"
+checksum = "sha256:2993a8f6ff53488976e003261ac733f0ef3703125c449cc9861652d117dcd5ea"
+dependencies = [
+ "snforge_std",
+]
+
+[[package]]
 name = "openzeppelin_token"
 version = "0.17.0"
 source = "registry+https://scarbs.xyz/"
@@ -61,3 +73,18 @@ name = "openzeppelin_utils"
 version = "0.17.0"
 source = "registry+https://scarbs.xyz/"
 checksum = "sha256:36d93e353f42fd6b824abcd8b4b51c3f5d02c893c5f886ae81403b0368aa5fde"
+
+[[package]]
+name = "snforge_scarb_plugin"
+version = "0.2.0"
+source = "registry+https://scarbs.xyz/"
+checksum = "sha256:2e4ce3ebe3f49548bd26908391b5d78537a765d827df0d96c32aeb88941d0d67"
+
+[[package]]
+name = "snforge_std"
+version = "0.30.0"
+source = "registry+https://scarbs.xyz/"
+checksum = "sha256:2f3c4846881813ac0f5d1460981249c9f5e2a6831e752beedf9b70975495b4ec"
+dependencies = [
+ "snforge_scarb_plugin",
+]
