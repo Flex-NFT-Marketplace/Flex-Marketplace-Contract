@@ -25,3 +25,12 @@ pub struct CollectionOffer {
     pub expires: u64,
     pub supported_token: ContractAddress
 }
+
+#[derive(Drop, starknet::Store, Serde, Clone, PartialEq)]
+pub struct ItemOffer {
+    pub token_id: u256,
+    pub buyer: ContractAddress,
+    pub sale_price: u256,
+    pub expires: u64,
+    pub supported_token: ContractAddress
+}

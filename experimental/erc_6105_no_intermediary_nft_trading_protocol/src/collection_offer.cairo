@@ -18,6 +18,7 @@ pub mod ERC6105CollectionOfferComponent {
 
     use erc_6105_no_intermediary_nft_trading_protocol::interface::IERC6105CollectionOffer;
     use erc_6105_no_intermediary_nft_trading_protocol::types::CollectionOffer;
+    use erc_6105_no_intermediary_nft_trading_protocol::errors::Errors;
 
     #[storage]
     struct Storage {
@@ -59,16 +60,6 @@ pub mod ERC6105CollectionOfferComponent {
         pub sale_price: u256,
         pub supported_token: ContractAddress,
         pub royalties: u256
-    }
-
-    pub mod Errors {
-        pub const INVALID_PRICE: felt252 = 'ERC6105: invalid sale price';
-        pub const INVALID_EXPIRES: felt252 = 'ERC6105: invalid expires';
-        pub const INVALID_AMOUNT: felt252 = 'ERC6105: invalid amount';
-        pub const INSUFFICIENT_ALLOWANCE: felt252 = 'ERC6105: insufficient allowance';
-        pub const INSUFFICIENT_BALANCE: felt252 = 'ERC6105: insufficient balance';
-        pub const INVALID_TOKEN: felt252 = 'ERC6105: invalid token';
-        pub const INCORRECT_VALUE: felt252 = 'ERC6105: not enough tokens';
     }
 
     #[embeddable_as(ERC6105CollectionOfferImpl)]
@@ -239,7 +230,7 @@ pub mod ERC6105CollectionOfferComponent {
                 .entry(caller)
                 .write(
                     CollectionOffer {
-                        buyer: caller,
+                        buyer: address_zero,
                         amount: 0,
                         sale_price: 0,
                         expires: 0,

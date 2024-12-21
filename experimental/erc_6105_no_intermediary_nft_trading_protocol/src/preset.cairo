@@ -60,6 +60,17 @@ pub trait IERC6105Mixin<TState> {
         self: @TState, buyer: ContractAddress
     ) -> (u256, u256, u64, ContractAddress);
 
+    // IERC6105 Item Offer extension functions
+    fn make_item_offer(ref self: TState, token_id: u256, sale_price: u256, expires: u64, supported_token: ContractAddress);
+
+    fn cancel_item_offer(ref self: TState, token_id: u256);
+
+    fn accept_item_offer(ref self: TState, token_id: u256, sale_price: u256, supported_token: ContractAddress, buyer: ContractAddress);
+
+    fn accept_item_offer_with_benchmark(ref self: TState, token_id: u256, sale_price: u256, supported_token: ContractAddress, buyer: ContractAddress, benchmark_price: u256);
+
+    fn get_item_offer(self: @TState, token_id: u256, buyer: ContractAddress) -> (u256, u64, ContractAddress);
+
     // IERC721 functions
     fn balance_of(self: @TState, account: ContractAddress) -> u256;
     fn owner_of(self: @TState, token_id: u256) -> ContractAddress;
@@ -97,6 +108,7 @@ pub mod ERC6105NoIntermediaryNftTradingProtocol {
     use openzeppelin_token::common::erc2981::{ERC2981Component, DefaultConfig};
     use erc_6105_no_intermediary_nft_trading_protocol::erc6105::ERC6105Component;
     use erc_6105_no_intermediary_nft_trading_protocol::collection_offer::ERC6105CollectionOfferComponent;
+    use erc_6105_no_intermediary_nft_trading_protocol::item_offer::ERC6105ItemOfferComponent;
 
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
     component!(path: OwnableComponent, storage: ownable, event: OwnableEvent);
@@ -108,6 +120,7 @@ pub mod ERC6105NoIntermediaryNftTradingProtocol {
         storage: collection_offer,
         event: ERC6105CollectionOfferEvent
     );
+    component!(path: ERC6105ItemOfferComponent, storage: item_offer, event: ERC6105ItemOfferEvent);
 
     // Ownable
     #[abi(embed_v0)]
@@ -124,6 +137,16 @@ pub mod ERC6105NoIntermediaryNftTradingProtocol {
     impl ERC6105Impl = ERC6105Component::ERC6105Impl<ContractState>;
     impl ERC6105InternalImpl = ERC6105Component::InternalImpl<ContractState>;
 
+    // ERC6105CollectionOffer
+    #[abi(embed_v0)]
+    impl ERC6105CollectionOfferImpl = ERC6105CollectionOfferComponent::ERC6105CollectionOfferImpl<ContractState>;
+    impl ERC6105CollectionOfferInternalImpl = ERC6105CollectionOfferComponent::InternalImpl<ContractState>;
+
+    // ERC6105ItemOffer
+    #[abi(embed_v0)]
+    impl ERC6105ItemOfferImpl = ERC6105ItemOfferComponent::ERC6105ItemOfferImpl<ContractState>;
+    impl ERC6105ItemOfferInternalImpl = ERC6105ItemOfferComponent::InternalImpl<ContractState>;
+
     #[storage]
     struct Storage {
         #[substorage(v0)]
@@ -138,6 +161,8 @@ pub mod ERC6105NoIntermediaryNftTradingProtocol {
         erc2981: ERC2981Component::Storage,
         #[substorage(v0)]
         collection_offer: ERC6105CollectionOfferComponent::Storage,
+        #[substorage(v0)]
+        item_offer: ERC6105ItemOfferComponent::Storage,
     }
 
     #[event]
@@ -155,6 +180,8 @@ pub mod ERC6105NoIntermediaryNftTradingProtocol {
         ERC2981Event: ERC2981Component::Event,
         #[flat]
         ERC6105CollectionOfferEvent: ERC6105CollectionOfferComponent::Event,
+        #[flat]
+        ERC6105ItemOfferEvent: ERC6105ItemOfferComponent::Event,
     }
 
     #[constructor]
