@@ -146,7 +146,7 @@ pub mod ERC6105ItemOfferComponent {
 
             self.emit(
                 UpdateItemOffer {
-                    from: zero_address,
+                    from: caller,
                     token_id: 0,
                     sale_price: 0,
                     expires: 0,
