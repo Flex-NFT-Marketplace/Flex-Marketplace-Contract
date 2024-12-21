@@ -1,10 +1,9 @@
-/// The item offer extension is OPTIONAL for ERC-6105 smart contracts. This allows smart contract to support item offer functionality.
+/// The item offer extension is OPTIONAL for ERC-6105 smart contracts. This allows smart contract to
+/// support item offer functionality.
 #[starknet::component]
 pub mod ERC6105ItemOfferComponent {
     use starknet::{ContractAddress, get_caller_address, get_block_timestamp, get_contract_address};
-    use starknet::storage::{
-        StoragePathEntry, Map
-    };
+    use starknet::storage::{StoragePathEntry, Map};
 
     use openzeppelin_introspection::src5::SRC5Component;
     use openzeppelin_token::erc721::ERC721Component::InternalImpl as ERC721InternalImpl;
@@ -72,7 +71,13 @@ pub mod ERC6105ItemOfferComponent {
         impl SRC5: SRC5Component::HasComponent<TContractState>,
         +Drop<TContractState>
     > of IERC6105ItemOffer<ComponentState<TContractState>> {
-        fn make_item_offer(ref self: ComponentState<TContractState>, token_id: u256, sale_price: u256, expires: u64, supported_token: ContractAddress) {
+        fn make_item_offer(
+            ref self: ComponentState<TContractState>,
+            token_id: u256,
+            sale_price: u256,
+            expires: u64,
+            supported_token: ContractAddress
+        ) {
             assert(sale_price > 0, Errors::INVALID_PRICE);
             assert(expires > get_block_timestamp(), Errors::INVALID_EXPIRES);
 
@@ -111,25 +116,14 @@ pub mod ERC6105ItemOfferComponent {
                 );
             }
 
-            let offer = ItemOffer {
-                token_id,
-                buyer: caller,
-                sale_price,
-                expires,
-                supported_token
-            };
+            let offer = ItemOffer { token_id, buyer: caller, sale_price, expires, supported_token };
 
             self.item_offers.entry(caller).write(token_id, offer);
 
-            self.emit(
-                UpdateItemOffer {
-                    token_id,
-                    sale_price,
-                    from: caller,
-                    expires,
-                    supported_token
-                }
-            );
+            self
+                .emit(
+                    UpdateItemOffer { token_id, sale_price, from: caller, expires, supported_token }
+                );
         }
 
         fn cancel_item_offer(ref self: ComponentState<TContractState>, token_id: u256) {
@@ -144,24 +138,41 @@ pub mod ERC6105ItemOfferComponent {
             };
             self.item_offers.entry(caller).write(token_id, empty_offer);
 
-            self.emit(
-                UpdateItemOffer {
-                    from: caller,
-                    token_id: 0,
-                    sale_price: 0,
-                    expires: 0,
-                    supported_token: zero_address
-                }
-            )
+            self
+                .emit(
+                    UpdateItemOffer {
+                        from: caller,
+                        token_id: 0,
+                        sale_price: 0,
+                        expires: 0,
+                        supported_token: zero_address
+                    }
+                )
         }
 
-        fn accept_item_offer(ref self: ComponentState<TContractState>, token_id: u256, sale_price: u256, supported_token: ContractAddress, buyer: ContractAddress) {
+        fn accept_item_offer(
+            ref self: ComponentState<TContractState>,
+            token_id: u256,
+            sale_price: u256,
+            supported_token: ContractAddress,
+            buyer: ContractAddress
+        ) {
             self.accept_item_offer_with_benchmark(token_id, sale_price, supported_token, buyer, 0);
         }
 
-        fn accept_item_offer_with_benchmark(ref self: ComponentState<TContractState>, token_id: u256, sale_price: u256, supported_token: ContractAddress, buyer: ContractAddress, benchmark_price: u256) {
+        fn accept_item_offer_with_benchmark(
+            ref self: ComponentState<TContractState>,
+            token_id: u256,
+            sale_price: u256,
+            supported_token: ContractAddress,
+            buyer: ContractAddress,
+            benchmark_price: u256
+        ) {
             let caller = get_caller_address();
-            assert(self.item_offers.entry(buyer).read(token_id).sale_price == sale_price, Errors::INVALID_PRICE);
+            assert(
+                self.item_offers.entry(buyer).read(token_id).sale_price == sale_price,
+                Errors::INVALID_PRICE
+            );
             assert(
                 self.item_offers.entry(buyer).read(token_id).supported_token == supported_token,
                 Errors::INVALID_TOKEN
@@ -170,60 +181,58 @@ pub mod ERC6105ItemOfferComponent {
             let token_owner = erc721_component.owner_of(token_id);
 
             let (royalty_recipient, royalties): (ContractAddress, u256) = self
-            ._calculate_royalties(token_id, sale_price, benchmark_price);
+                ._calculate_royalties(token_id, sale_price, benchmark_price);
 
-        let payment: u256 = sale_price - royalties;
-        let address_zero: ContractAddress = 0.try_into().unwrap();
+            let payment: u256 = sale_price - royalties;
+            let address_zero: ContractAddress = 0.try_into().unwrap();
 
-        if supported_token == address_zero {
-            let ETH_address: ContractAddress =
-                0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7
-                .try_into()
-                .unwrap();
-            let ETH_dispatcher = ERC20ABIDispatcher { contract_address: ETH_address };
-            assert(
-                ETH_dispatcher.balance_of(get_contract_address()) == sale_price,
-                Errors::INCORRECT_VALUE
-            );
-            self
-                ._process_supported_token_payment(
-                    royalties, buyer, royalty_recipient, address_zero
+            if supported_token == address_zero {
+                let ETH_address: ContractAddress =
+                    0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7
+                    .try_into()
+                    .unwrap();
+                let ETH_dispatcher = ERC20ABIDispatcher { contract_address: ETH_address };
+                assert(
+                    ETH_dispatcher.balance_of(get_contract_address()) == sale_price,
+                    Errors::INCORRECT_VALUE
                 );
-            self._process_supported_token_payment(payment, buyer, token_owner, address_zero);
-        } else {
-            let token_dispatcher = ERC20ABIDispatcher { contract_address: supported_token };
-            let num: u256 = token_dispatcher.allowance(buyer, get_contract_address());
-            assert(num >= sale_price, Errors::INSUFFICIENT_ALLOWANCE);
-            self
-                ._process_supported_token_payment(
-                    royalties, buyer, royalty_recipient, supported_token
-                );
-            self._process_supported_token_payment(payment, buyer, token_owner, supported_token);
-        }
-
-        erc721_component.transfer_from(token_owner, buyer, token_id);
-        
-        let empty_offer = ItemOffer {
-            token_id: 0,
-            buyer: address_zero,
-            sale_price: 0,
-            expires: 0,
-            supported_token: address_zero
-        };
-        self.item_offers.entry(buyer).write(token_id, empty_offer);
-        self.emit(
-            ItemPurchased {
-                token_id,
-                from: caller,
-                to: buyer,
-                sale_price,
-                supported_token,
-                royalties
+                self
+                    ._process_supported_token_payment(
+                        royalties, buyer, royalty_recipient, address_zero
+                    );
+                self._process_supported_token_payment(payment, buyer, token_owner, address_zero);
+            } else {
+                let token_dispatcher = ERC20ABIDispatcher { contract_address: supported_token };
+                let num: u256 = token_dispatcher.allowance(buyer, get_contract_address());
+                assert(num >= sale_price, Errors::INSUFFICIENT_ALLOWANCE);
+                self
+                    ._process_supported_token_payment(
+                        royalties, buyer, royalty_recipient, supported_token
+                    );
+                self._process_supported_token_payment(payment, buyer, token_owner, supported_token);
             }
-        )
+
+            erc721_component.transfer_from(token_owner, buyer, token_id);
+
+            let empty_offer = ItemOffer {
+                token_id: 0,
+                buyer: address_zero,
+                sale_price: 0,
+                expires: 0,
+                supported_token: address_zero
+            };
+            self.item_offers.entry(buyer).write(token_id, empty_offer);
+            self
+                .emit(
+                    ItemPurchased {
+                        token_id, from: caller, to: buyer, sale_price, supported_token, royalties
+                    }
+                )
         }
 
-        fn get_item_offer(self: @ComponentState<TContractState>, token_id: u256, buyer: ContractAddress) -> (u256, u64, ContractAddress) {
+        fn get_item_offer(
+            self: @ComponentState<TContractState>, token_id: u256, buyer: ContractAddress
+        ) -> (u256, u64, ContractAddress) {
             let offer = self.item_offers.entry(buyer).read(token_id);
             (offer.sale_price, offer.expires, offer.supported_token)
         }

@@ -61,15 +61,36 @@ pub trait IERC6105Mixin<TState> {
     ) -> (u256, u256, u64, ContractAddress);
 
     // IERC6105 Item Offer extension functions
-    fn make_item_offer(ref self: TState, token_id: u256, sale_price: u256, expires: u64, supported_token: ContractAddress);
+    fn make_item_offer(
+        ref self: TState,
+        token_id: u256,
+        sale_price: u256,
+        expires: u64,
+        supported_token: ContractAddress
+    );
 
     fn cancel_item_offer(ref self: TState, token_id: u256);
 
-    fn accept_item_offer(ref self: TState, token_id: u256, sale_price: u256, supported_token: ContractAddress, buyer: ContractAddress);
+    fn accept_item_offer(
+        ref self: TState,
+        token_id: u256,
+        sale_price: u256,
+        supported_token: ContractAddress,
+        buyer: ContractAddress
+    );
 
-    fn accept_item_offer_with_benchmark(ref self: TState, token_id: u256, sale_price: u256, supported_token: ContractAddress, buyer: ContractAddress, benchmark_price: u256);
+    fn accept_item_offer_with_benchmark(
+        ref self: TState,
+        token_id: u256,
+        sale_price: u256,
+        supported_token: ContractAddress,
+        buyer: ContractAddress,
+        benchmark_price: u256
+    );
 
-    fn get_item_offer(self: @TState, token_id: u256, buyer: ContractAddress) -> (u256, u64, ContractAddress);
+    fn get_item_offer(
+        self: @TState, token_id: u256, buyer: ContractAddress
+    ) -> (u256, u64, ContractAddress);
 
     // IERC721 functions
     fn balance_of(self: @TState, account: ContractAddress) -> u256;
@@ -139,12 +160,15 @@ pub mod ERC6105NoIntermediaryNftTradingProtocol {
 
     // ERC6105CollectionOffer
     #[abi(embed_v0)]
-    impl ERC6105CollectionOfferImpl = ERC6105CollectionOfferComponent::ERC6105CollectionOfferImpl<ContractState>;
-    impl ERC6105CollectionOfferInternalImpl = ERC6105CollectionOfferComponent::InternalImpl<ContractState>;
+    impl ERC6105CollectionOfferImpl =
+        ERC6105CollectionOfferComponent::ERC6105CollectionOfferImpl<ContractState>;
+    impl ERC6105CollectionOfferInternalImpl =
+        ERC6105CollectionOfferComponent::InternalImpl<ContractState>;
 
     // ERC6105ItemOffer
     #[abi(embed_v0)]
-    impl ERC6105ItemOfferImpl = ERC6105ItemOfferComponent::ERC6105ItemOfferImpl<ContractState>;
+    impl ERC6105ItemOfferImpl =
+        ERC6105ItemOfferComponent::ERC6105ItemOfferImpl<ContractState>;
     impl ERC6105ItemOfferInternalImpl = ERC6105ItemOfferComponent::InternalImpl<ContractState>;
 
     #[storage]

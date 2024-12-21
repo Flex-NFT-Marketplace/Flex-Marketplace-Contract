@@ -1,6 +1,6 @@
 use starknet::ContractAddress;
 use snforge_std::{
-    start_cheat_caller_address, stop_cheat_caller_address, start_cheat_caller_address_global, stop_cheat_caller_address_global,
+    start_cheat_caller_address, start_cheat_caller_address_global, stop_cheat_caller_address_global,
     spy_events, EventSpyAssertionsTrait
 };
 use openzeppelin_testing::constants::OWNER;
@@ -31,24 +31,25 @@ fn test_make_item_offer() {
     let test = ERC6105TestTrait::setup();
     ETH_dispatcher.approve(test.erc6105_address, 1);
     let mut spy = spy_events();
-    test.erc6105.make_item_offer(token_id,
-        sale_price,
-        expires,
-        zero_address
-    );
+    test.erc6105.make_item_offer(token_id, sale_price, expires, zero_address);
 
-    spy.assert_emitted(
-        @array![
-            (
-                test.erc6105_address,
-                ERC6105ItemOfferComponent::Event::UpdateItemOffer(
-                    ERC6105ItemOfferComponent::UpdateItemOffer {
-                        token_id, from: eth_rich_address, sale_price, expires, supported_token: zero_address
-                    }
-            )
-            )
-        ]
-    );
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    test.erc6105_address,
+                    ERC6105ItemOfferComponent::Event::UpdateItemOffer(
+                        ERC6105ItemOfferComponent::UpdateItemOffer {
+                            token_id,
+                            from: eth_rich_address,
+                            sale_price,
+                            expires,
+                            supported_token: zero_address
+                        }
+                    )
+                )
+            ]
+        );
 }
 
 #[test]
@@ -73,42 +74,44 @@ fn test_cancel_item_offer() {
     let test = ERC6105TestTrait::setup();
     ETH_dispatcher.approve(test.erc6105_address, 1);
     let mut spy = spy_events();
-    test.erc6105.make_item_offer(token_id,
-        sale_price,
-        expires,
-        zero_address
-    );
+    test.erc6105.make_item_offer(token_id, sale_price, expires, zero_address);
 
-    spy.assert_emitted(
-        @array![
-            (
-                test.erc6105_address,
-                ERC6105ItemOfferComponent::Event::UpdateItemOffer(
-                    ERC6105ItemOfferComponent::UpdateItemOffer {
-                        token_id, from: eth_rich_address, sale_price, expires, supported_token: zero_address
-                    }
-            )
-            )
-        ]
-    );
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    test.erc6105_address,
+                    ERC6105ItemOfferComponent::Event::UpdateItemOffer(
+                        ERC6105ItemOfferComponent::UpdateItemOffer {
+                            token_id,
+                            from: eth_rich_address,
+                            sale_price,
+                            expires,
+                            supported_token: zero_address
+                        }
+                    )
+                )
+            ]
+        );
 
     test.erc6105.cancel_item_offer(token_id);
-    spy.assert_emitted(
-        @array![
-            (
-                test.erc6105_address,
-                ERC6105ItemOfferComponent::Event::UpdateItemOffer(
-                    ERC6105ItemOfferComponent::UpdateItemOffer {
-                        token_id: 0,
-                        from: eth_rich_address,
-                        sale_price: 0,
-                        expires: 0,
-                        supported_token: zero_address
-                    }
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    test.erc6105_address,
+                    ERC6105ItemOfferComponent::Event::UpdateItemOffer(
+                        ERC6105ItemOfferComponent::UpdateItemOffer {
+                            token_id: 0,
+                            from: eth_rich_address,
+                            sale_price: 0,
+                            expires: 0,
+                            supported_token: zero_address
+                        }
+                    )
                 )
-            )
-        ]
-    );
+            ]
+        );
 }
 
 #[test]
@@ -134,46 +137,48 @@ fn test_accept_item_offer() {
     ETH_dispatcher.approve(test.erc6105_address, 1);
     ETH_dispatcher.transfer(test.erc6105_address, 1);
     let mut spy = spy_events();
-    test.erc6105.make_item_offer(token_id,
-        sale_price,
-        expires,
-        zero_address
-    );
+    test.erc6105.make_item_offer(token_id, sale_price, expires, zero_address);
 
-    spy.assert_emitted(
-        @array![
-            (
-                test.erc6105_address,
-                ERC6105ItemOfferComponent::Event::UpdateItemOffer(
-                    ERC6105ItemOfferComponent::UpdateItemOffer {
-                        token_id, from: eth_rich_address, sale_price, expires, supported_token: zero_address
-                    }
-            )
-            )
-        ]
-    );
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    test.erc6105_address,
+                    ERC6105ItemOfferComponent::Event::UpdateItemOffer(
+                        ERC6105ItemOfferComponent::UpdateItemOffer {
+                            token_id,
+                            from: eth_rich_address,
+                            sale_price,
+                            expires,
+                            supported_token: zero_address
+                        }
+                    )
+                )
+            ]
+        );
     stop_cheat_caller_address_global();
 
     start_cheat_caller_address(test.erc6105_address, OWNER());
     test.erc6105.accept_item_offer(token_id, sale_price, zero_address, eth_rich_address);
 
-    spy.assert_emitted(
-        @array![
-            (
-                test.erc6105_address,
-                ERC6105ItemOfferComponent::Event::ItemPurchased(
-                    ERC6105ItemOfferComponent::ItemPurchased {
-                        token_id,
-                        from: OWNER(),
-                        to: eth_rich_address,
-                        sale_price,
-                        supported_token: zero_address,
-                        royalties: 0
-                    }
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    test.erc6105_address,
+                    ERC6105ItemOfferComponent::Event::ItemPurchased(
+                        ERC6105ItemOfferComponent::ItemPurchased {
+                            token_id,
+                            from: OWNER(),
+                            to: eth_rich_address,
+                            sale_price,
+                            supported_token: zero_address,
+                            royalties: 0
+                        }
+                    )
                 )
-            )
-        ]
-    );
+            ]
+        );
 }
 
 #[test]
@@ -199,46 +204,50 @@ fn test_accept_item_offer_with_benchmark() {
     ETH_dispatcher.approve(test.erc6105_address, 1);
     ETH_dispatcher.transfer(test.erc6105_address, 1);
     let mut spy = spy_events();
-    test.erc6105.make_item_offer(token_id,
-        sale_price,
-        expires,
-        zero_address
-    );
+    test.erc6105.make_item_offer(token_id, sale_price, expires, zero_address);
 
-    spy.assert_emitted(
-        @array![
-            (
-                test.erc6105_address,
-                ERC6105ItemOfferComponent::Event::UpdateItemOffer(
-                    ERC6105ItemOfferComponent::UpdateItemOffer {
-                        token_id, from: eth_rich_address, sale_price, expires, supported_token: zero_address
-                    }
-            )
-            )
-        ]
-    );
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    test.erc6105_address,
+                    ERC6105ItemOfferComponent::Event::UpdateItemOffer(
+                        ERC6105ItemOfferComponent::UpdateItemOffer {
+                            token_id,
+                            from: eth_rich_address,
+                            sale_price,
+                            expires,
+                            supported_token: zero_address
+                        }
+                    )
+                )
+            ]
+        );
     stop_cheat_caller_address_global();
 
     start_cheat_caller_address(test.erc6105_address, OWNER());
-    test.erc6105.accept_item_offer_with_benchmark(token_id, sale_price, zero_address, eth_rich_address, 0);
+    test
+        .erc6105
+        .accept_item_offer_with_benchmark(token_id, sale_price, zero_address, eth_rich_address, 0);
 
-    spy.assert_emitted(
-        @array![
-            (
-                test.erc6105_address,
-                ERC6105ItemOfferComponent::Event::ItemPurchased(
-                    ERC6105ItemOfferComponent::ItemPurchased {
-                        token_id,
-                        from: OWNER(),
-                        to: eth_rich_address,
-                        sale_price,
-                        supported_token: zero_address,
-                        royalties: 0
-                    }
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    test.erc6105_address,
+                    ERC6105ItemOfferComponent::Event::ItemPurchased(
+                        ERC6105ItemOfferComponent::ItemPurchased {
+                            token_id,
+                            from: OWNER(),
+                            to: eth_rich_address,
+                            sale_price,
+                            supported_token: zero_address,
+                            royalties: 0
+                        }
+                    )
                 )
-            )
-        ]
-    );
+            ]
+        );
 }
 
 #[test]
@@ -263,26 +272,29 @@ fn test_get_item_offer() {
     let test = ERC6105TestTrait::setup();
     ETH_dispatcher.approve(test.erc6105_address, 1);
     let mut spy = spy_events();
-    test.erc6105.make_item_offer(token_id,
-        sale_price,
-        expires,
-        zero_address
-    );
+    test.erc6105.make_item_offer(token_id, sale_price, expires, zero_address);
 
-    spy.assert_emitted(
-        @array![
-            (
-                test.erc6105_address,
-                ERC6105ItemOfferComponent::Event::UpdateItemOffer(
-                    ERC6105ItemOfferComponent::UpdateItemOffer {
-                        token_id, from: eth_rich_address, sale_price, expires, supported_token: zero_address
-                    }
-            )
-            )
-        ]
-    );
+    spy
+        .assert_emitted(
+            @array![
+                (
+                    test.erc6105_address,
+                    ERC6105ItemOfferComponent::Event::UpdateItemOffer(
+                        ERC6105ItemOfferComponent::UpdateItemOffer {
+                            token_id,
+                            from: eth_rich_address,
+                            sale_price,
+                            expires,
+                            supported_token: zero_address
+                        }
+                    )
+                )
+            ]
+        );
 
-    let (res_sale_price, res_expires, res_supported_token): (u256, u64, ContractAddress) = test.erc6105.get_item_offer(token_id, eth_rich_address);
+    let (res_sale_price, res_expires, res_supported_token): (u256, u64, ContractAddress) = test
+        .erc6105
+        .get_item_offer(token_id, eth_rich_address);
     assert(res_sale_price == sale_price, 'wrong sale price');
     assert(res_expires == expires, 'wrong expires');
     assert(res_supported_token == zero_address, 'wrong supported token');
