@@ -1,9 +1,10 @@
 use snforge_std::{
-    start_cheat_caller_address, stop_cheat_caller_address, declare, ContractClassTrait
+    declare, ContractClassTrait, spy_events, EventSpyAssertionsTrait 
 };
 
-use starknet::{ContractAddress, get_block_timestamp};
+use starknet::{ContractAddress, contract_address_const};
 
+use erc_7662_ai_agent_nft::erc7662::ERC7662::{Event, AgentCreated, AgentUpdated};
 use erc_7662_ai_agent_nft::interfaces::{IERC7662Dispatcher, IERC7662DispatcherTrait};
 
 fn NAME() -> ByteArray {
@@ -20,14 +21,43 @@ fn BASE_URI() -> ByteArray {
 }
 
 fn OWNER() -> ContractAddress {
-    'owner'.try_into().unwrap()
+    contract_address_const::<'owner'>()
 }
 
 fn BOB() -> ContractAddress {
     'bob'.try_into().unwrap()
 }
 
-fn setup() -> IERC7662Dispatcher {
+fn name() -> ByteArray {
+    "AgentName"
+}
+
+fn description() -> ByteArray {
+    "AgentDescription"
+}
+
+fn model() -> ByteArray {
+    "AgentModel"
+}
+
+fn user_prompt_uri() -> ByteArray {
+    "https://user.prompt.uri/"
+}
+
+fn system_prompt_uri() -> ByteArray {
+    "https://system.prompt.uri/"
+}
+
+fn image_uri() -> ByteArray {
+    "https://image.uri/"
+}
+
+fn category() -> ByteArray {
+    "AgentCategory"
+}
+
+
+fn setup() -> (IERC7662Dispatcher, ContractAddress) {
     let contract_class = declare("ERC7662").unwrap();
 
     let mut calldata = array![];
@@ -37,26 +67,33 @@ fn setup() -> IERC7662Dispatcher {
 
     let (contract_address, _) = contract_class.deploy(@calldata).unwrap();
 
-    IERC7662Dispatcher { contract_address }
+    (IERC7662Dispatcher { contract_address }, contract_address)
 }
 
 #[test]
 fn test_mint_agent() {
-    let dispatcher = setup();
+    let (dispatcher, contract_address) = setup();
 
+    let mut spy = spy_events();
     let token_id = dispatcher
         .mint_agent(
             OWNER(),
-            "AgentName",
-            "AgentDescription",
-            "AgentModel",
-            "https://user.prompt.uri/",
-            "https://system.prompt.uri/",
-            "https://image.uri/",
-            "AgentCategory"
+            name(),
+            description(),
+            model(),
+            user_prompt_uri(),
+            system_prompt_uri(),
+            image_uri(),
+            category()
         );
 
     let agent = dispatcher.get_agent(token_id);
+    let expected_event_agent = Event::AgentCreated(
+        AgentCreated {
+            name: name(), description: description(), model: model(), recipient: OWNER(), token_id,
+        }
+    );
+    spy.assert_emitted(@array![(contract_address, expected_event_agent),]);
     assert(agent.name == "AgentName", 'Invalid agent name');
     assert(agent.description == "AgentDescription", 'Invalid agent description');
     assert(agent.model == "AgentModel", 'Invalid agent model');
@@ -64,18 +101,19 @@ fn test_mint_agent() {
 
 #[test]
 fn test_add_encrypted_prompts() {
-    let dispatcher = setup();
+    let (dispatcher, contract_address) = setup();
 
+    let mut spy = spy_events();
     let token_id = dispatcher
         .mint_agent(
             OWNER(),
-            "AgentName",
-            "AgentDescription",
-            "AgentModel",
-            "https://user.prompt.uri/",
-            "https://system.prompt.uri/",
-            "https://image.uri/",
-            "AgentCategory"
+            name(),
+            description(),
+            model(),
+            user_prompt_uri(),
+            system_prompt_uri(),
+            image_uri(),
+            category()
         );
 
     dispatcher
@@ -83,6 +121,10 @@ fn test_add_encrypted_prompts() {
             token_id, "https://encrypted.user.prompt.uri/", "https://encrypted.system.prompt.uri/"
         );
 
+    spy
+        .assert_emitted(
+            @array![(contract_address, Event::AgentUpdated(AgentUpdated { token_id }),)]
+        );
     let agent = dispatcher.get_agent(token_id);
     assert(agent.prompts_encrypted == true, 'Prompts should be encrypted');
     assert(
@@ -97,7 +139,7 @@ fn test_add_encrypted_prompts() {
 
 #[test]
 fn test_get_collection_ids() {
-    let dispatcher = setup();
+    let (dispatcher, _contract_address) = setup();
 
     let token_id_1 = dispatcher
         .mint_agent(
@@ -132,7 +174,7 @@ fn test_get_collection_ids() {
 
 #[test]
 fn test_get_agent_data() {
-    let dispatcher = setup();
+    let (dispatcher, _contract_address) = setup();
 
     let token_id = dispatcher
         .mint_agent(
