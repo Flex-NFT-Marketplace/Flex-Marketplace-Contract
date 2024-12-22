@@ -22,5 +22,8 @@ pub trait IERC7662<TState> {
     );
     fn get_collection_ids(self: @TState, address: ContractAddress) -> Array<u256>;
     fn get_agent(self: @TState, token_id: u256) -> Agent;
-    fn get_agent_data(self: @TState, token_id: u256) -> Agent;
+    fn get_agent_data(
+        self: @TState, token_id: u256
+    ) -> (ByteArray, ByteArray, ByteArray, ByteArray, ByteArray, bool);
 }
+

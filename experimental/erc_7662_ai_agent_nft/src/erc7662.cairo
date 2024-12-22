@@ -1,11 +1,12 @@
 #[starknet::contract]
 pub mod ERC7662 {
+    use ERC721Component::InternalTrait;
     use openzeppelin::token::erc721::ERC721Component;
     use openzeppelin::introspection::src5::SRC5Component;
-    use starknet::{ContractAddress, get_caller_address};
+    use starknet::{ContractAddress};
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess,
-        StoragePointerWriteAccess, StoragePathEntry, Vec, VecTrait, MutableVecTrait
+        StoragePointerWriteAccess
     };
 
     use erc_7662_ai_agent_nft::types::Agent;
@@ -13,6 +14,9 @@ pub mod ERC7662 {
 
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
+
+    #[abi(embed_v0)]
+    impl ERC721Impl = ERC721Component::ERC721Impl<ContractState>;
     #[abi(embed_v0)]
     impl SRC5Impl = SRC5Component::SRC5Impl<ContractState>;
 
@@ -25,12 +29,13 @@ pub mod ERC7662 {
         #[substorage(v0)]
         src5: SRC5Component::Storage,
         token_ids: u256,
+        // Map of token_id to Agent struct required for ERC7662
         agents: Map<u256, Agent>,
     }
 
     #[event]
     #[derive(Drop, starknet::Event)]
-    enum Event {
+    pub enum Event {
         #[flat]
         ERC721Event: ERC721Component::Event,
         #[flat]
@@ -40,19 +45,21 @@ pub mod ERC7662 {
     }
 
 
+    // Event requierd for ERC7662 emitted when an Agent NFT is updated
     #[derive(Drop, PartialEq, starknet::Event)]
-    struct AgentUpdated {
-        token_id: u256,
+    pub struct AgentUpdated {
+        pub token_id: u256,
     }
 
 
+    // Event requierd for ERC7662 emitted when an Agent NFT is created
     #[derive(Drop, PartialEq, starknet::Event)]
-    struct AgentCreated {
-        name: ByteArray,
-        description: ByteArray,
-        model: ByteArray,
-        recipient: ContractAddress,
-        token_id: u256,
+    pub struct AgentCreated {
+        pub name: ByteArray,
+        pub description: ByteArray,
+        pub model: ByteArray,
+        pub recipient: ContractAddress,
+        pub token_id: u256,
     }
 
 
@@ -91,7 +98,7 @@ pub mod ERC7662 {
             category: ByteArray
         ) -> u256 {
             let mut token_id = self.token_ids.read();
-            self._mint(to, token_id);
+            self.erc721.mint(to, token_id);
             self.token_ids.write(token_id + 1);
             let agent = Agent {
                 name: name.clone(),
@@ -155,6 +162,8 @@ pub mod ERC7662 {
             result
         }
 
+        // @dev Return all Agent NFT data reuquired by standard erc-7662
+        // @param _tokenID uint256 ID of the NFT
         fn get_agent_data(
             self: @ContractState, token_id: u256
         ) -> (ByteArray, ByteArray, ByteArray, ByteArray, ByteArray, bool) {
@@ -170,13 +179,6 @@ pub mod ERC7662 {
         }
     }
 
-
-    #[generate_trait]
-    impl PrivateImpl of PrivateTrait {
-        fn _mint(ref self: ContractState, to: ContractAddress, token_id: u256) {
-            self.erc721.mint(to, token_id);
-        }
-    }
 
     /// An empty implementation of the ERC721 hooks.
     impl ERC721HooksEmptyImpl<
