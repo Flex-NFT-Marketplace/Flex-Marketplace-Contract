@@ -38,6 +38,45 @@ scarb fmt
 scarb test
 ```
 
-## 📄 License
+## ERC-6806 Details
 
-This project is released under the Apache license.
+### Overview
+ERC-6806 is a standard for Holding Time Tracking NFTs, allowing for the tracking of the duration for which a token is held.
+
+### Functions
+- `get_holding_info(token_id: u256) -> (ContractAddress, u64)`: Returns the holder's address and the holding time for the specified token ID.
+- `set_holding_time_whitelisted_address(account: ContractAddress, ignore_reset: bool)`: Sets an address as whitelisted for holding time tracking.
+
+## Syntax Changes for Starknet's Cairo
+
+### Interface Definition
+```cairo
+#[starknet::interface]
+pub trait IERC721<TContractState> {
+    fn get_holding_info(self: @TContractState, token_id: u256) -> (ContractAddress, u64);
+    fn set_holding_time_whitelisted_address(ref self: TContractState, account: ContractAddress, ignore_reset: bool);
+}
+```
+
+### Contract Implementation
+```cairo
+#[starknet::contract]
+pub mod ERC721 {
+    // Storage variables
+    #[storage]
+    struct Storage {
+        holder: Map<u256, ContractAddress>,
+        hold_start: Map<u256, u64>,
+    }
+
+    #[abi(embed_v0)]
+    impl IERC721Impl of super::IERC721<ContractState> {
+        fn get_holding_info(self: @ContractState, token_id: u256) -> (ContractAddress, u64) {
+            let holder = self.holder.read(token_id);
+            let hold_start = self.hold_start.read(token_id);
+            let current_time = get_block_timestamp();
+            let holding_time = current_time - hold_start;
+            (holder, holding_time)
+        }
+    }
+}
