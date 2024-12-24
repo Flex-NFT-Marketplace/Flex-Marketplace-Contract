@@ -5,18 +5,59 @@ version = 1
 name = "erc5006_cairo"
 version = "0.1.0"
 dependencies = [
- "snforge_std",
+ "openzeppelin_introspection",
+ "openzeppelin_token",
 ]
 
 [[package]]
-name = "snforge_scarb_plugin"
-version = "0.34.0"
-source = "git+https://github.com/foundry-rs/starknet-foundry?tag=v0.34.0#d6976d4635cbe69bd199fd502788c469d408ed2d"
-
-[[package]]
-name = "snforge_std"
-version = "0.34.0"
-source = "git+https://github.com/foundry-rs/starknet-foundry?tag=v0.34.0#d6976d4635cbe69bd199fd502788c469d408ed2d"
+name = "openzeppelin_access"
+version = "0.17.0"
+source = "registry+https://scarbs.xyz/"
+checksum = "sha256:541bb8fdf1ad17fe0d275b00acb9f0d7f56ea5534741e21535ac3fda2c600281"
 dependencies = [
- "snforge_scarb_plugin",
+ "openzeppelin_introspection",
+ "openzeppelin_utils",
 ]
+
+[[package]]
+name = "openzeppelin_account"
+version = "0.17.0"
+source = "registry+https://scarbs.xyz/"
+checksum = "sha256:c4e11609fdd1f4c3d3004cd1468711bd2ea664739c9e59a4b270567fe4c23ee3"
+dependencies = [
+ "openzeppelin_introspection",
+ "openzeppelin_utils",
+]
+
+[[package]]
+name = "openzeppelin_governance"
+version = "0.17.0"
+source = "registry+https://scarbs.xyz/"
+checksum = "sha256:b7e0142d88d69a8c367aea8c9dc7f659f27372551efc23f39a0cf71a189c1302"
+dependencies = [
+ "openzeppelin_access",
+ "openzeppelin_introspection",
+]
+
+[[package]]
+name = "openzeppelin_introspection"
+version = "0.17.0"
+source = "registry+https://scarbs.xyz/"
+checksum = "sha256:892433a4a1ea0fc9cf7cdb01e06ddc2782182abcc188e4ea5dd480906d006cf8"
+
+[[package]]
+name = "openzeppelin_token"
+version = "0.17.0"
+source = "registry+https://scarbs.xyz/"
+checksum = "sha256:77997a7e217b69674c34b402dc0c7b2210540db66a56087572679c31896eaabb"
+dependencies = [
+ "openzeppelin_account",
+ "openzeppelin_governance",
+ "openzeppelin_introspection",
+]
+
+[[package]]
+name = "openzeppelin_utils"
+version = "0.17.0"
+source = "registry+https://scarbs.xyz/"
+checksum = "sha256:36d93e353f42fd6b824abcd8b4b51c3f5d02c893c5f886ae81403b0368aa5fde"
