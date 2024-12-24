@@ -1,4 +1,5 @@
 use starknet::ContractAddress;
+
 #[derive(Drop, starknet::Store, Serde, Clone, PartialEq)]
 pub struct UserRecord {
     pub token_id: u256,

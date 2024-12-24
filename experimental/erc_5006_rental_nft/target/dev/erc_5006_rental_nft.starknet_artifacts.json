@@ -1,1 +1,0 @@
-{"version":1,"contracts":[{"id":"1a0l8rdn7tkr2","package_name":"erc_5006_rental_nft","contract_name":"ERC5006","module_path":"erc_5006_rental_nft::erc5006::ERC5006","artifacts":{"sierra":"erc_5006_rental_nft_ERC5006.contract_class.json","casm":null}}]}

@@ -2,13 +2,21 @@
 version = 1
 
 [[package]]
-name = "erc_5006_rental_nft"
+name = "erc5006_cairo"
 version = "0.1.0"
 dependencies = [
  "snforge_std",
 ]
 
 [[package]]
+name = "snforge_scarb_plugin"
+version = "0.34.0"
+source = "git+https://github.com/foundry-rs/starknet-foundry?tag=v0.34.0#d6976d4635cbe69bd199fd502788c469d408ed2d"
+
+[[package]]
 name = "snforge_std"
-version = "0.27.0"
-source = "git+https://github.com/foundry-rs/starknet-foundry?tag=v0.27.0#2d99b7c00678ef0363881ee0273550c44a9263de"
+version = "0.34.0"
+source = "git+https://github.com/foundry-rs/starknet-foundry?tag=v0.34.0#d6976d4635cbe69bd199fd502788c469d408ed2d"
+dependencies = [
+ "snforge_scarb_plugin",
+]
