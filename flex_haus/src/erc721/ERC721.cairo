@@ -759,12 +759,12 @@ pub mod ERC721Component {
         fn _set_name(ref self: ComponentState<TContractState>, name: ByteArray) {
             self.ERC721_name.write(name);
         }
-        
+
         /// Sets symbol
         fn _set_symbol(ref self: ComponentState<TContractState>, symbol: ByteArray) {
             self.ERC721_symbol.write(symbol);
         }
-        
+
         /// Base URI for computing `token_uri`.
         ///
         /// If set, the resulting URI for each token will be the concatenation of the base URI and

@@ -1,18 +1,15 @@
 use flexhaus::collectible::FlexHausCollectible;
 
 use flexhaus::interface::IFlexHausCollectible::{
-    IFlexHausCollectible, 
-    IFlexHausCollectibleDispatcher, 
-    IFlexHausCollectibleDispatcherTrait
+    IFlexHausCollectible, IFlexHausCollectibleDispatcher, IFlexHausCollectibleDispatcherTrait
 };
 
 use openzeppelin::utils::serde::SerializedAppend;
 
 use core::starknet::{ContractAddress, contract_address_const};
 use snforge_std::{
-    declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address, 
-    stop_cheat_caller_address, spy_events, 
-    EventSpyAssertionsTrait, load
+    declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address,
+    stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait, load
 };
 
 use core::traits::TryInto;
