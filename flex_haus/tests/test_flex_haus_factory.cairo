@@ -2,7 +2,7 @@ use flexhaus::factory::FlexHausFactory;
 use starknet::ClassHash;
 
 use flexhaus::interface::IFlexHausFactory::{
-    IFlexHausFactory, IFlexHausFactoryDispatcher, IFlexHausFactoryDispatcherTrait
+    IFlexHausFactory, IFlexHausFactoryDispatcher, IFlexHausFactoryDispatcherTrait, 
 };
 
 use core::starknet::{ContractAddress, contract_address_const};
@@ -11,10 +11,28 @@ use snforge_std::{
     stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait, load
 };
 
-use super::utils::{deploy_flex_haus_factory};
+use super::utils::{deploy_flex_haus_factory, deploy_flex_haus_collectible, name, symbol, base_uri, total_supply};
 
 #[test]
-fn test_create_collectible() {}
+fn test_create_collectible() {
+    let (factory, fca) = deploy_flex_haus_factory();
+    let (_, cca) = deploy_flex_haus_collectible();
+    let mut spy = spy_events();
+    factory.create_collectible(name(), symbol(), base_uri(), total_supply());
+    spy.assert_emitted(
+        @array![
+            (
+                fca,
+                FlexHausFactory::FlexHausFactory::Event::UpdateCollectible(
+                    FlexHausFactory::FlexHausFactory::UpdateCollectible {
+                        creator: fca,
+                        collectible: cca
+                    }
+                )
+            )
+        ]
+    );
+}
 
 #[test]
 fn test_create_drop() {}

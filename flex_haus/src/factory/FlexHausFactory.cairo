@@ -65,7 +65,7 @@ mod FlexHausFactory {
 
     #[event]
     #[derive(Drop, starknet::Event)]
-    enum Event {
+    pub enum Event {
         UpdateCollectible: UpdateCollectible,
         UpdateDrop: UpdateDrop,
         ClaimCollectible: ClaimCollectible,
@@ -76,7 +76,7 @@ mod FlexHausFactory {
     }
 
     #[derive(Drop, Copy, starknet::Event)]
-    struct UpdateCollectible {
+    pub struct UpdateCollectible {
         #[key]
         creator: ContractAddress,
         collectible: ContractAddress,
