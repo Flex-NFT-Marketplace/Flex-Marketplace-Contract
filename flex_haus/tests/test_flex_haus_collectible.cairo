@@ -1,70 +1,17 @@
 use flexhaus::collectible::FlexHausCollectible;
 
 use flexhaus::interface::IFlexHausCollectible::{
-    IFlexHausCollectible, 
-    IFlexHausCollectibleDispatcher, 
-    IFlexHausCollectibleDispatcherTrait
+    IFlexHausCollectible, IFlexHausCollectibleDispatcher, IFlexHausCollectibleDispatcherTrait
 };
-
-use openzeppelin::utils::serde::SerializedAppend;
-
 use core::starknet::{ContractAddress, contract_address_const};
 use snforge_std::{
-    declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address, 
-    stop_cheat_caller_address, spy_events, 
-    EventSpyAssertionsTrait, load
+    declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address,
+    stop_cheat_caller_address, spy_events, EventSpyAssertionsTrait, load
 };
 
 use core::traits::TryInto;
 
-fn owner() -> ContractAddress {
-    contract_address_const::<'owner'>()
-}
-
-fn name() -> ByteArray {
-    "FlexHausCollectible"
-}
-
-fn symbol() -> ByteArray {
-    "FHC"
-}
-
-fn base_uri() -> ByteArray {
-    "https://example.com/"
-}
-
-fn total_supply() -> u256 {
-    100
-}
-
-fn factory() -> ContractAddress {
-    contract_address_const::<'factory'>()
-}
-
-fn another_factory() -> ContractAddress {
-    contract_address_const::<'another_factory'>()
-}
-
-fn minter() -> ContractAddress {
-    contract_address_const::<'minter'>()
-}
-
-fn deploy_flex_haus_collectible() -> (IFlexHausCollectibleDispatcher, ContractAddress) {
-    let contract = declare("FlexHausCollectible").unwrap().contract_class();
-    let mut calldata: Array<felt252> = array![];
-    calldata.append_serde(owner());
-    calldata.append_serde(name());
-    calldata.append_serde(symbol());
-    calldata.append_serde(base_uri());
-    calldata.append_serde(total_supply());
-    calldata.append_serde(factory());
-
-    let (contract_address, _) = contract.deploy(@calldata).unwrap();
-
-    let dispatcher = IFlexHausCollectibleDispatcher { contract_address };
-
-    (dispatcher, contract_address)
-}
+use super::utils::{owner, factory, another_factory, minter, deploy_flex_haus_collectible};
 
 #[test]
 fn test_constructor() {
