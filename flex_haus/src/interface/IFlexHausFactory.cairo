@@ -4,8 +4,30 @@ use starknet::{ContractAddress, ClassHash};
 struct DropDetail {
     drop_type: u8,
     secure_amount: u256,
-    top_supporters: u64,
+    is_random_to_subscribers: bool,
+    from_top_supporter: u64,
+    to_top_supporter: u64,
     start_time: u64,
+    expire_time: u64,
+}
+
+#[derive(Drop, Copy, Serde, PartialEq)]
+enum CollectibleRarity {
+    Common,
+    Rare,
+    Legendary,
+    Ultimate,
+}
+
+impl CollectibleRarityInto of Into<CollectibleRarity, felt252> {
+    fn into(self: CollectibleRarity) -> felt252 {
+        match self {
+            CollectibleRarity::Common => 'common',
+            CollectibleRarity::Rare => 'rare',
+            CollectibleRarity::Legendary => 'legendary',
+            CollectibleRarity::Ultimate => 'ultimate',
+        }
+    }
 }
 
 #[starknet::interface]
@@ -15,23 +37,30 @@ trait IFlexHausFactory<TContractState> {
         name: ByteArray,
         symbol: ByteArray,
         base_uri: ByteArray,
-        total_supply: u256
+        total_supply: u256,
+        rarity: felt252,
     );
     fn create_drop(
         ref self: TContractState,
         collectible: ContractAddress,
         drop_type: u8,
         secure_amount: u256,
-        top_supporters: u64,
+        is_random_to_subscribers: bool,
+        from_top_supporter: u64,
+        to_top_supporter: u64,
         start_time: u64,
+        expire_time: u64,
     );
     fn update_collectible_drop_phase(
         ref self: TContractState,
         collectible: ContractAddress,
         drop_type: u8,
         secure_amount: u256,
-        top_supporters: u64,
+        is_random_to_subscribers: bool,
+        from_top_supporter: u64,
+        to_top_supporter: u64,
         start_time: u64,
+        expire_time: u64,
     );
     fn update_collectible_detail(
         ref self: TContractState,
@@ -39,7 +68,8 @@ trait IFlexHausFactory<TContractState> {
         name: ByteArray,
         symbol: ByteArray,
         base_uri: ByteArray,
-        total_supply: u256
+        total_supply: u256,
+        rarity: felt252,
     );
     fn claim_collectible(
         ref self: TContractState, collectible: ContractAddress, keys: Array<felt252>
@@ -59,5 +89,7 @@ trait IFlexHausFactory<TContractState> {
     fn get_min_duration_time_for_update(self: @TContractState) -> u64;
     fn get_all_collectibles_addresses(self: @TContractState) -> Array<ContractAddress>;
     fn get_total_collectibles_count(self: @TContractState) -> u64;
-    fn get_collectibles_of_owner(self: @TContractState, owner: ContractAddress) -> Array<ContractAddress>;
+    fn get_collectibles_of_owner(
+        self: @TContractState, owner: ContractAddress
+    ) -> Array<ContractAddress>;
 }

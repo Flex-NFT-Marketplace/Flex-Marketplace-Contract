@@ -9,7 +9,7 @@ mod FlexHausFactory {
         Map, StoragePointerReadAccess, StoragePointerWriteAccess, StoragePathEntry, Vec, VecTrait,
         MutableTrait
     };
-    use flexhaus::interface::IFlexHausFactory::{IFlexHausFactory, DropDetail};
+    use flexhaus::interface::IFlexHausFactory::{IFlexHausFactory, DropDetail, CollectibleRarity};
     use flexhaus::interface::IFlexHausCollectible::{
         IFlexHausCollectibleMixinDispatcher, IFlexHausCollectibleMixinDispatcherTrait
     };
@@ -80,6 +80,8 @@ mod FlexHausFactory {
         #[key]
         creator: ContractAddress,
         collectible: ContractAddress,
+        drop_amount: u256,
+        rarity: felt252,
     }
 
     #[derive(Drop, Copy, starknet::Event)]
@@ -88,8 +90,11 @@ mod FlexHausFactory {
         collectible: ContractAddress,
         drop_type: u8,
         secure_amount: u256,
-        top_supporters: u64,
+        is_random_to_subscribers: bool,
+        from_top_supporter: u64,
+        to_top_supporter: u64,
         start_time: u64,
+        expire_time: u64,
     }
 
     #[derive(Drop, Copy, starknet::Event)]
@@ -138,9 +143,11 @@ mod FlexHausFactory {
             name: ByteArray,
             symbol: ByteArray,
             base_uri: ByteArray,
-            total_supply: u256
+            total_supply: u256,
+            rarity: felt252,
         ) {
             self.reentrancyguard.start();
+            self.assert_valid_rarity(rarity);
             self.pay_protocol_fee();
             let creator = get_caller_address();
 
@@ -190,7 +197,10 @@ mod FlexHausFactory {
             self.all_collectibles.append().write(collectible);
             self.mapping_collectible.entry(creator).append().write(collectible);
 
-            self.emit(UpdateCollectible { creator, collectible });
+            self
+                .emit(
+                    UpdateCollectible { creator, collectible, drop_amount: total_supply, rarity }
+                );
             self.reentrancyguard.end();
         }
 
@@ -199,31 +209,58 @@ mod FlexHausFactory {
             collectible: ContractAddress,
             drop_type: u8,
             secure_amount: u256,
-            top_supporters: u64,
+            is_random_to_subscribers: bool,
+            from_top_supporter: u64,
+            to_top_supporter: u64,
             start_time: u64,
+            expire_time: u64,
         ) {
             self.reentrancyguard.start();
             self.assert_only_flex_haus_collectible(collectible);
             self.assert_only_creator_of_collectible(collectible);
+            assert(expire_time > start_time, 'Wrong expire time');
             let drop_detail = self.mapping_drop.entry(collectible).read();
             assert(drop_detail.drop_type == 0, 'Drop already created');
+            assert(
+                (from_top_supporter == 0 && to_top_supporter == 0)
+                    || (from_top_supporter > 0 && to_top_supporter >= from_top_supporter),
+                'Invalid top supporter'
+            );
 
-            if top_supporters > 0 {
-                self.assert_valid_total_supporters(collectible, top_supporters);
+            if from_top_supporter > 0 {
+                self
+                    .assert_valid_total_supporters(
+                        collectible, (to_top_supporter - from_top_supporter + 1)
+                    );
             }
 
             assert(start_time > 0, 'Wrong start time');
             self.assert_valid_drop_type(drop_type);
 
             let new_drop_detail = DropDetail {
-                drop_type: drop_type.into(), secure_amount, top_supporters, start_time
+                drop_type: drop_type.into(),
+                secure_amount,
+                is_random_to_subscribers,
+                from_top_supporter,
+                to_top_supporter,
+                start_time,
+                expire_time,
             };
 
             self.mapping_drop.entry(collectible).write(new_drop_detail);
 
             self
                 .emit(
-                    UpdateDrop { collectible, drop_type, secure_amount, top_supporters, start_time }
+                    UpdateDrop {
+                        collectible,
+                        drop_type,
+                        secure_amount,
+                        is_random_to_subscribers,
+                        from_top_supporter,
+                        to_top_supporter,
+                        start_time,
+                        expire_time
+                    }
                 );
 
             self.reentrancyguard.end();
@@ -234,34 +271,54 @@ mod FlexHausFactory {
             collectible: ContractAddress,
             drop_type: u8,
             secure_amount: u256,
-            top_supporters: u64,
+            is_random_to_subscribers: bool,
+            from_top_supporter: u64,
+            to_top_supporter: u64,
             start_time: u64,
+            expire_time: u64,
         ) {
             self.reentrancyguard.start();
             self.assert_only_flex_haus_collectible(collectible);
             self.assert_only_creator_of_collectible(collectible);
-
+            assert(expire_time > start_time, 'Wrong expire time');
             let mut drop_detail = self.mapping_drop.entry(collectible).read();
             self.assert_not_exceeded_time(drop_detail);
 
             assert(start_time > 0, 'Wrong start time');
+            assert(
+                (from_top_supporter == 0 && to_top_supporter == 0)
+                    || (from_top_supporter > 0 && to_top_supporter >= from_top_supporter),
+                'Invalid top supporter'
+            );
 
-            if top_supporters > 0 {
-                self.assert_valid_total_supporters(collectible, top_supporters);
+            if from_top_supporter > 0 {
+                self
+                    .assert_valid_total_supporters(
+                        collectible, (to_top_supporter - from_top_supporter + 1)
+                    );
             }
             self.assert_valid_drop_type(drop_type);
 
             drop_detail.drop_type = drop_type.into();
             drop_detail.secure_amount = secure_amount;
-            drop_detail.top_supporters = top_supporters;
+            drop_detail.from_top_supporter = from_top_supporter;
+            drop_detail.to_top_supporter = to_top_supporter;
             drop_detail.start_time = start_time;
+            drop_detail.expire_time = expire_time;
 
             self.mapping_drop.entry(collectible).write(drop_detail);
 
             self
                 .emit(
                     UpdateDrop {
-                        collectible, drop_type, secure_amount, top_supporters, start_time,
+                        collectible,
+                        drop_type,
+                        secure_amount,
+                        is_random_to_subscribers,
+                        from_top_supporter,
+                        to_top_supporter,
+                        start_time,
+                        expire_time,
                     }
                 );
 
@@ -274,11 +331,13 @@ mod FlexHausFactory {
             name: ByteArray,
             symbol: ByteArray,
             base_uri: ByteArray,
-            total_supply: u256
+            total_supply: u256,
+            rarity: felt252,
         ) {
             self.reentrancyguard.start();
             self.assert_only_flex_haus_collectible(collectible);
             self.assert_only_creator_of_collectible(collectible);
+            self.assert_valid_rarity(rarity);
             let collectible_drop = self.mapping_drop.entry(collectible).read();
             if collectible_drop.start_time != 0 {
                 self.assert_not_exceeded_time(collectible_drop);
@@ -286,7 +345,9 @@ mod FlexHausFactory {
 
             assert(total_supply > 0, 'Invalid total supply');
             assert(
-                collectible_drop.top_supporters.into() <= total_supply, 'Supporters total supply'
+                (collectible_drop.to_top_supporter - collectible_drop.from_top_supporter + 1)
+                    .into() <= total_supply,
+                'Invalid Supporters total supply'
             );
 
             let collectible_dis = IFlexHausCollectibleMixinDispatcher {
@@ -297,7 +358,15 @@ mod FlexHausFactory {
             collectible_dis.set_symbol(symbol);
             collectible_dis.set_base_uri(base_uri);
 
-            self.emit(UpdateCollectible { creator: get_caller_address(), collectible });
+            self
+                .emit(
+                    UpdateCollectible {
+                        creator: get_caller_address(),
+                        collectible,
+                        drop_amount: total_supply,
+                        rarity
+                    }
+                );
             self.reentrancyguard.end();
         }
 
@@ -309,7 +378,7 @@ mod FlexHausFactory {
             let collectible_drop = self.get_collectible_drop(collectible);
             assert(
                 collectible_drop.drop_type != 0
-                    && collectible_drop.start_time <= get_block_timestamp(),
+                    && collectible_drop.expire_time <= get_block_timestamp(),
                 'Drop not started'
             );
 
@@ -482,6 +551,16 @@ mod FlexHausFactory {
 
         fn assert_valid_drop_type(self: @ContractState, drop_type: u8) {
             assert(drop_type == 1 || drop_type == 2, 'Invalid drop type');
+        }
+
+        fn assert_valid_rarity(self: @ContractState, rarity: felt252) {
+            assert(
+                rarity == CollectibleRarity::Common.into()
+                    || rarity == CollectibleRarity::Rare.into()
+                    || rarity == CollectibleRarity::Legendary.into()
+                    || rarity == CollectibleRarity::Ultimate.into(),
+                'Invalid rarity'
+            );
         }
 
         fn pay_protocol_fee(ref self: ContractState) {
