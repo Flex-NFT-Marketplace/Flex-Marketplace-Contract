@@ -85,16 +85,18 @@ pub fn base64_encode(input: ByteArray) -> ByteArray {
             0
         };
 
-        let triple: u32 = (left_shift(b0.try_into().unwrap(), 16))
-            | (left_shift(b1.try_into().unwrap(), 8))
-            | b2.try_into().unwrap();
+        let triple: u32 = (left_shift(b0.into(), 16).try_into().unwrap())
+            | (left_shift(b1.into(), 8).try_into().unwrap())
+            | b2.into();
 
-        output.append(BASE64_TABLE.at(((right_shift(triple, 18)) & 0x3F).into()));
-        output.append(BASE64_TABLE.at(((right_shift(triple, 12)) & 0x3F).into()));
+        output
+            .append(BASE64_TABLE.at(((right_shift(triple.into(), 18)) & 0x3F).try_into().unwrap()));
+        output
+            .append(BASE64_TABLE.at(((right_shift(triple.into(), 12)) & 0x3F).try_into().unwrap()));
         output
             .append(
                 if i + 1 < input.len() {
-                    BASE64_TABLE.at(((right_shift(triple, 6)) & 0x3F).into())
+                    BASE64_TABLE.at(((right_shift(triple.into(), 6)) & 0x3F).try_into().unwrap())
                 } else {
                     @"="
                 },
@@ -112,7 +114,17 @@ pub fn base64_encode(input: ByteArray) -> ByteArray {
     }
 }
 
-fn left_shift(input: u32, count: u32) -> u32 {
+pub fn multi_div(num: u256, div: u256) -> u256 {
+    let mut result = num;
+    let mut index = 1;
+    while (index < div) {
+        result = result / 10;
+        index += 1;
+    };
+    result
+}
+
+pub fn left_shift(input: u256, count: u256) -> u256 {
     let mut index = 0;
     let mut result = input;
     loop {
@@ -124,7 +136,7 @@ fn left_shift(input: u32, count: u32) -> u32 {
     }
 }
 
-fn right_shift(num: u32, shift_by: u32) -> u32 {
+pub fn right_shift(num: u256, shift_by: u256) -> u256 {
     if shift_by == 0 {
         return num;
     }
@@ -133,3 +145,28 @@ fn right_shift(num: u32, shift_by: u32) -> u32 {
     result
 }
 
+pub fn uint_to_str(num: u256) -> ByteArray {
+    if num == 0 {
+        return "0";
+    }
+
+    let mut i = num.clone();
+    let mut j = num.clone();
+    let mut length = 0;
+    while (i != 0) {
+        length += 1;
+        i /= 10;
+    };
+
+    let mut result: ByteArray = "";
+    let mut k = length;
+    while (k != 0) {
+        k -= 1;
+        let temp: u8 = (j % 10).try_into().unwrap();
+
+        result.append(@format!("{}", temp));
+        j = j / 10;
+    };
+
+    return result.rev();
+}
