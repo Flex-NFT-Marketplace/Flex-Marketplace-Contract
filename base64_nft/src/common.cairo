@@ -114,21 +114,6 @@ pub fn base64_encode(input: ByteArray) -> ByteArray {
     }
 }
 
-pub fn byte_arr_to_arr_u8(input: ByteArray) -> Array<u8> {
-    let mut output: Array<u8> = array![];
-
-    let mut i = 0;
-    loop {
-        if i >= input.len() {
-            break output.clone();
-        }
-
-        let b0 = input.at(i).unwrap();
-        output.append(b0);
-        i += 1;
-    }
-}
-
 pub fn multi_div(num: u256, div: u256) -> u256 {
     let mut result = num;
     let mut index = 1;
