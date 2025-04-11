@@ -6,6 +6,7 @@ name = "base64_nft"
 version = "0.1.0"
 dependencies = [
  "openzeppelin",
+ "snforge_std",
 ]
 
 [[package]]
@@ -114,3 +115,16 @@ source = "git+https://github.com/openzeppelin/cairo-contracts?tag=v1.0.0#755ce1a
 name = "openzeppelin_utils"
 version = "1.0.0"
 source = "git+https://github.com/openzeppelin/cairo-contracts?tag=v1.0.0#755ce1adbf8d89ed23fbb8daa328fcbeab7c6424"
+
+[[package]]
+name = "snforge_scarb_plugin"
+version = "0.35.0"
+source = "git+https://github.com/foundry-rs/starknet-foundry.git?tag=v0.35.0#281bd6b3e84fb8d5cf2044763b04174d99457f20"
+
+[[package]]
+name = "snforge_std"
+version = "0.35.0"
+source = "git+https://github.com/foundry-rs/starknet-foundry.git?tag=v0.35.0#281bd6b3e84fb8d5cf2044763b04174d99457f20"
+dependencies = [
+ "snforge_scarb_plugin",
+]
